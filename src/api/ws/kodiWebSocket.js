@@ -1,6 +1,7 @@
 // src/api/ws/kodiWebSocket.js
 import config from "../../core/config";
 import { deleteSession } from "../../api/session";
+import { getProgress, saveProgress } from "../../api/hdrezka/progressApi";
 
 class Emitter {
   constructor() {
@@ -42,17 +43,34 @@ function normalizeKodiUrl(raw) {
   if (!raw) return null;
   let url = raw.trim();
 
-  // якщо немає протоколу — додаємо ws://
   if (!/^wss?:\/\//i.test(url)) {
     url = "ws://" + url;
   }
 
-  // якщо немає /jsonrpc в кінці — додаємо
   if (!/jsonrpc\/?$/i.test(url)) {
     url = url.replace(/\/+$/g, "") + "/jsonrpc";
   }
 
   return url;
+}
+
+function loadProgressMeta() {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem("kodi_progress_meta");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn("[kodiWebSocket] cannot read kodi_progress_meta", e);
+    return null;
+  }
+}
+
+function timeToSeconds(time) {
+  if (!time) return 0;
+  const h = time.hours || 0;
+  const m = time.minutes || 0;
+  const s = time.seconds || 0;
+  return h * 3600 + m * 60 + s;
 }
 
 // тягнемо юзерів з БД через /api/v1/utils/users
@@ -83,16 +101,18 @@ const kodiWebSocket = {
   playerId: null,
   reconnectAttempts: 0,
 
+  // === прогресс ===
+  progressMeta: loadProgressMeta(), // { movie_id, season, episode }
+  progressTimer: null,
+  resumeDone: false,
+
   async init() {
     if (this.ws) {
       console.warn("[kodiWebSocket] Already initialized!");
       return;
     }
 
-    // 1) беремо адресу з БД
     const kodiFromDb = await fetchKodiAddressForCurrentUser();
-
-    // 2) якщо в БД нема — fallback на конфіг
     const rawUrl = kodiFromDb || config.kodi_url || null;
     const url = normalizeKodiUrl(rawUrl);
 
@@ -120,6 +140,8 @@ const kodiWebSocket = {
       this.isConnected = false;
       emitter.emit("connected", false);
       this.ws = null;
+
+      this.stopProgressLoop();
 
       const delay = 5000 * Math.pow(2, this.reconnectAttempts);
       this.reconnectAttempts = this.reconnectAttempts + 1;
@@ -158,7 +180,9 @@ const kodiWebSocket = {
       }
       emitter.emit("playerIdChange", this.playerId);
     } else if (data.id === 102 && data.result) {
+      // тут всегда приходит time / totaltime
       emitter.emit("playerProperties", data.result);
+      this.handleProgressFromProperties(data.result);
     } else if (data.id === 230 && data.result) {
       emitter.emit("applicationProperties", data.result);
     }
@@ -175,8 +199,14 @@ const kodiWebSocket = {
     console.log("[Kodi Notification]", data.method, data.params);
 
     if (data.method === "Player.OnStop") {
+      // перед тем как мы убьём playerId, пусть таймер уже сделал последнее сохранение
+      this.stopProgressLoop();
+
       this.playerId = null;
       emitter.emit("playerIdChange", this.playerId);
+
+      // очистить мету прогресса
+      this.setProgressMeta(null);
 
       const user = safeGetCurrentUser();
       if (user?.id) {
@@ -193,10 +223,121 @@ const kodiWebSocket = {
     if (data.method === "Player.OnPlay") {
       console.log("Player.OnPlay event received, requesting active player...");
       this.requestActivePlayer();
+      this.startProgressLoop();
+      this.resumeFromLastProgress();
+    }
+
+    // при паузе/перемотке — разово дергаем GetProperties → там уже handleProgressFromProperties сохранит прогресс
+    if (data.method === "Player.OnPause" || data.method === "Player.OnSeek") {
+      if (this.playerId != null) {
+        this.requestPlayerProperties(this.playerId);
+      }
     }
 
     emitter.emit("notification", data);
   },
+
+  // ===== ПРОГРЕСС =====
+
+  handleProgressFromProperties(props) {
+    if (!this.progressMeta) return;
+    const user = safeGetCurrentUser();
+    if (!user?.id) return;
+
+    const seconds = timeToSeconds(props.time);
+    if (Number.isNaN(seconds)) return;
+
+    // не спамим нулями
+    const secInt = Math.floor(seconds);
+    if (secInt < 1) return;
+
+    saveProgress({
+      user_id: user.id,
+      movie_id: this.progressMeta.movie_id,
+      position_seconds: secInt,
+      season: this.progressMeta.season ?? null,
+      episode: this.progressMeta.episode ?? null,
+    });
+  },
+
+  setProgressMeta(meta) {
+    this.progressMeta = meta;
+    this.resumeDone = false;
+    try {
+      if (meta) {
+        localStorage.setItem("kodi_progress_meta", JSON.stringify(meta));
+      } else {
+        localStorage.removeItem("kodi_progress_meta");
+      }
+    } catch (e) {
+      console.warn("[kodiWebSocket] cannot write kodi_progress_meta", e);
+    }
+  },
+
+  startProgressLoop() {
+    if (this.progressTimer || !this.progressMeta) return;
+
+    this.progressTimer = setInterval(() => {
+      if (this.playerId != null) {
+        this.requestPlayerProperties(this.playerId);
+      }
+    }, 30000); // как в браузерном плеере — раз в 30 сек
+  },
+
+  stopProgressLoop() {
+    if (this.progressTimer) {
+      clearInterval(this.progressTimer);
+      this.progressTimer = null;
+    }
+  },
+
+  async resumeFromLastProgress() {
+    if (!this.progressMeta || this.resumeDone) return;
+    const user = safeGetCurrentUser();
+    if (!user?.id) return;
+
+    try {
+      const { position_seconds } = await getProgress({
+        user_id: user.id,
+        movie_id: this.progressMeta.movie_id,
+        season: this.progressMeta.season ?? null,
+        episode: this.progressMeta.episode ?? null,
+      });
+
+      const sec = Math.floor(position_seconds || 0);
+      if (!sec) return; // нет прогресса — стартуем с начала
+
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+
+      const trySeek = () => {
+        if (this.playerId == null) {
+          setTimeout(trySeek, 300);
+          return;
+        }
+        console.log(
+          "[Kodi WS] Resuming from",
+          h,
+          "h",
+          m,
+          "m",
+          s,
+          "s (",
+          sec,
+          "seconds )"
+        );
+        this.seekAbsolute(h, m, s);
+        this.resumeDone = true;
+      };
+
+      trySeek();
+    } catch (e) {
+      console.error("[kodiWebSocket] resumeFromLastProgress error:", e);
+    }
+  },
+
+  // ===== JSON-RPC =====
 
   sendJsonRpc(method, params = {}, requestId = 1) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {

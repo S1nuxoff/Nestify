@@ -26,6 +26,7 @@ function App() {
 
   return (
     <>
+      {/* Оставляем player здесь, без обертки App */}
       <Routes>
         <Route
           path="/player/:movieId"
@@ -36,10 +37,9 @@ function App() {
           }
         />
       </Routes>
+
       <div style={{ position: "relative", zIndex: 1 }} className="App">
-        {/* <div className="container"> */}
         <Routes>
-          {/* Главная + модалка */}
           <Route
             path="/"
             element={
@@ -56,8 +56,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
-          {/* Остальные роуты */}
           <Route
             path="/search"
             element={
@@ -82,9 +80,7 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route path="/settings" element={<UserSettingsPage />} />
-
           <Route
             path="/history"
             element={
@@ -93,19 +89,19 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
+          {/* 🔥 ЭТОТ /player убираем */}
+          {/* <Route
             path="/player/:movieId"
             element={
               <PrivateRoute>
                 <PlayerPage />
               </PrivateRoute>
             }
-          />
+          /> */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/login/create/user" element={<CreateUserPage />} />
         </Routes>
       </div>
-      {/* </div> */}
     </>
   );
 }

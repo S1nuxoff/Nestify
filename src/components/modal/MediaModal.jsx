@@ -113,6 +113,7 @@ const MediaModal = ({
         return setValidationMessage("Будь ласка, виберіть епізод");
       }
     }
+
     const success = await playMovieSource({
       seasonId: selectedSeason,
       episodeId: selectedEpisode,
@@ -120,17 +121,35 @@ const MediaModal = ({
       translatorId: selectedTranslatorId,
       action: movieDetails.action,
     });
+
     if (success) {
-      setSelectedTranslatorId(null);
-      setSelectedSeason(null);
-      setSelectedEpisode(null);
-      onClose();
+      await addMovieToHistory({
+        user_id: currentUser.id,
+        season_id: selectedSeason,
+        episode_id: selectedEpisode,
+        movie_id: movieDetails.id,
+        translator_id: selectedTranslatorId,
+        action: movieDetails.action,
+      });
+
       await createSession(currentUser.id, {
         movie_id: movieDetails.id,
         translator_id: selectedTranslatorId,
         season_id: selectedSeason,
         episode_id: selectedEpisode,
       });
+
+      // ВАЖНО: говорим WS, какой именно фильм/серия сейчас через Kodi
+      kodiWebSocket.setProgressMeta({
+        movie_id: movieDetails.id,
+        season: movieDetails.action === "get_stream" ? selectedSeason : null,
+        episode: movieDetails.action === "get_stream" ? selectedEpisode : null,
+      });
+
+      setSelectedTranslatorId(null);
+      setSelectedSeason(null);
+      setSelectedEpisode(null);
+      onClose();
     }
   };
 

@@ -63,19 +63,9 @@ function HistoryPage() {
         />
         <>
           <div className="history-page__content">
-            <div className="category-content-top">
-              <div className="category-content-title">
-                <BackIcon
-                  style={{ cursor: "pointer" }}
-                  onClick={() => navigate(-1)} // ⬅ назад в истории
-                />
-
-                <span className="row-header-title">Історія перегляду</span>
-              </div>
-            </div>
             <Explorer
               Page={history}
-              title={""}
+              title={"Історія перегляду"}
               currentUser={currentUser}
               onMovieSelect={setSelectedMovie}
             />
