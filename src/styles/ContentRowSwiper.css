@@ -1,0 +1,25 @@
+.content-row__top {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  height: 24px;
+  transition: 0.2s ease-in-out;
+  justify-content: space-between;
+  /* margin: 14px 0px; */
+}
+.content-row__top-action {
+  cursor: pointer;
+}
+.content-row__top-title {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-items: center;
+}
+.arrow-right-icon {
+  transition: 0.2s ease-in-out;
+}
+.content-row__top-title:hover .arrow-right-icon {
+  transform: scale(1.2);
+}

@@ -1,29 +1,41 @@
 // hooks/useLiveSession.js
 import { useState, useEffect } from "react";
 import config from "../core/config";
+
 const useLiveSession = (userId) => {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    if (!userId) return; // не подключаться без юзера
-    const ws = new WebSocket(
-      `ws://212.162.155.61:8000/ws/live_session/${userId}`
-    );
+    if (!userId) return;
+
+    const ws = new WebSocket(`${config.backend_ws}/ws/live_session/${userId}`);
+
+    ws.onopen = () => {
+      console.log("[live_session] WS open");
+    };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        setSession(data.live_session || null); // сразу достаём только live_session
+        console.log("[live_session] message:", data);
+        setSession(data.live_session || null);
       } catch (err) {
         console.error("WS parse error:", err);
       }
     };
 
-    ws.onopen = () => console.log("[HomeRezka WS] Connected to live_session");
-    ws.onerror = (e) => console.error("[HomeRezka WS] Error", e);
-    ws.onclose = () => console.warn("[HomeRezka WS] Disconnected");
+    ws.onerror = (e) => {
+      console.error("[live_session] WS error", e);
+    };
 
-    return () => ws.close();
+    ws.onclose = (e) => {
+      console.warn("[live_session] WS closed", e.code, e.reason);
+    };
+
+    // ❌ НІЧОГО НЕ ЗАКРИВАЄМО ВРУЧНУ
+    return () => {
+      // ws.close();  // прибираємо
+    };
   }, [userId]);
 
   return session;

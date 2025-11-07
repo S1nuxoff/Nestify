@@ -1,5 +1,7 @@
+// src/api/ws/kodiWebSocket.js
 import config from "../../core/config";
 import { deleteSession } from "../../api/session";
+
 class Emitter {
   constructor() {
     this.handlers = {};
@@ -21,26 +23,93 @@ class Emitter {
     this.handlers[eventName].forEach((cb) => cb(data));
   }
 }
-const currentUser = JSON.parse(localStorage.getItem("current_user"));
+
 const emitter = new Emitter();
-const KODI_WS_URL = config.kodi_url;
+const API_BASE = config.backend_url;
+
+function safeGetCurrentUser() {
+  try {
+    const raw = localStorage.getItem("current_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.error("[kodiWebSocket] bad current_user in localStorage", e);
+    return null;
+  }
+}
+
+// нормалізуємо адресу: додаємо ws:// і /jsonrpc за потреби
+function normalizeKodiUrl(raw) {
+  if (!raw) return null;
+  let url = raw.trim();
+
+  // якщо немає протоколу — додаємо ws://
+  if (!/^wss?:\/\//i.test(url)) {
+    url = "ws://" + url;
+  }
+
+  // якщо немає /jsonrpc в кінці — додаємо
+  if (!/jsonrpc\/?$/i.test(url)) {
+    url = url.replace(/\/+$/g, "") + "/jsonrpc";
+  }
+
+  return url;
+}
+
+// тягнемо юзерів з БД через /api/v1/utils/users
+async function fetchKodiAddressForCurrentUser() {
+  const user = safeGetCurrentUser();
+  if (!user?.id) return null;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/utils/users`);
+    if (!res.ok) {
+      console.warn("[kodiWebSocket] failed to load users from API");
+      return null;
+    }
+    const data = await res.json(); // очікуємо масив юзерів
+    const found = Array.isArray(data)
+      ? data.find((u) => u.id === user.id)
+      : null;
+    return found?.kodi_address || null;
+  } catch (e) {
+    console.error("[kodiWebSocket] error loading users:", e);
+    return null;
+  }
+}
 
 const kodiWebSocket = {
   ws: null,
   isConnected: false,
   playerId: null,
+  reconnectAttempts: 0,
 
-  init() {
+  async init() {
     if (this.ws) {
       console.warn("[kodiWebSocket] Already initialized!");
       return;
     }
-    this.ws = new WebSocket(KODI_WS_URL);
+
+    // 1) беремо адресу з БД
+    const kodiFromDb = await fetchKodiAddressForCurrentUser();
+
+    // 2) якщо в БД нема — fallback на конфіг
+    const rawUrl = kodiFromDb || config.kodi_url || null;
+    const url = normalizeKodiUrl(rawUrl);
+
+    if (!url) {
+      console.warn(
+        "[kodiWebSocket] Kodi URL is not set (no kodi_address in DB and no config.kodi_url)"
+      );
+      return;
+    }
+
+    console.log("[Kodi WS] Connecting to:", url);
+    this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
       console.log("[Kodi WS] Connected!");
       this.isConnected = true;
-      this.reconnectAttempts = 0; // сбрасываем счетчик попыток
+      this.reconnectAttempts = 0;
       this.requestActivePlayer();
       this.requestVolume();
       emitter.emit("connected", true);
@@ -51,7 +120,7 @@ const kodiWebSocket = {
       this.isConnected = false;
       emitter.emit("connected", false);
       this.ws = null;
-      // Вычисляем задержку с экспоненциальным backoff (например, 5 * 2^attempt секунд)
+
       const delay = 5000 * Math.pow(2, this.reconnectAttempts);
       this.reconnectAttempts = this.reconnectAttempts + 1;
       console.log(
@@ -79,8 +148,8 @@ const kodiWebSocket = {
       }
     };
   },
+
   handleResponse(data) {
-    // Обработка ответа для запроса активного плеера (id=101)
     if (data.id === 101 && data.result) {
       if (data.result.length > 0) {
         this.playerId = data.result[0].playerid;
@@ -88,16 +157,12 @@ const kodiWebSocket = {
         this.playerId = null;
       }
       emitter.emit("playerIdChange", this.playerId);
-    }
-    // Обработка ответа для запроса свойств плеера (id=102)
-    else if (data.id === 102 && data.result) {
+    } else if (data.id === 102 && data.result) {
       emitter.emit("playerProperties", data.result);
-    }
-    // Обработка ответа для запроса громкости (id=230)
-    else if (data.id === 230 && data.result) {
+    } else if (data.id === 230 && data.result) {
       emitter.emit("applicationProperties", data.result);
     }
-    // Другие ответы...
+
     if (data.id === 500 && data.result) {
       emitter.emit("moviesList", data.result.movies || []);
     }
@@ -108,22 +173,28 @@ const kodiWebSocket = {
 
   handleNotification(data) {
     console.log("[Kodi Notification]", data.method, data.params);
+
     if (data.method === "Player.OnStop") {
       this.playerId = null;
       emitter.emit("playerIdChange", this.playerId);
-      deleteSession(currentUser.id)
-        .then(() => {
-          console.log("Session removal notified successfully.");
-        })
-        .catch((error) => {
-          console.error("Error notifying session removal:", error);
-        });
+
+      const user = safeGetCurrentUser();
+      if (user?.id) {
+        deleteSession(user.id)
+          .then(() => {
+            console.log("Session removal notified successfully.");
+          })
+          .catch((error) => {
+            console.error("Error notifying session removal:", error);
+          });
+      }
     }
+
     if (data.method === "Player.OnPlay") {
-      // При получении события запуска воспроизведения запрашиваем активный плеер
       console.log("Player.OnPlay event received, requesting active player...");
       this.requestActivePlayer();
     }
+
     emitter.emit("notification", data);
   },
 
@@ -153,7 +224,6 @@ const kodiWebSocket = {
     this.sendJsonRpc("Player.GetProperties", params, 102);
   },
 
-  // Новый метод для получения громкости
   requestVolume() {
     this.sendJsonRpc(
       "Application.GetProperties",
@@ -229,7 +299,6 @@ const kodiWebSocket = {
   },
 
   setVolume(volume) {
-    // Передаём значение громкости (0-100)
     this.sendJsonRpc("Application.SetVolume", { volume }, 220);
   },
 

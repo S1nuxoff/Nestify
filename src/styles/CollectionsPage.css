@@ -3,5 +3,10 @@
   width: 100%;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 24px;
+}
+.collections-content {
   margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }

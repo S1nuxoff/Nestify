@@ -1,5 +1,5 @@
 // src/hooks/useMovieSource.js
-import { getSource } from "../api/htttp/hdrezka";
+import { getSource } from "../api/hdrezka";
 import kodiWebSocket, { waitForPlayerOnPlay } from "../api/ws/kodiWebSocket"; // 👈
 
 const useMovieSource = () => {

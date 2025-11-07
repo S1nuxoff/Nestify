@@ -1,4 +1,4 @@
-import { getSource } from "../htttp/hdrezka";
+import { getSource } from "../hdrezka";
 
 export const getMovieStreamUrl = async ({
   seasonId,

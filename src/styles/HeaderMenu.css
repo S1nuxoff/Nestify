@@ -20,6 +20,7 @@
   border-radius: 8px;
   font-weight: 400;
   transition: 0.2s ease-in-out;
+  font-size: 20px;
 }
 
 .header-menu-item:hover {
@@ -53,8 +54,8 @@
   position: absolute;
   top: 116%;
   left: 0;
-  background: var(--white-opacity-10);
-  backdrop-filter: blur(50px);
+  background: rgba(45, 45, 45, 0.589);
+  backdrop-filter: blur(10px);
   border-radius: 16px;
   margin-top: 4px;
   padding: 8px 0;

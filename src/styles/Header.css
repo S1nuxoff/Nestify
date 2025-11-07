@@ -11,7 +11,7 @@ header {
 }
 
 .hdrezka-header-input-container {
-  width: 400px;
+  width: 500px;
   display: flex;
   align-items: center;
   position: relative;
@@ -19,9 +19,9 @@ header {
 .hdrezka-header-search-input {
   width: 100%;
   border: none;
-  height: 40px;
+  height: 50px;
   background-color: var(--white-opacity-5);
-  border-radius: 16px;
+  border-radius: 32px;
   padding: 8px 16px 8px 48px;
   color: var(--white);
   font-size: 14px;
@@ -62,7 +62,7 @@ header {
   width: 100%;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .header-container {
   width: 100%;
@@ -131,12 +131,18 @@ header {
 }
 .header-user__container {
   position: relative;
+  display: flex;
+  color: var(--white);
+  font-size: 20px;
+  font-weight: 500;
+  align-items: center;
+  gap: 8px;
 }
 .header-user__avatar-container {
   cursor: pointer;
   display: flex;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 32px;
   padding: 4px;
   background-color: var(--white-opacity-10);
@@ -151,19 +157,22 @@ header {
   gap: 16px;
   margin-bottom: 16px;
 }
-
+.header-logo {
+  width: 140%;
+  height: 140%;
+}
 .dropdown-user {
   display: flex;
   align-items: center;
   cursor: pointer;
   padding: 6px;
   transition: background 0.2s ease;
+  border-radius: 16px;
   /* background-color: var(--white-opacity-10); */
 }
 
 .dropdown-user:hover {
   background-color: var(--white-opacity-10);
-  border-radius: 16px;
 }
 
 .dropdown-user-avatar {
@@ -193,6 +202,8 @@ header {
   padding: 12px;
   z-index: 999;
   min-width: 400px;
+  max-height: 400px;
+  overflow: auto;
 }
 
 .header-dropdown__user-name {

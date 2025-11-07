@@ -1,5 +1,6 @@
 .home-page-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 40px;
+  margin-top: 32px;
 }

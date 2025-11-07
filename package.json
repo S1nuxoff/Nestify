@@ -12,7 +12,6 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "@videojs/http-streaming": "^3.17.0",
-    "@vidstack/player-react": "^1.6.0",
     "@vidstack/react": "^1.12.13",
     "axios": "^1.8.3",
     "cheerio": "^1.0.0",

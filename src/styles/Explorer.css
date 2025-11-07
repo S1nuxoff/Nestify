@@ -14,8 +14,11 @@
   align-items: start;
 }
 .explorer_watch-history {
-  margin-top: 32px;
-  margin-bottom: 16px;
+  /* margin-top: 32px;
+  margin-bottom: 16px; */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .explorer_watch-history .swiper-slide {
