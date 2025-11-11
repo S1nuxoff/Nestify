@@ -6,5 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
+    networks:
+      - dokploy-network
+    # Можеш залишити доступ по IP:8080, якщо треба:
     ports:
       - "8080:80"
+
+networks:
+  dokploy-network:
+    external: true
