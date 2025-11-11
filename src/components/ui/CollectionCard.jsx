@@ -1,15 +1,12 @@
-// src/components/ui/CollectionCard.jsx
 import React from "react";
 import "../../styles/MediaCard.css";
 import config from "../../core/config";
 import { useNavigate } from "react-router-dom";
 
-function CollectionCard(props) {
+function CollectionCardInner(props) {
   const navigate = useNavigate();
 
-  // Підтримуємо всі варіанти: movie / collection / item / просто розспред
   const collection = props.movie || props.collection || props.item || props;
-
   if (!collection) return null;
 
   const { navigate_to, local_url, title, filename } = collection;
@@ -36,6 +33,8 @@ function CollectionCard(props) {
             src={imgSrc}
             alt={title || filename || "collection"}
             className="video-card_preview-image"
+            loading="lazy"
+            decoding="async"
           />
         )}
       </div>
@@ -43,4 +42,5 @@ function CollectionCard(props) {
   );
 }
 
+const CollectionCard = React.memo(CollectionCardInner);
 export default CollectionCard;

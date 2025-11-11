@@ -1,5 +1,7 @@
+// src/pages/HomePage.jsx
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 import {
   getPage,
   search,
@@ -10,99 +12,45 @@ import {
 import { getFeatured } from "../api/utils";
 
 import Featured from "../components/section/Featured";
-import SessionPlayer from "../components/section/SessionPlayer";
-import MediaModal from "../components/modal/MediaModal";
-import useLiveSession from "../hooks/useLiveSession";
-import useMovieDetails from "../hooks/useMovieDetails";
+// import SessionPlayer from "../components/section/SessionPlayer"; // якщо треба
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import ContentRowSwiper from "../components/section/ContentRowSwiper";
 import "../styles/HomePage.css";
 import CollectionCard from "../components/ui/CollectionCard";
 import MediaCard from "../components/ui/MediaCard";
-import kodiWebSocket from "../api/ws/kodiWebSocket";
+import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 import Alert from "../components/ui/Alert";
 
 function HomePage() {
-  const [kodiOnline, setKodiOnline] = useState(kodiWebSocket.isConnected);
-  const [showKodiConnected, setShowKodiConnected] = useState(false);
+  const [showPlayerConnected, setShowPlayerConnected] = useState(false);
   const [page, setPage] = useState({});
   const [featured, setFeatured] = useState([]);
   const [history, setHistory] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedMovie, setSelectedMovie] = useState(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  // Router helpers
-  const { movieLink } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Безпечне читання current_user
-  let currentUser = null;
-  try {
-    const raw = localStorage.getItem("current_user");
-    currentUser = raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    console.error("bad current_user in localStorage", e);
-    currentUser = null;
-  }
-
-  const { movieDetails, loading: movieLoading } = useMovieDetails(
-    selectedMovie?.filmLink || selectedMovie?.link
-  );
-
-  const session = useLiveSession(currentUser ? Number(currentUser.id) : null);
-
-  // --- Открытие модалки по movieLink из url ---
+  // читаємо current_user ОДИН раз
   useEffect(() => {
-    if (movieLink) {
-      const link = decodeURIComponent(movieLink);
-      let movie = null;
-      const searchByLink = (arr) =>
-        arr?.find(
-          (m) =>
-            m.link === link || m.filmLink === link || m.navigate_to === link
-        );
-      movie = searchByLink(page.newest?.items);
-      if (!movie) movie = searchByLink(page.popular_movies?.items);
-      if (!movie) movie = searchByLink(page.popular_series?.items);
-      if (!movie) movie = searchByLink(featured);
-      if (!movie) movie = searchByLink(history);
-      if (movie) setSelectedMovie(movie);
-      else setSelectedMovie({ link }); // для запроса деталей по link
-    } else {
-      setSelectedMovie(null);
+    try {
+      const raw = localStorage.getItem("current_user");
+      setCurrentUser(raw ? JSON.parse(raw) : null);
+    } catch (e) {
+      console.error("bad current_user in localStorage", e);
+      setCurrentUser(null);
     }
-  }, [movieLink, page, featured, history]);
+  }, []);
 
-  // --- Открытие модалки и запись адреса ---
-  const handleMovieSelect = (movie) => {
-    setSelectedMovie(movie);
-    navigate(
-      `/movie/${encodeURIComponent(
-        movie.link || movie.filmLink || movie.navigate_to
-      )}`
-    );
-  };
-
-  // --- Закрытие модалки ---
-  const closePopup = () => {
-    setSelectedMovie(null);
-    if (location.pathname.startsWith("/movie/")) {
-      navigate("/", { replace: true });
-    }
-  };
-
-  // --- Поиск/загрузка ---
   const handleSearch = async (query) => {
     try {
+      setIsPageLoading(true);
       if (query.trim() === "") {
-        setIsPageLoading(true);
         setPage(await getPage());
       } else {
-        setIsPageLoading(true);
         setPage(await search(query));
       }
     } catch (err) {
@@ -112,7 +60,6 @@ function HomePage() {
     }
   };
 
-  // --- Первичная загрузка данных ---
   useEffect(() => {
     (async () => {
       try {
@@ -128,7 +75,8 @@ function HomePage() {
   useEffect(() => {
     (async () => {
       try {
-        setCategories((await getCategories()).categories || []);
+        const res = await getCategories();
+        setCategories(res.categories || []);
       } catch (e) {
         console.error("getCategories error:", e);
       }
@@ -162,56 +110,42 @@ function HomePage() {
     })();
   }, [currentUser?.id]);
 
-  // --- Событие подключения к Kodi ---
+  // нотиф про підключення плеєра
   useEffect(() => {
     const handler = (isOnline) => {
-      setKodiOnline(isOnline);
       if (isOnline) {
-        setShowKodiConnected(true);
-        setTimeout(() => setShowKodiConnected(false), 2500);
+        setShowPlayerConnected(true);
+        setTimeout(() => setShowPlayerConnected(false), 2500);
       }
     };
-    kodiWebSocket.on("connected", handler);
-    return () => kodiWebSocket.off("connected", handler);
+    nestifyPlayerClient.on("connected", handler);
+    return () => nestifyPlayerClient.off("connected", handler);
   }, []);
-  console.log(page.collections);
+
+  const handleMovieSelect = (movie) => {
+    const link = movie.link || movie.filmLink || movie.navigate_to;
+    if (!link) return;
+    navigate(`/movie/${encodeURIComponent(link)}`);
+  };
+
   return (
     <>
       <Alert
-        visible={showKodiConnected}
+        visible={showPlayerConnected}
         type="success"
-        title="Kodi підключено"
-        message="З'єднання з Kodi встановлено успішно!"
+        title="Nestify Player підключено"
+        message="З'єднання з плеєром встановлено успішно!"
       />
-
-      {selectedMovie && (
-        <MediaModal
-          loading={movieLoading}
-          movieDetails={movieDetails}
-          currentUser={currentUser}
-          movie={selectedMovie}
-          onClose={closePopup}
-        />
-      )}
 
       <div className="container">
         <Header
           categories={categories}
-          currentUser={currentUser}
+          currentUser={currentUser || {}}
           onSearch={handleSearch}
           onMovieSelect={handleMovieSelect}
         />
 
-        {session ? (
-          <SessionPlayer
-            session={session}
-            history={history}
-            currentUser={currentUser}
-            onMovieSelect={handleMovieSelect}
-          />
-        ) : (
-          <Featured onMovieSelect={handleMovieSelect} featured={featured} />
-        )}
+        <Featured onMovieSelect={handleMovieSelect} featured={featured} />
 
         <div className="home-page-content">
           {!isHistoryLoading &&
@@ -232,13 +166,6 @@ function HomePage() {
           {!isPageLoading && (
             <>
               <ContentRowSwiper
-                data={page.collections}
-                title="Колекції"
-                navigate_to="/collections"
-                CardComponent={CollectionCard}
-              />
-
-              <ContentRowSwiper
                 data={page.newest?.items || []}
                 title="Новинки"
                 navigate_to="/new"
@@ -248,6 +175,13 @@ function HomePage() {
                 rows={2}
               />
               <ContentRowSwiper
+                data={page.collections}
+                title="Колекції"
+                navigate_to="/collections"
+                CardComponent={CollectionCard}
+              />
+
+              <ContentRowSwiper
                 data={page.popular?.items || []}
                 title="Популярне"
                 navigate_to="/?filter=popular"
@@ -256,6 +190,7 @@ function HomePage() {
                 navPrefix="/category"
                 rows={2}
               />
+
               <ContentRowSwiper
                 data={page.watching?.items || []}
                 title="Зараз дивляться"
@@ -273,6 +208,7 @@ function HomePage() {
               <div className="spinner"></div>
             </div>
           )}
+
           <Footer />
         </div>
       </div>

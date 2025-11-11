@@ -5,8 +5,9 @@ import { ReactComponent as PlayerBackwardIcon } from "../../assets/icons/player_
 import { ReactComponent as PlayerForwardIcon } from "../../assets/icons/player_forward.svg";
 import { ReactComponent as PlayerVolumeuIcon } from "../../assets/icons/player_volume.svg";
 import { ReactComponent as PlayerStop } from "../../assets/icons/player_stop.svg";
-import kodiWebSocket from "../../api/ws/kodiWebSocket";
 import "../../styles/PlayerPlaybackControls.css";
+import usePlayerStatus from "../../hooks/usePlayerStatus";
+import nestifyPlayerClient from "../../api/ws/nestifyPlayerClient";
 
 const formatTime = (sec) => {
   const h = Math.floor(sec / 3600);
@@ -98,9 +99,8 @@ const ProgressBar = ({
 };
 
 function SessionPlaybackControls() {
-  const [playerId, setPlayerId] = useState(null);
-  const [currentSec, setCurrentSec] = useState(0);
-  const [durationSec, setDurationSec] = useState(0);
+  const { status } = usePlayerStatus();
+
   const [sliderValue, setSliderValue] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -108,6 +108,12 @@ function SessionPlaybackControls() {
 
   const isDraggingRef = useRef(false);
   const sliderRef = useRef(null);
+
+  const currentSec = status ? Math.floor((status.position_ms || 0) / 1000) : 0;
+  const durationSec = status
+    ? Math.max(0, Math.floor((status.duration_ms || 0) / 1000))
+    : 0;
+
   const min = 0;
   const max = 100;
 
@@ -117,27 +123,52 @@ function SessionPlaybackControls() {
     rgba(217, 217, 217, 50%) ${sliderValue}%,
     rgba(217, 217, 217, 50%)`;
 
-  const handlePlayPause = useCallback(() => kodiWebSocket.playPause(), []);
-  const handleRewind = useCallback(() => kodiWebSocket.seek(-10), []);
-  const handleForward = useCallback(() => kodiWebSocket.seek(10), []);
-  const handleStop = useCallback(() => kodiWebSocket.stop(), []);
+  useEffect(() => {
+    if (!status) return;
+
+    setIsPlaying(status.is_playing || status.state === "playing");
+    setVolume(status.volume ?? 50);
+
+    if (!isDraggingRef.current && durationSec > 0) {
+      const newPercent = (currentSec / durationSec) * 100;
+      setSliderValue(newPercent);
+    } else if (!isDraggingRef.current && durationSec === 0) {
+      setSliderValue(0);
+    }
+  }, [status, currentSec, durationSec]);
+
+  const handlePlayPause = useCallback(() => {
+    nestifyPlayerClient.playPause();
+  }, []);
+
+  const handleRewind = useCallback(() => {
+    nestifyPlayerClient.seekBySeconds(-10);
+  }, []);
+
+  const handleForward = useCallback(() => {
+    nestifyPlayerClient.seekBySeconds(10);
+  }, []);
+
+  const handleStop = useCallback(() => {
+    nestifyPlayerClient.stop();
+  }, []);
+
   const handleSliderChange = useCallback((e) => {
     setSliderValue(parseInt(e.target.value, 10));
   }, []);
+
   const handleSliderMouseDown = useCallback(() => {
     isDraggingRef.current = true;
   }, []);
+
   const handleSliderMouseUp = useCallback(() => {
     isDraggingRef.current = false;
-    if (playerId !== null && durationSec > 0) {
+    if (durationSec > 0) {
       const newPositionSec = Math.floor((sliderValue / 100) * durationSec);
-      const h = Math.floor(newPositionSec / 3600);
-      const m = Math.floor((newPositionSec % 3600) / 60);
-      const s = newPositionSec % 60;
-      kodiWebSocket.seekAbsolute(h, m, s);
-      setCurrentSec(newPositionSec);
+      const newMs = newPositionSec * 1000;
+      nestifyPlayerClient.seekMs(newMs);
     }
-  }, [playerId, durationSec, sliderValue]);
+  }, [durationSec, sliderValue]);
 
   const handleVolumeIconClick = useCallback(() => {
     setShowVolumeSlider((prev) => !prev);
@@ -146,12 +177,12 @@ function SessionPlaybackControls() {
   const updateVolumeFromPointer = useCallback((e) => {
     if (!sliderRef.current) return;
     const rect = sliderRef.current.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const newValue = 1 - clickY / rect.height;
+    const clickX = e.clientX - rect.left; // горизонталь вместо вертикали
+    const newValue = clickX / rect.width; // 0 -> 1 слева направо
     const clamped = Math.max(0, Math.min(newValue, 1));
     const newVolume = Math.round(clamped * 100);
     setVolume(newVolume);
-    kodiWebSocket.setVolume(newVolume);
+    nestifyPlayerClient.setVolume(newVolume);
   }, []);
 
   const handlePointerMove = useCallback(
@@ -182,71 +213,16 @@ function SessionPlaybackControls() {
   );
 
   useEffect(() => {
-    kodiWebSocket.init();
-
-    const handlePlayerIdChange = (newPlayerId) => {
-      setPlayerId(newPlayerId);
-      if (newPlayerId === null) {
-        setCurrentSec(0);
-        setDurationSec(0);
-        setSliderValue(0);
-      }
-    };
-
-    const handlePlayerProperties = (props) => {
-      const { time, totaltime } = props;
-      const curSec = time.hours * 3600 + time.minutes * 60 + time.seconds;
-      const durSec =
-        totaltime.hours * 3600 + totaltime.minutes * 60 + totaltime.seconds;
-
-      setCurrentSec(curSec);
-      setDurationSec(durSec);
-      if ("speed" in props) setIsPlaying(props.speed !== 0);
-      if (!isDraggingRef.current) {
-        const newPercent = durSec > 0 ? (curSec / durSec) * 100 : 0;
-        setSliderValue(newPercent);
-      }
-    };
-
-    const handleApplicationProperties = (props) => {
-      if (props.volume !== undefined) setVolume(props.volume);
-    };
-
-    kodiWebSocket.on("playerIdChange", handlePlayerIdChange);
-    kodiWebSocket.on("playerProperties", handlePlayerProperties);
-    kodiWebSocket.on("applicationProperties", handleApplicationProperties);
-
-    const interval = setInterval(() => {
-      if (kodiWebSocket.playerId === null) {
-        kodiWebSocket.requestActivePlayer();
-      } else {
-        kodiWebSocket.requestPlayerProperties(kodiWebSocket.playerId);
-      }
-      kodiWebSocket.requestVolume();
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      kodiWebSocket.off("playerIdChange", handlePlayerIdChange);
-      kodiWebSocket.off("playerProperties", handlePlayerProperties);
-      kodiWebSocket.off("applicationProperties", handleApplicationProperties);
-    };
-  }, []);
-
-  useEffect(() => {
     if (showVolumeSlider) {
-      // Блокируем прокрутку
       document.body.style.overflow = "hidden";
     } else {
-      // Восстанавливаем прокрутку
       document.body.style.overflow = "";
     }
-
-    // Чистим стиль, если компонент размонтируется
     return () => {
       document.body.style.overflow = "";
     };
   }, [showVolumeSlider]);
+
   return (
     <>
       {showVolumeSlider && (
@@ -254,7 +230,6 @@ function SessionPlaybackControls() {
           className="volume-overlay"
           onClick={() => setShowVolumeSlider(false)}
         >
-          <div className="volume-tooltip">{Math.round(volume)}%</div>
           <div
             className="volume-slider"
             ref={sliderRef}
@@ -264,6 +239,8 @@ function SessionPlaybackControls() {
           >
             <div className="volume-track-bg"></div>
             <div className="volume-track-fill"></div>
+            {/* проценты прямо на ползунке */}
+            <div className="volume-tooltip">{Math.round(volume)}%</div>
           </div>
         </div>
       )}

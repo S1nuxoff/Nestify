@@ -71,11 +71,18 @@
 }
 
 body {
-  background-color: var(--dark);
+  background-color: #1b1b1b;
   font-family: "SF Pro Display", sans-serif;
 }
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+
+  width: 100%;
+}
+
 :root {
-  --sub-gray: #8d8d8d;
+  --sub-gray: #1d1d1d;
   --dark: #2d2d2d;
   --white: #eeeeee;
   --green: #00c717;
@@ -171,6 +178,9 @@ body {
   .container {
     padding-left: 16px;
     padding-right: 16px;
+  }
+  .explorer-library-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr; /* Две колонки на планшетах */
   }
 }
 @media (max-width: 1380px) {
@@ -447,7 +457,7 @@ body {
   .video-card-meta {
     /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
     height: 100%;
-    justify-content: center;
+    justify-content: flex-end;
     margin: 0;
     width: 100%;
     /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
@@ -466,16 +476,15 @@ body {
 
 @media (max-width: 530px) {
   .explorer_watch-history .swiper-slide {
-    width: 200px !important; /* или через JS, как выше */
+    width: 180px !important; /* или через JS, как выше */
     /* Можно задать min-width / max-width по необходимости */
   }
   .movie_card_swiper .swiper-slide {
-    width: 200px !important; /* или через JS, как выше */
+    width: 180px !important; /* или через JS, как выше */
     /* Можно задать min-width / max-width по необходимости */
   }
   .video-card-preview-wrapper {
-    aspect-ratio: 16 / 9;
-    width: 200px;
+    width: 180px;
   }
   .video-card-preview-wrapper-explorer {
     width: 100%;
@@ -534,7 +543,7 @@ body {
   .continue-title {
   }
   .continue-container {
-    height: 440px;
+    height: 600px;
   }
   .player-container {
     height: 440px;
@@ -591,4 +600,18 @@ body {
   /* display: grid;
   grid-template-rows: 1fr 1fr;
   gap: 0px; */
+}
+
+.session-controls__container {
+  position: fixed;
+
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100000;
+  width: 1000px;
+  background: var(--dark-opacity-90);
+  backdrop-filter: blur(10px);
+  padding: 24px 32px 24px 32px;
+  border-radius: 24px;
 }

@@ -1,60 +1,118 @@
 .episode-item__container {
   width: 100%;
   display: flex;
-  gap: 32px;
+  gap: 16px;
+  cursor: pointer;
   align-items: center;
 }
+
 .eposide-item__number {
   font-size: 32px;
   color: var(--white);
   font-weight: 500;
-  width: 24px;
+  width: 32px;
+  flex-shrink: 0;
 }
+
 .episode-item-details-container {
   width: 100%;
   background-color: var(--white-opacity-5);
+  backdrop-filter: blur(10px);
   padding: 16px 16px;
-  border-radius: 8px;
+  border-radius: 16px;
   justify-content: space-between;
   display: flex;
   align-items: center;
+  position: relative;
+  overflow: hidden;
 }
+
+.episode-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .episode-item-title-container {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+
 .episode-item-title {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--white);
 }
+
 .episode-item-origin {
   color: var(--white-gray);
   font-size: 14px;
   font-weight: 400;
 }
+
+.episode-item-meta-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 .episode-item-date {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--white);
 }
 
-/* --- Добавляем выделение у выбранного эпизода --- */
-.episode-item__container.selected .episode-item-details-container {
-  background-color: var(--white); /* Сам фон */
+.episode-item-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
 }
 
-.episode-item__container.selected
-  .episode-item-details-container
-  .episode-item-title-container
-  .episode-item-title,
-.episode-item__container.selected
-  .episode-item-details-container
-  .episode-item-title-container
-  .episode-item-origin,
-.episode-item__container.selected
-  .episode-item-details-container
-  .episode-item-date {
-  color: var(--dark); /* Цвет текста */
+.episode-item-status.status-completed {
+  background: rgba(0, 255, 149, 0.12);
+  color: #00ff95;
+}
+
+/* прогресс-полоска под карточкой */
+.episode-item-progress {
+  width: calc(100% - 4px);
+  height: 3px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.episode-item-progress-inner {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff4b4b, #ffb347);
+}
+
+/* выделение выбранного эпизода */
+.episode-item__container.selected .episode-item-details-container {
+  background-color: var(--white);
+}
+.episode-item__container.completed .eposide-item__number {
+  color: #00ff95;
+}
+
+.episode-item__container.selected .episode-item-title,
+.episode-item__container.selected .episode-item-origin,
+.episode-item__container.selected .episode-item-date,
+.episode-item__container.selected .episode-item-status {
+  color: var(--dark);
+}
+
+/* полностью просмотренный эпизод */
+
+.episode-item__container.completed .episode-item-progress-inner {
+  background: linear-gradient(90deg, #00ff95, #6bffb0);
 }

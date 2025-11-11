@@ -23,3 +23,115 @@
 .content-row__top-title:hover .arrow-right-icon {
   transform: scale(1.2);
 }
+
+/* обертка ряда — позиционируем для стрелок */
+.content-row__swiper-wrap {
+  position: relative;
+}
+
+/* кастомные стрелки */
+.crs-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 20px;
+  line-height: 36px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: auto; /* важно */
+}
+
+.crs-nav-prev {
+  left: 6px;
+}
+.crs-nav-next {
+  right: 6px;
+}
+
+.crs-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* стрелки прячем на мобилках */
+@media (max-width: 767px) {
+  .crs-nav-btn {
+    display: none;
+  }
+}
+
+/* гарантия, что кнопки не перекрываются слайдами */
+.movie_card_swiper {
+  position: relative;
+  z-index: 1;
+}
+
+/* если рядом наслоения — убери pointer-events у оверлеев поверх */
+
+.content-row__swiper-wrap {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+/* центрируем точки */
+.crs-pagination {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* bullets */
+.crs-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.crs-bullet--active {
+  width: 18px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.card-appear {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  filter: blur(6px);
+  animation: cardFadeIn 0.45s ease-out forwards;
+  animation-delay: calc(var(--stagger-index) * 40ms);
+  will-change: transform, opacity, filter;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}

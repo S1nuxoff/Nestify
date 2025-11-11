@@ -100,34 +100,6 @@
   height: 6px;
 }
 
-/* Volume overlay */
-.volume-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10030;
-  flex-direction: column;
-  background-color: rgba(0, 0, 0, 0.8);
-}
-
-/* Volume slider container */
-.volume-slider {
-  position: relative;
-  width: 130px;
-  height: 400px;
-  border-radius: 32px;
-  overflow: hidden;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
 /* Volume slider background */
 .volume-track-bg {
   position: absolute;
@@ -167,4 +139,67 @@
   border-radius: 4px;
   font-size: 14px;
   pointer-events: none;
+}
+
+/* Volume overlay */
+.volume-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10030;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Горизонтальный слайдер */
+.volume-slider {
+  position: relative;
+  width: 95%; /* на всю ширину компонента */
+  max-width: 600px; /* можешь убрать, если прям 100% нужно */
+  height: 50px; /* высота слайдера */
+  border-radius: 600px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Фон */
+.volume-track-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--white-opacity-20);
+}
+
+/* Заполненная часть — слева направо */
+.volume-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--value) * 100%);
+  height: 100%;
+  background: var(--white);
+  border-radius: 600px;
+  transition: width 0.1s;
+}
+
+.volume-tooltip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #000; /* можно var(--black) / #fff по вкусу */
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none; /* чтобы не мешала кликам по слайдеру */
+  margin-bottom: 0; /* если было ранее */
 }

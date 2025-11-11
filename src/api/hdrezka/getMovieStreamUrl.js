@@ -1,6 +1,7 @@
+// src/api/hdrezka/getMovieStreamUrl.js
 import { getSource } from "../hdrezka";
 
-export const getMovieStreamUrl = async ({
+export const getMovieSources = async ({
   seasonId,
   episodeId,
   movieId,
@@ -26,7 +27,7 @@ export const getMovieStreamUrl = async ({
       sourcesArray = data.sources;
     } else {
       console.error("Неизвестный формат источников:", data);
-      return null;
+      return [];
     }
 
     const selectedTranslate = sourcesArray.find(
@@ -35,17 +36,13 @@ export const getMovieStreamUrl = async ({
 
     if (!selectedTranslate) {
       console.error("Не найден переводчик:", translatorId);
-      return null;
+      return [];
     }
 
-    const lastSource =
-      selectedTranslate.source_links?.[
-        selectedTranslate.source_links.length - 1
-      ];
-
-    return lastSource?.url || null;
+    // тут уже масив { quality, url }
+    return selectedTranslate.source_links || [];
   } catch (error) {
-    console.error("Ошибка при получении ссылки на просмотр:", error);
-    return null;
+    console.error("Ошибка при получении источников:", error);
+    return [];
   }
 };

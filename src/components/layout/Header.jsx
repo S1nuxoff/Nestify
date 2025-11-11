@@ -162,7 +162,7 @@ const Header = ({ categories, currentUser, onSearch, onMovieSelect }) => {
         </div>
       ) : (
         <>
-          <a href="/">
+          <a className="header-logo-wrapper" href="/">
             <Logo className="header-logo" />
           </a>
           <SearchInput onSearch={onSearch} onMovieSelect={onMovieSelect} />

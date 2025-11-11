@@ -208,7 +208,6 @@
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
 }
 
 .cinema-player-now-playing {
@@ -313,4 +312,95 @@
   .cinema-player-volume {
     display: none;
   }
+}
+
+.cinema-player-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative; /* щоб меню якості прив'язати сюди */
+}
+
+/* Кнопка settings */
+.cinema-player-settings-btn {
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 999px;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cinema-player-settings-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #fff;
+}
+
+/* Меню якості */
+.cinema-player-quality-menu {
+  position: absolute;
+  bottom: 42px; /* над нижньою панеллю */
+  right: 0;
+  min-width: 300px;
+  padding: 8px 0;
+  border-radius: 12px;
+  background: var(--dark-opacity-70);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 20;
+}
+
+.cinema-player-quality-menu-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  padding: 2px 12px 6px;
+}
+
+.cinema-player-quality-option--active,
+.cinema-player-quality-option--active:hover {
+  color: var(--blue);
+  font-weight: 600;
+  border-radius: 8px;
+}
+.cinema-player-quality-option--active {
+  font-weight: 600;
+  color: var(--blue);
+}
+
+/* якщо хочеш сховати менюшку на мобілці */
+@media (max-width: 768px) {
+  .cinema-player-quality-menu {
+    right: 8px;
+  }
+}
+
+.cinema-player-quality-option {
+  border: none;
+  color: #fff;
+  padding: 4px 12px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+
+  text-align: left;
+  padding-left: 24px;
+}
+
+.cinema-player-quality-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* АКТИВНА ЯКІСТЬ – завжди синя */
+.cinema-player-quality-option--active,
+.cinema-player-quality-option--active:hover {
+  color: var(--red) !important; /* завжди синій текст */
+  font-weight: 600;
 }

@@ -1,22 +1,27 @@
-import { useSearchParams } from "react-router-dom";
+// src/pages/SearchPage.jsx
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { search, getCategories } from "../api/hdrezka";
 import Explorer from "../components/layout/Explorer";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
-import MediaModal from "../components/modal/MediaModal";
-import useMovieDetails from "../hooks/useMovieDetails";
 
 export default function SearchPage({ currentUser }) {
   const [params] = useSearchParams();
   const query = params.get("query") || "";
   const [results, setResults] = useState([]);
-  const [selectedMovie, setSelectedMovie] = useState(null);
   const [categories, setCategories] = useState([]);
-  const { movieDetails, loading } = useMovieDetails(
-    selectedMovie?.filmLink || selectedMovie?.link
-  );
 
+  const navigate = useNavigate();
+
+  // открываем отдельную страничку фильма
+  const handleMovieSelect = (movie) => {
+    const link = movie.link || movie.filmLink || movie.navigate_to;
+    if (!link) return;
+    navigate(`/movie/${encodeURIComponent(link)}`);
+  };
+
+  // поиск по query
   useEffect(() => {
     if (!query) return;
     (async () => {
@@ -29,6 +34,7 @@ export default function SearchPage({ currentUser }) {
     })();
   }, [query]);
 
+  // категории для хедера
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -40,33 +46,25 @@ export default function SearchPage({ currentUser }) {
     };
     fetchData();
   }, []);
+
   return (
     <>
-      {selectedMovie && (
-        <MediaModal
-          loading={loading}
-          movieDetails={movieDetails}
-          currentUser={currentUser}
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
-      )}
-
       <div className="container">
         <Header
           categories={categories}
-          onMovieSelect={setSelectedMovie}
+          onMovieSelect={handleMovieSelect}
           currentUser={currentUser}
-        />{" "}
-        {/* поиск доступен снова */}
+        />
+
         <div className="category-content">
           <Explorer
             Page={results}
-            title={`Результати пошуку: ${query}`} /* ← обратные кавычки + ${} */
+            title={`Результати пошуку: ${query}`}
             currentUser={currentUser}
-            onMovieSelect={setSelectedMovie}
+            onMovieSelect={handleMovieSelect}
           />
         </div>
+
         <Footer />
       </div>
     </>

@@ -6,6 +6,7 @@
   color: white;
   position: relative;
   overflow-y: auto;
+  z-index: 9999999999999999;
 }
 
 .header-menu::-webkit-scrollbar {
@@ -67,6 +68,7 @@
   z-index: 100;
   list-style: none;
   gap: 8px;
+  z-index: 298932009;
   padding: 16px;
 }
 

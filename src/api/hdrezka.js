@@ -53,11 +53,34 @@ export const search = async (query) => {
   }
 };
 
-export const getMovie = async (filmLink) => {
+/**
+ * getMovie(filmLink, userId?)
+ * filmLink — ссылка на фильм/сериал
+ * userId   — id пользователя (опционально, но если есть — шлем user_id)
+ */
+export const getMovie = async (filmLink, userId) => {
   try {
-    const response = await apiClient.get("get_movie", {
-      params: { link: filmLink },
-    });
+    let uid = userId ?? null;
+
+    // если не передали userId явно — пробуем достать из localStorage
+    if (uid == null) {
+      try {
+        const raw = localStorage.getItem("current_user");
+        uid = raw ? JSON.parse(raw)?.id : null;
+      } catch (e) {
+        console.error("bad current_user in localStorage", e);
+      }
+    }
+
+    const params = { link: filmLink };
+    // typeof === "number" — чтобы 0 тоже прошёл, если вдруг
+    if (typeof uid === "number") {
+      params.user_id = uid;
+    }
+
+    console.log("[getMovie] request params:", params);
+
+    const response = await apiClient.get("get_movie", { params });
     return response.data;
   } catch (error) {
     throw error;

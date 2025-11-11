@@ -1,0 +1,242 @@
+.mini-player-wrapper {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  z-index: 10020;
+  transition: 0.2s ease-in-out;
+  pointer-events: auto;
+}
+
+/* Основний блок */
+.mini-player {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  max-width: 500px;
+  min-width: 500px;
+  background: var(--white-opacity-10);
+  border-radius: 100px;
+  padding: 8px 14px 8px 8px;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: 0.5s ease-in-out;
+}
+
+@media (max-width: 650px) {
+  .mini-player {
+    max-width: 350px;
+    min-width: 350px;
+  }
+}
+
+.mini-player--expanded {
+  padding: 16px 16px;
+  border-radius: 32px;
+  transition: 0.2s ease-in-out;
+}
+
+/* превью */
+.mini-player__thumb {
+  width: 64px;
+  min-width: 64px;
+  height: 64px;
+  border-radius: 100px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  transition: 0.2s ease-in-out;
+}
+
+.mini-player__thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.4), transparent 60%);
+}
+
+/* контент */
+.mini-player__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  transition: 0.2s ease-in-out;
+}
+
+/* верхній ряд */
+.mini-player__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mini-player__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: 0.2s ease-in-out;
+}
+
+.mini-player__status {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: 0.2s ease-in-out;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mini-player__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  transition: 0.2s ease-in-out;
+}
+
+.mini-player__origin {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 160px;
+  text-overflow: ellipsis;
+}
+
+.mini-player__episode {
+  opacity: 0.8;
+}
+
+/* маленька кнопка play/pause */
+.mini-player__play-btn {
+  border: none;
+  outline: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.mini-player__play-btn:hover {
+}
+
+/* прогрес */
+.mini-player__progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-player__progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 16px;
+  background: rgba(217, 217, 217, 0.5);
+  overflow: hidden;
+}
+
+.mini-player__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    to right,
+    var(--red) 0%,
+    var(--red) 50%,
+    rgba(217, 217, 217, 0.5) 100%
+  );
+  transition: width 0.12s linear;
+}
+
+.mini-player__time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  flex-shrink: 0;
+}
+
+/* додаткові кнопки при expand */
+.mini-player__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mini-player__ctrl-btn {
+  border: none;
+  outline: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.mini-player__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.mini-player__ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.mini-player__ctrl-btn .mini-player__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Компактный режим при скролле вниз */
+.mini-player--compact {
+  max-width: 320px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  align-items: center;
+}
+
+/* уменьшаем превью */
+.mini-player--compact .mini-player__thumb {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+}
+
+/* прячем второстепенный текст */
+.mini-player--compact .mini-player__status,
+.mini-player--compact .mini-player__origin,
+.mini-player--compact .mini-player__progress-row {
+  display: none;
+}
+
+/* чуть меньше тайтл */
+.mini-player--compact .mini-player__title {
+  font-size: 12px;
+  max-width: 140px;
+}
+
+/* кнопка play компактнее не обязательно, но можно:
+.mini-player--compact .mini-player__play-btn {
+  width: 28px;
+  height: 28px;
+}
+*/

@@ -11,11 +11,11 @@ import {
   RotateCwIcon,
 } from "lucide-react";
 import { ReactComponent as BackIcon } from "../assets/icons/player_back_icon.svg";
+import { ReactComponent as SettingsIcon } from "../assets/icons/settings.svg";
 
 import "../styles/VideoPlayer.css";
 import { getProgress, saveProgress } from "../api/hdrezka/progressApi";
 
-// локальний форматер часу
 function formatTime(sec) {
   const total = Math.floor(sec || 0);
   const h = Math.floor(total / 3600);
@@ -28,8 +28,15 @@ function formatTime(sec) {
 
 export default function PlayerPage() {
   const { state } = useLocation();
-  const { selectedEpisode, selectedSeason, movieDetails, movie_url } =
+  const { selectedEpisode, selectedSeason, movieDetails, movie_url, sources } =
     state ?? {};
+
+  const normalizedSources =
+    Array.isArray(sources) && sources.length
+      ? sources
+      : movie_url
+      ? [{ quality: "auto", url: movie_url }]
+      : [];
 
   const userId = JSON.parse(localStorage.getItem("current_user"))?.id;
   const navigate = useNavigate();
@@ -38,6 +45,8 @@ export default function PlayerPage() {
   const videoRef = useRef(null);
   const hideControlsTimeoutRef = useRef(null);
   const saveIntervalRef = useRef(null);
+  const qualitySwitchRef = useRef(null);
+  const qualityMenuRef = useRef(null);
 
   const [startPos, setStartPos] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,11 +58,28 @@ export default function PlayerPage() {
   const [showControls, setShowControls] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [currentQuality, setCurrentQuality] = useState(null);
+  const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  /* --- витягуємо прогрес --- */
   useEffect(() => {
-    if (!movieDetails || !movie_url || !userId) return;
+    if (!normalizedSources.length) return;
+    if (!currentQuality) {
+      setCurrentQuality(
+        normalizedSources[normalizedSources.length - 1].quality
+      );
+    }
+  }, [normalizedSources, currentQuality]);
+
+  const currentSource =
+    normalizedSources.find((s) => s.quality === currentQuality) ||
+    normalizedSources[normalizedSources.length - 1] ||
+    null;
+
+  /* --- getProgress --- */
+  useEffect(() => {
+    if (!movieDetails || !userId) return;
 
     let cancelled = false;
     (async () => {
@@ -73,12 +99,12 @@ export default function PlayerPage() {
     return () => {
       cancelled = true;
     };
-  }, [userId, movieDetails, movie_url, selectedSeason, selectedEpisode]);
+  }, [userId, movieDetails, selectedSeason, selectedEpisode]);
 
-  /* --- застосовуємо стартову позицію й автоплей --- */
+  /* --- apply startPos + autoplay --- */
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || startPos === null) return;
+    if (!video || startPos === null || !currentSource) return;
 
     const applyStart = () => {
       try {
@@ -104,9 +130,9 @@ export default function PlayerPage() {
       video.addEventListener("loadedmetadata", applyStart);
       return () => video.removeEventListener("loadedmetadata", applyStart);
     }
-  }, [startPos]);
+  }, [startPos, currentSource]);
 
-  /* --- автоприховування контролів --- */
+  /* --- auto-hide controls --- */
   const scheduleHideControls = useCallback(() => {
     clearTimeout(hideControlsTimeoutRef.current);
     hideControlsTimeoutRef.current = setTimeout(
@@ -126,7 +152,7 @@ export default function PlayerPage() {
     return () => clearTimeout(hideControlsTimeoutRef.current);
   }, [isPlaying, scheduleHideControls]);
 
-  /* --- базові хендлери відео --- */
+  /* --- video events --- */
   const handleLoadedMetadata = () => {
     const video = videoRef.current;
     if (!video) return;
@@ -203,7 +229,7 @@ export default function PlayerPage() {
     setIsMuted(v === 0);
   };
 
-  /* --- scrub по прогресу --- */
+  /* --- scrubbing --- */
   const handleScrubStart = () => setIsScrubbing(true);
 
   const handleScrubChange = (e) => {
@@ -224,10 +250,58 @@ export default function PlayerPage() {
       position_seconds: Math.floor(currentTime),
       season: selectedSeason ?? null,
       episode: selectedEpisode ?? null,
+      // 🔥 передаємо загальну тривалість
+      duration: Math.floor(video.duration || duration || 0),
     });
   };
 
-  /* --- fullscreen з мобільною підтримкою --- */
+  /* --- quality change --- */
+  const handleChangeQuality = (quality) => {
+    if (quality === currentQuality) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    qualitySwitchRef.current = {
+      time: video.currentTime,
+      wasPlaying: !video.paused,
+    };
+
+    setIsBuffering(true);
+    setCurrentQuality(quality);
+    setIsQualityMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (!qualitySwitchRef.current) return;
+    const video = videoRef.current;
+    if (!video || !currentSource) return;
+
+    const saved = qualitySwitchRef.current;
+
+    const apply = () => {
+      try {
+        video.currentTime = saved.time || 0;
+        if (saved.wasPlaying) {
+          video
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => setIsPlaying(false));
+        }
+      } finally {
+        qualitySwitchRef.current = null;
+        setIsBuffering(false);
+      }
+    };
+
+    if (video.readyState >= 1) {
+      apply();
+    } else {
+      video.addEventListener("loadedmetadata", apply, { once: true });
+      return () => video.removeEventListener("loadedmetadata", apply);
+    }
+  }, [currentSource]);
+
+  /* --- fullscreen --- */
   const toggleFullscreen = () => {
     const root = rootRef.current;
     const video = videoRef.current;
@@ -281,7 +355,28 @@ export default function PlayerPage() {
     };
   }, []);
 
-  /* --- автосейв прогресу, коли грає --- */
+  /* --- close quality menu on outside click --- */
+  useEffect(() => {
+    if (!isQualityMenuOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        qualityMenuRef.current &&
+        !qualityMenuRef.current.contains(e.target)
+      ) {
+        setIsQualityMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isQualityMenuOpen]);
+
+  /* --- autosave progress every 30s --- */
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !movieDetails || !userId) return;
@@ -294,6 +389,8 @@ export default function PlayerPage() {
         position_seconds: Math.floor(video.currentTime),
         season: selectedSeason ?? null,
         episode: selectedEpisode ?? null,
+        // 🔥 duration теж відправляємо
+        duration: Math.floor(video.duration || duration || 0),
       });
     };
 
@@ -302,7 +399,14 @@ export default function PlayerPage() {
     }
 
     return () => clearInterval(saveIntervalRef.current);
-  }, [isPlaying, userId, movieDetails, selectedSeason, selectedEpisode]);
+  }, [
+    isPlaying,
+    userId,
+    movieDetails,
+    selectedSeason,
+    selectedEpisode,
+    duration,
+  ]);
 
   const handlePause = () => {
     setIsPlaying(false);
@@ -314,10 +418,12 @@ export default function PlayerPage() {
       position_seconds: Math.floor(video.currentTime),
       season: selectedSeason ?? null,
       episode: selectedEpisode ?? null,
+      // 🔥 і тут
+      duration: Math.floor(video.duration || duration || 0),
     });
   };
 
-  /* --- хоткеї --- */
+  /* --- hotkeys --- */
   useEffect(() => {
     const handler = (e) => {
       const video = videoRef.current;
@@ -370,7 +476,7 @@ export default function PlayerPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [volume]);
 
-  if (!movieDetails || !movie_url) {
+  if (!movieDetails || !normalizedSources.length) {
     return (
       <div className="cinema-player-fallback">
         <div className="cinema-player-fallback-content">
@@ -398,7 +504,7 @@ export default function PlayerPage() {
       <video
         ref={videoRef}
         className="cinema-player-video"
-        src={movie_url}
+        src={currentSource?.url || ""}
         onClick={togglePlay}
         onLoadedMetadata={handleLoadedMetadata}
         onLoadedData={handleLoadedData}
@@ -417,11 +523,10 @@ export default function PlayerPage() {
 
       {showControls && (
         <>
-          {/* TOP BAR */}
           <div className="cinema-player-top-bar">
             <button
               className="cinema-player-back-btn"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/")}
             >
               <BackIcon className="cinema-player-back-icon" />
             </button>
@@ -433,7 +538,6 @@ export default function PlayerPage() {
             </span>
           </div>
 
-          {/* CENTER CONTROLS */}
           <div className="cinema-player-center">
             <button
               className="cinema-player-circle-btn"
@@ -456,7 +560,6 @@ export default function PlayerPage() {
             </button>
           </div>
 
-          {/* BOTTOM BAR */}
           <div className="cinema-player-bottom">
             <div className="cinema-player-progress-row">
               <span className="cinema-player-time">
@@ -476,14 +579,13 @@ export default function PlayerPage() {
                 className="cinema-player-progress"
                 style={{
                   background: `linear-gradient(to right,
-      #e50914 0%,
-      #e50914 ${progressPercent}%,
-      rgba(255,255,255,0.4) ${progressPercent}%,
-      rgba(255,255,255,0.4) 100%
-    )`,
+                    #e50914 0%,
+                    #e50914 ${progressPercent}%,
+                    rgba(255,255,255,0.4) ${progressPercent}%,
+                    rgba(255,255,255,0.4) 100%
+                  )`,
                 }}
               />
-
               <span className="cinema-player-time">{formatTime(duration)}</span>
             </div>
 
@@ -519,7 +621,45 @@ export default function PlayerPage() {
                 </span>
               </div>
 
-              <div className="cinema-player-controls-right">
+              <div
+                className="cinema-player-controls-right"
+                ref={qualityMenuRef}
+              >
+                {normalizedSources.length > 1 && (
+                  <>
+                    <button
+                      className="cinema-player-settings-btn"
+                      onClick={() => setIsQualityMenuOpen((prev) => !prev)}
+                    >
+                      <SettingsIcon className="cinema-player-settings-icon" />
+                    </button>
+                    {isQualityMenuOpen && (
+                      <div className="cinema-player-quality-menu">
+                        <div className="cinema-player-quality-menu-title">
+                          Якість
+                        </div>
+                        {normalizedSources
+                          .slice()
+                          .reverse()
+                          .map((s) => (
+                            <button
+                              key={s.quality}
+                              className={
+                                "cinema-player-quality-option" +
+                                (s.quality === currentQuality
+                                  ? " cinema-player-quality-option--active"
+                                  : "")
+                              }
+                              onClick={() => handleChangeQuality(s.quality)}
+                            >
+                              {s.quality.replace("_Ultra", "")}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
                 <button onClick={toggleFullscreen}>
                   {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
                 </button>

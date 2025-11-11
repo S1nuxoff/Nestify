@@ -1,28 +1,23 @@
+// src/pages/CategoryPage.jsx
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getPage, getCategories } from "../api/hdrezka";
 import Explorer from "../components/layout/Explorer";
-import MediaModal from "../components/modal/MediaModal";
 
 import config from "../core/config";
-import useMovieDetails from "../hooks/useMovieDetails";
 import Header from "../components/layout/Header";
 import Pagination from "../components/layout/Pagination";
 import Footer from "../components/layout/Footer";
 import "../styles/Category.css";
-import { ReactComponent as BackIcon } from "../assets/icons/back.svg";
 
 function CategoryPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [pageData, setPageData] = useState({ items: [], pages_count: 1 });
-  const [selectedMovie, setSelectedMovie] = useState(null);
   const [categories, setCategories] = useState([]);
-  const { movieDetails, loading } = useMovieDetails(
-    selectedMovie?.filmLink || selectedMovie?.link
-  );
-  const currentUser = JSON.parse(localStorage.getItem("current_user"));
   const [isLoading, setIsLoading] = useState(true);
+
+  const currentUser = JSON.parse(localStorage.getItem("current_user"));
 
   const backendPath = location.pathname
     .replace(/^\/category/, "")
@@ -30,7 +25,6 @@ function CategoryPage() {
     .replace(/\/+$/, "");
 
   const fullUrl = config.hdrezk_url + backendPath + location.search;
-
   const baseUrl = "/category" + backendPath.replace(/\/page\/\d+\/?$/, "");
 
   useEffect(() => {
@@ -38,7 +32,7 @@ function CategoryPage() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPage = async () => {
       setIsLoading(true);
       try {
         const data = await getPage(fullUrl);
@@ -50,11 +44,11 @@ function CategoryPage() {
       }
     };
 
-    fetchData();
-  }, [location.pathname, location.search]);
+    fetchPage();
+  }, [location.pathname, location.search, fullUrl]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCategories = async () => {
       try {
         const { categories: list = [] } = await getCategories();
         setCategories(list);
@@ -62,62 +56,42 @@ function CategoryPage() {
         console.error("Error fetching categories:", error);
       }
     };
-    fetchData();
+    fetchCategories();
   }, []);
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true); // ⬅️ показать спиннер
-      try {
-        const data = await getPage(fullUrl);
-        setPageData(data);
-      } catch (err) {
-        console.error("Error fetching category page:", err);
-      } finally {
-        setIsLoading(false); // ⬅️ скрыть спиннер
-      }
-    };
 
-    fetchData();
-  }, [location.pathname]);
+  // 👇 тепер при виборі фільму завжди відкриваємо MoviePage
+  const handleMovieSelect = (movie) => {
+    const link = movie.link || movie.filmLink || movie.navigate_to;
+    if (!link) return;
+    navigate(`/movie/${encodeURIComponent(link)}`);
+  };
 
   return (
-    <>
-      {selectedMovie && (
-        <MediaModal
-          loading={loading}
-          movieDetails={movieDetails}
-          currentUser={currentUser}
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
+    <div className="container">
+      <Header
+        categories={categories}
+        onMovieSelect={handleMovieSelect} // ⬅️ замість setSelectedMovie
+        currentUser={currentUser}
+      />
+
+      {isLoading ? (
+        <div className="spinner-wrapper">
+          <div className="spinner"></div>
+        </div>
+      ) : (
+        <div className="category-content">
+          <Explorer
+            Page={pageData.items}
+            title={pageData.title}
+            currentUser={currentUser}
+            onMovieSelect={handleMovieSelect} // ⬅️ теж відкриваємо сторінку
+          />
+          <Pagination totalPages={pageData.pages_count} baseUrl={baseUrl} />
+        </div>
       )}
 
-      <div className="container">
-        <Header
-          categories={categories}
-          onMovieSelect={setSelectedMovie}
-          currentUser={currentUser}
-        />
-        <>
-          {isLoading ? (
-            <div className="spinner-wrapper">
-              <div className="spinner"></div>
-            </div>
-          ) : (
-            <div className="category-content">
-              <Explorer
-                Page={pageData.items}
-                title={pageData.title}
-                currentUser={currentUser}
-                onMovieSelect={setSelectedMovie}
-              />
-              <Pagination totalPages={pageData.pages_count} baseUrl={baseUrl} />
-            </div>
-          )}
-        </>
-        <Footer />
-      </div>
-    </>
+      <Footer />
+    </div>
   );
 }
 

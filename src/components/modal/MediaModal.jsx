@@ -1,4 +1,3 @@
-// src/components/MoviePopup.js
 import React, { useState, useEffect } from "react";
 import ReactPlayer from "react-player";
 import Lottie from "lottie-react";
@@ -10,16 +9,15 @@ import { ReactComponent as CastIcon } from "../../assets/icons/cast.svg";
 import { ReactComponent as VolumeMute } from "../../assets/icons/volume-mute.svg";
 import { ReactComponent as VolumeOne } from "../../assets/icons/volume-one.svg";
 import { SkeletonLine, SkeletonPoster } from "../ui/Skeleton";
-import ErrorAnimatedIcon from "../../assets/icons/animated/error.json"; // твій JSON-файл
-import { createSession } from "../../api/session";
+import ErrorAnimatedIcon from "../../assets/icons/animated/error.json";
 import VoiceoverOption from "../ui/VoiceoverOption";
 import EpisodeSelector from "../ui/EpisodeSelector";
 import useMovieSource from "../../hooks/useMovieSource";
-import { getMovieStreamUrl } from "../../api/hdrezka/getMovieStreamUrl";
+import { getMovieSources } from "../../api/hdrezka/getMovieStreamUrl";
 import "../../styles/MediaModal.css";
 import { useNavigate } from "react-router-dom";
 import { addMovieToHistory } from "../../api/user";
-import kodiWebSocket from "../../api/ws/kodiWebSocket"; // путь укажи как у тебя
+import nestifyPlayerClient from "../../api/ws/nestifyPlayerClient";
 import Alert from "../ui/Alert";
 
 const MediaModal = ({
@@ -29,7 +27,9 @@ const MediaModal = ({
   loading,
   movieDetails,
 }) => {
-  const [kodiOnline, setKodiOnline] = useState(kodiWebSocket.isConnected);
+  const [playerOnline, setPlayerOnline] = useState(
+    nestifyPlayerClient.isConnected
+  );
   const [selectedTranslatorId, setSelectedTranslatorId] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false);
@@ -40,27 +40,30 @@ const MediaModal = ({
   const [validationMessage, setValidationMessage] = useState("");
   const [showValidation, setShowValidation] = useState(false);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (validationMessage) {
-      setShowValidation(true); // Показати
+      setShowValidation(true);
 
       const timer = setTimeout(() => {
-        setShowValidation(false); // Почати зникнення
-        setTimeout(() => setValidationMessage(""), 400); // Прибрати після анімації
-      }, 5000); // 5 секунд
+        setShowValidation(false);
+        setTimeout(() => setValidationMessage(""), 400);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }
   }, [validationMessage]);
-  const navigate = useNavigate();
+
   const toggleMute = () => {
-    setIsMuted(!isMuted);
-    setIsVisible(!isVisible);
+    setIsMuted((prev) => !prev);
+    setIsVisible((prev) => !prev);
   };
+
   useEffect(() => {
-    const handler = (status) => setKodiOnline(status);
-    kodiWebSocket.on("connected", handler);
-    return () => kodiWebSocket.off("connected", handler);
+    const handler = (status) => setPlayerOnline(status);
+    nestifyPlayerClient.on("connected", handler);
+    return () => nestifyPlayerClient.off("connected", handler);
   }, []);
 
   useEffect(() => {
@@ -96,23 +99,37 @@ const MediaModal = ({
     }
   }, [loading, movieDetails, selectedSeason]);
 
-  const handlePlayKodi = async () => {
+  const handlePlayTv = async () => {
     setValidationMessage("");
-    if (!kodiOnline) {
-      setValidationMessage("Kodi офлайн");
+
+    if (!playerOnline) {
+      setValidationMessage("Nestify Player офлайн");
       return;
     }
+
     if (!selectedTranslatorId) {
-      return setValidationMessage("Будь ласка, виберіть озвучку");
+      setValidationMessage("Будь ласка, виберіть озвучку");
+      return;
     }
+
     if (movieDetails.action === "get_stream") {
       if (!selectedSeason) {
-        return setValidationMessage("Будь ласка, виберіть сезон");
+        setValidationMessage("Будь ласка, виберіть сезон");
+        return;
       }
       if (!selectedEpisode) {
-        return setValidationMessage("Будь ласка, виберіть епізод");
+        setValidationMessage("Будь ласка, виберіть епізод");
+        return;
       }
     }
+
+    const meta = {
+      link: movie?.link || movieDetails?.link || null,
+      originName: movieDetails.origin_name || movieDetails.title,
+      title: movieDetails.title,
+      image: movieDetails.image,
+      userId: currentUser?.id ?? null,
+    };
 
     const success = await playMovieSource({
       seasonId: selectedSeason,
@@ -120,41 +137,36 @@ const MediaModal = ({
       movieId: movieDetails.id,
       translatorId: selectedTranslatorId,
       action: movieDetails.action,
+      meta,
     });
 
     if (success) {
-      await addMovieToHistory({
-        user_id: currentUser.id,
-        season_id: selectedSeason,
-        episode_id: selectedEpisode,
-        movie_id: movieDetails.id,
-        translator_id: selectedTranslatorId,
-        action: movieDetails.action,
-      });
-
-      await createSession(currentUser.id, {
-        movie_id: movieDetails.id,
-        translator_id: selectedTranslatorId,
-        season_id: selectedSeason,
-        episode_id: selectedEpisode,
-      });
-
-      // ВАЖНО: говорим WS, какой именно фильм/серия сейчас через Kodi
-      kodiWebSocket.setProgressMeta({
-        movie_id: movieDetails.id,
-        season: movieDetails.action === "get_stream" ? selectedSeason : null,
-        episode: movieDetails.action === "get_stream" ? selectedEpisode : null,
-      });
+      // історію можна лишити, якщо хочеш
+      try {
+        await addMovieToHistory({
+          user_id: currentUser.id,
+          season_id: selectedSeason,
+          episode_id: selectedEpisode,
+          movie_id: movieDetails.id,
+          translator_id: selectedTranslatorId,
+          action: movieDetails.action,
+        });
+      } catch (e) {
+        console.error("addMovieToHistory error:", e);
+      }
 
       setSelectedTranslatorId(null);
       setSelectedSeason(null);
       setSelectedEpisode(null);
       onClose();
+    } else {
+      setValidationMessage("Не вдалося відправити на Nestify Player.");
     }
   };
 
   const handlePlayBrowser = async () => {
     setValidationMessage("");
+
     if (!selectedTranslatorId) {
       return setValidationMessage("Будь ласка, виберіть озвучку.");
     }
@@ -166,7 +178,8 @@ const MediaModal = ({
         return setValidationMessage("Будь ласка, виберіть епізод.");
       }
     }
-    const movie_url = await getMovieStreamUrl({
+
+    const sources = await getMovieSources({
       seasonId: selectedSeason,
       episodeId: selectedEpisode,
       movieId: movieDetails.id,
@@ -174,7 +187,12 @@ const MediaModal = ({
       action: movieDetails.action,
     });
 
-    if (movie_url) {
+    if (!sources || !sources.length) {
+      setValidationMessage("Не вдалося отримати джерела відео.");
+      return;
+    }
+
+    try {
       await addMovieToHistory({
         user_id: currentUser.id,
         season_id: selectedSeason,
@@ -183,15 +201,18 @@ const MediaModal = ({
         translator_id: selectedTranslatorId,
         action: movieDetails.action,
       });
-      navigate(`/player/${movieDetails.id}`, {
-        state: {
-          movieDetails,
-          movie_url,
-          selectedEpisode,
-          selectedSeason,
-        },
-      });
+    } catch (e) {
+      console.error("addMovieToHistory error:", e);
     }
+
+    navigate(`/player/${movieDetails.id}`, {
+      state: {
+        movieDetails,
+        sources,
+        selectedEpisode,
+        selectedSeason,
+      },
+    });
   };
 
   const toggleSeasonDropdown = () => {
@@ -262,14 +283,15 @@ const MediaModal = ({
                 </div>
               </div>
             </div>
-          )}{" "}
+          )}
+
           {!loading && movieDetails && (
             <>
               <div className="movie-modal__content">
                 {validationMessage && (
                   <Alert
                     visible={!!validationMessage}
-                    type="error" // или "info", "success"
+                    type="error"
                     title="Ooops.."
                     message={validationMessage}
                   />
@@ -304,11 +326,13 @@ const MediaModal = ({
                         </div>
                         <div
                           className={`movie-modal__cast-button${
-                            !kodiOnline ? " disabled" : ""
+                            !playerOnline ? " disabled" : ""
                           }`}
-                          onClick={kodiOnline ? handlePlayKodi : undefined}
+                          onClick={playerOnline ? handlePlayTv : undefined}
                           title={
-                            kodiOnline ? "Відправити на Kodi" : "Kodi офлайн"
+                            playerOnline
+                              ? "Відправити на Nestify Player"
+                              : "Nestify Player офлайн"
                           }
                         >
                           <CastIcon />
@@ -329,42 +353,6 @@ const MediaModal = ({
                     </div>
                   </div>
                   <div className="movie-modal__poster-container">
-                    {/* {movieDetails?.trailer ? (
-                      <>
-                        <div className="movie-modal__youtube-player-container">
-                          <div
-                            className={`youtube-player-overlay ${
-                              isVisible ? "" : "hidden"
-                            }`}
-                          ></div>
-                          <ReactPlayer
-                            className="movie-modal__youtube-player"
-                            loop
-                            rel="0"
-                            url={movieDetails.trailer}
-                            playing={false} // автозапуск: true/false
-                            controls={false} // убрать интерфейс
-                            muted={isMuted}
-                            width="100%"
-                            height="100%"
-                            volume={0.1}
-                            config={{
-                              youtube: {
-                                playerVars: {
-                                  autoplay: 1,
-                                  modestbranding: 1,
-                                  rel: 0,
-                                  controls: 0,
-                                  showinfo: 0,
-                                  fs: 0,
-                                  disablekb: 1,
-                                },
-                              },
-                            }}
-                          />
-                        </div>
-                      </>
-                    ) : ( */}
                     <>
                       <div
                         className={`youtube-player-overlay ${
@@ -378,7 +366,6 @@ const MediaModal = ({
                         }}
                       ></div>
                     </>
-                    {/* )} */}
                   </div>
                 </div>
                 <div className="movie-modal__details">
@@ -574,6 +561,7 @@ const MediaModal = ({
               </div>
             </>
           )}
+
           {!loading && !movieDetails && <p>Нет данных</p>}
         </div>
       </div>

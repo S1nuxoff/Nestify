@@ -16,11 +16,11 @@
 } */
 
 .video-card-preview-wrapper {
-  aspect-ratio: 16/9;
-  width: 300px;
+  aspect-ratio: 9/16;
+  width: 260px;
 }
 .movie_card_swiper .swiper-slide {
-  width: 300px !important;
+  width: 260px !important;
 }
 
 .video-card-preview-wrapper-history {
@@ -34,7 +34,7 @@
   height: 100%; /* Картинка займет всю высоту контейнера */
   object-fit: cover; /* Картинка будет растягиваться, заполняя контейнер, с сохранением пропорций */
   object-position: center; /* Картинка будет выровнена по центру */
-  border-radius: 12px;
+  border-radius: 20px;
   transition: 0.2s ease-in-out;
   box-shadow: 0 4px 7px rgba(0, 0, 0, 0.25);
 }
@@ -98,9 +98,14 @@
   opacity: 1;
 }
 
-.video-card-container:hover .video-card_preview-image {
-  opacity: 0.6;
+.video-card_preview-image {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
+
+.video-card-container:hover .video-card_preview-image {
+  transform: scale(0.96);
+}
+
 .video-card-history-meta {
   display: flex;
   gap: 4px;
@@ -131,5 +136,60 @@
   }
   100% {
     background-color: #ddd;
+  }
+}
+
+.video-card-preview-wrapper {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* базовая картинка */
+.video-card_preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+/* пока грузится постер – скрываем его и показываем скелетон */
+.video-card-preview-wrapper.is-loading .video-card_preview-image {
+  opacity: 0;
+}
+
+.video-card-preview-wrapper.is-loading::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.12) 20%,
+    rgba(255, 255, 255, 0.04) 40%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.1s infinite linear;
+}
+
+/* когда загрузилось – убираем скелетон */
+.video-card-preview-wrapper.is-loaded::before {
+  content: none;
+}
+
+/* лёгкий "поп" когда картинка появилась */
+.video-card_preview-image.img-loaded {
+  opacity: 1;
+  transform: scale(1.01);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }

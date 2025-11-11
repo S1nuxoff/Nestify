@@ -1,4 +1,3 @@
-// src/hooks/useMovieDetails.js
 import { useState, useEffect } from "react";
 import { getMovie } from "../api/hdrezka";
 
@@ -10,14 +9,26 @@ const useMovieDetails = (filmLink) => {
   useEffect(() => {
     if (!filmLink) {
       setMovieDetails(null);
-      setLoading(false); // <--- тут loading=false, а надо true
+      setLoading(false);
       return;
     }
+
     const fetchDetails = async () => {
       setLoading(true);
-      setMovieDetails(null); // <--- сбрасывай, чтобы явно был null (и всегда loading=true при новом запросе)
+      setMovieDetails(null);
+      setError(null);
+
+      // достаём userId для этого запроса
+      let userId = null;
       try {
-        const data = await getMovie(filmLink);
+        const raw = localStorage.getItem("current_user");
+        userId = raw ? JSON.parse(raw)?.id : null;
+      } catch (e) {
+        console.error("bad current_user in localStorage (useMovieDetails)", e);
+      }
+
+      try {
+        const data = await getMovie(filmLink, userId);
         setMovieDetails(data);
       } catch (err) {
         setError(err);

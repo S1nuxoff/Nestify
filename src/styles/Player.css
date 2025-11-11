@@ -10,11 +10,11 @@
 .continue-container {
   position: relative;
   max-width: 100%;
-  border-radius: 16px;
+  border-radius: 40px;
   overflow: hidden;
   display: flex;
   margin-top: 24px;
-  height: 460px;
+  height: 800px;
   padding-left: 16px;
   padding-right: 16px;
   transition: 0.4s ease-in-out;
@@ -173,7 +173,7 @@
   color: var(--white);
 }
 .continue-title {
-  font-size: 40px;
+  font-size: 64px;
   font-weight: 800;
   color: var(--white);
   word-break: keep-all; /* 👈 не разрывает слова */
@@ -189,7 +189,7 @@
   align-items: center;
 }
 .continue-sub_title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -282,6 +282,7 @@
   text-overflow: ellipsis;
   max-width: 500px;
   opacity: 0.8;
+  font-size: 24px;
 }
 .continue-titles {
   gap: 4px;
@@ -361,10 +362,6 @@
 
 .fade-in {
   transition: opacity 1s ease-in-out;
-}
-
-.continue-container.unmuted {
-  height: 700px;
 }
 
 .continue-container.unmuted .youtube-player {

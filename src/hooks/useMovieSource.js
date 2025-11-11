@@ -1,6 +1,5 @@
-// src/hooks/useMovieSource.js
 import { getSource } from "../api/hdrezka";
-import kodiWebSocket, { waitForPlayerOnPlay } from "../api/ws/kodiWebSocket"; // 👈
+import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 
 const useMovieSource = () => {
   const playMovieSource = async ({
@@ -9,6 +8,7 @@ const useMovieSource = () => {
     movieId,
     translatorId,
     action,
+    meta, // { link, originName, title, image, userId }
   }) => {
     try {
       const data = await getSource(
@@ -26,7 +26,7 @@ const useMovieSource = () => {
       } else if (Array.isArray(data.sources)) {
         sourcesArray = data.sources;
       } else {
-        console.error("Полученные данные не содержат массив источников:", data);
+        console.error("Отримані дані не містять масив джерел:", data);
         return false;
       }
 
@@ -35,10 +35,7 @@ const useMovieSource = () => {
       );
 
       if (!selectedTranslate) {
-        console.error(
-          "Источник для выбранного переводчика не найден:",
-          translatorId
-        );
+        console.error("Джерело для обраної озвучки не знайдено:", translatorId);
         return false;
       }
 
@@ -51,26 +48,29 @@ const useMovieSource = () => {
             selectedTranslate.source_links.length - 1
           ];
         if (lastSource && lastSource.url) {
-          kodiWebSocket.openFile(lastSource.url);
+          const ok = await nestifyPlayerClient.playOnTv({
+            streamUrl: lastSource.url,
+            link: meta?.link || null,
+            originName: meta?.originName || null,
+            title: meta?.title || null,
+            image: meta?.image || null,
+            movieId,
+            season: action === "get_stream" ? seasonId : null,
+            episode: action === "get_stream" ? episodeId : null,
+            userId: meta?.userId ?? null,
+          });
 
-          // Дожидаемся Player.OnPlay
-          try {
-            await waitForPlayerOnPlay(4000); // 4 секунды
-            return true; // Всё ок — воспроизведение началось
-          } catch (err) {
-            console.error("Kodi не начал воспроизведение:", err);
-            return false;
-          }
+          return ok;
         } else {
-          console.error("URL не найден в последнем источнике", lastSource);
+          console.error("URL не знайдено в останньому джерелі", lastSource);
           return false;
         }
       } else {
-        console.error("Для выбранного переводчика нет доступных ссылок");
+        console.error("Для обраної озвучки немає доступних посилань");
         return false;
       }
     } catch (error) {
-      console.error("Ошибка при получении источника:", error);
+      console.error("Помилка при отриманні джерела:", error);
       return false;
     }
   };

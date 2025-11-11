@@ -8,7 +8,7 @@
 .explorer-library-grid {
   margin-top: 24px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr; /* 3 колонки */
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; /* 3 колонки */
   gap: 48px 24px;
   width: 100%;
   align-items: start;
@@ -67,8 +67,3 @@
   background-color: var(--white-opacity-10);
 }
 /* Адаптивность: на узких экранах 2 колонки, затем 1 */
-@media (max-width: 1024px) {
-  .explorer-library-grid {
-    grid-template-columns: 1fr 1fr; /* Две колонки на планшетах */
-  }
-}
