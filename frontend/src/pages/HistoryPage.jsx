@@ -19,7 +19,11 @@ function HistoryPage() {
   const { movieDetails, loading } = useMovieDetails(
     selectedMovie?.filmLink || selectedMovie?.link
   );
-
+  const handleMovieSelect = (movie) => {
+    const link = movie.link || movie.filmLink || movie.navigate_to;
+    if (!link) return;
+    navigate(`/movie/${encodeURIComponent(link)}`);
+  };
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
   useEffect(() => {
     (async () => {
@@ -45,20 +49,10 @@ function HistoryPage() {
   console.log(history);
   return (
     <>
-      {selectedMovie && (
-        <MediaModal
-          loading={loading}
-          movieDetails={movieDetails}
-          currentUser={currentUser}
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
-      )}
-
       <div className="container">
         <Header
           categories={categories}
-          onMovieSelect={setSelectedMovie}
+          onMovieSelect={handleMovieSelect}
           currentUser={currentUser}
         />
         <>
@@ -67,7 +61,7 @@ function HistoryPage() {
               Page={history}
               title={"Історія перегляду"}
               currentUser={currentUser}
-              onMovieSelect={setSelectedMovie}
+              onMovieSelect={handleMovieSelect}
             />
           </div>
         </>

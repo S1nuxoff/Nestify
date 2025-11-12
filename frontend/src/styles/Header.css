@@ -5,6 +5,7 @@ header {
   align-items: center;
   justify-content: space-between;
   position: sticky;
+  z-index: 1232222;
 }
 
 .header-buttons {
@@ -14,7 +15,7 @@ header {
 .header-desktop {
   position: sticky;
   top: 16px;
-  z-index: 1000;
+  z-index: 10000000;
 
   display: flex;
   align-items: center;
@@ -31,6 +32,12 @@ header {
   border-radius: 64px;
   background: var(--dark-opacity-10);
   margin-bottom: 16px;
+}
+.header-tablet {
+  z-index: 10000000;
+}
+.header-desktop {
+  z-index: 10000000;
 }
 
 .hdrezka-header-input-container {

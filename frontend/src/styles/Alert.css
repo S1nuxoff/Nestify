@@ -16,11 +16,14 @@
   transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
   transform: translate(-50%, -20px);
   border: 1px solid var(--white-opacity-10);
+  pointer-events: none;
 }
 
 .alert-container.visible {
   opacity: 1;
   transform: translate(-50%, 0);
+
+  pointer-events: auto;
 }
 
 .alert__animated-icon {

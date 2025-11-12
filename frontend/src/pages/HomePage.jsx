@@ -174,6 +174,7 @@ function HomePage() {
                 navPrefix="/category"
                 rows={2}
               />
+
               <ContentRowSwiper
                 data={page.collections}
                 title="Колекції"

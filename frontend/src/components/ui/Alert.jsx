@@ -18,7 +18,10 @@ export default function Alert({
   message = "",
 }) {
   return (
-    <div className={`alert-container${visible ? " visible" : ""}`}>
+    <div
+      className={`alert-container${visible ? " visible" : ""}`}
+      aria-hidden={!visible}
+    >
       <Lottie
         className="alert__animated-icon"
         animationData={ICONS[type] || ErrorAnimatedIcon}
