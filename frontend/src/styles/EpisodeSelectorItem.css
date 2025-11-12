@@ -116,3 +116,45 @@
 .episode-item__container.completed .episode-item-progress-inner {
   background: linear-gradient(90deg, #00ff95, #6bffb0);
 }
+
+/* ====== ВХОДНЫЕ АНИМАЦИИ ====== */
+.episode-item__container.pre {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+.episode-item__container.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 360ms ease, transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(var(--i, 0) * 40ms); /* ступенчатая задержка */
+}
+
+/* микро-ховер */
+.episode-item__container.in .episode-item-details-container {
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.episode-item__container.in:hover .episode-item-details-container {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+/* плавність прогрес-бара */
+.episode-item-progress-inner {
+  transition: width 280ms ease-in-out, background 220ms ease;
+}
+.episode-item-progress-inner--done {
+  background: linear-gradient(90deg, #00e676, #00c853);
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .episode-item__container.pre,
+  .episode-item__container.in {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .episode-item-progress-inner {
+    transition: none !important;
+  }
+}

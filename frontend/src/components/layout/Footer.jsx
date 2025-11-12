@@ -4,7 +4,7 @@ function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-content">
-        <div>
+        {/* <div>
           <strong>Disclaimer:</strong> All data, posters, and streams are
           sourced from{" "}
           <a
@@ -20,7 +20,7 @@ function Footer() {
             personal use only. No content is stored on our servers. All rights
             to content belong to their respective owners.
           </div>
-        </div>
+        </div> */}
         <div className="footer-jokes">
           <span>
             &copy; {new Date().getFullYear()} Not Netflix. All wrongs reserved.

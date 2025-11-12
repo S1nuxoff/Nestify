@@ -1,37 +1,42 @@
+// components/ui/EpisodeSelector.jsx
 import React from "react";
 import "../../styles/EpisodeSelectorItem.css";
 
 function EpisodeSelector({
+  index = 0, // ← для stagger
+  isLoaded = true, // ← коли список готовий
   episde_id,
   episde_title,
   episde_origin,
   episde_date,
   isSelected,
   isWatched,
-  progressPercent, // 0–100 или null
+  progressPercent, // 0–100 або null
   onSelect,
 }) {
   const containerClass = [
     "episode-item__container",
     isSelected ? "selected" : "",
     isWatched ? "completed" : "",
+    isLoaded ? "in" : "pre", // ← класи для анімації
   ]
     .filter(Boolean)
     .join(" ");
 
-  const handleClick = () => {
-    if (onSelect) onSelect(episde_id);
-  };
+  const handleClick = () => onSelect?.(episde_id);
 
   const hasProgress =
     typeof progressPercent === "number" && progressPercent > 0;
-
   const clampedPercent = hasProgress
     ? Math.min(Math.max(progressPercent, 0), 100)
     : 0;
 
   return (
-    <div className={containerClass} onClick={handleClick}>
+    <div
+      className={containerClass}
+      onClick={handleClick}
+      style={{ "--i": index }} // ← затримка для кожного елемента
+    >
       <span className="eposide-item__number">{episde_id}</span>
 
       <div className="episode-item-details-container">
@@ -44,7 +49,6 @@ function EpisodeSelector({
 
         <div className="episode-item-meta-right">
           <span className="episode-item-date">{episde_date}</span>
-
           {hasProgress && (
             <span
               className={
@@ -55,10 +59,14 @@ function EpisodeSelector({
             </span>
           )}
         </div>
+
         {hasProgress && (
           <div className="episode-item-progress">
             <div
-              className="episode-item-progress-inner"
+              className={
+                "episode-item-progress-inner" +
+                (isWatched ? " episode-item-progress-inner--done" : "")
+              }
               style={{ width: `${clampedPercent}%` }}
             />
           </div>

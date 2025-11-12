@@ -307,12 +307,22 @@ const MoviePage = () => {
   const toggleSeasonDropdown = () => {
     setIsSeasonDropdownOpen((prev) => !prev);
   };
+  const [episodesLoaded, setEpisodesLoaded] = useState(false);
 
   const handleSelectSeason = (seasonNumber) => {
     setSelectedSeason(seasonNumber);
     setSelectedEpisode(null);
     setIsSeasonDropdownOpen(false);
+    setEpisodesLoaded(false); // скинь, щоб при новому сезоні знову зіграло
+    // episodesLoaded знову стане true завдяки useEffect вище
   };
+  useEffect(() => {
+    if (!movieDetails?.episodes_schedule || !selectedSeason) return;
+    // невелика пауза, щоб DOM намалював список і тоді запустити анімації
+    setEpisodesLoaded(false);
+    const t = setTimeout(() => setEpisodesLoaded(true), 30);
+    return () => clearTimeout(t);
+  }, [movieDetails?.episodes_schedule, selectedSeason]);
 
   // 👉 клик по эпизоду: выбираем и сразу считаем, что хотим смотреть
   const handleSelectEpisode = (episodeNumber) => {
@@ -1012,7 +1022,7 @@ const MoviePage = () => {
                       {movieDetails.episodes_schedule
                         .filter((s) => s.season_number === selectedSeason)
                         .flatMap((s) =>
-                          s.episodes.map((ep) => {
+                          s.episodes.map((ep, idx) => {
                             const epKey = `${s.season_number}-${ep.episode_number}`;
                             const hist = episodeHistoryMap.get(epKey);
 
@@ -1036,6 +1046,8 @@ const MoviePage = () => {
                             return (
                               <EpisodeSelector
                                 key={ep.episode_id}
+                                index={idx} // ← stagger
+                                isLoaded={episodesLoaded} // ← тригер анімації
                                 episde_date={ep.air_date}
                                 episde_id={ep.episode_number}
                                 episde_title={ep.title}
