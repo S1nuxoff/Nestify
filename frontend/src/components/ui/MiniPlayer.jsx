@@ -35,7 +35,6 @@ function useScrollCompactMode(enabled = true) {
   const tickingRef = useRef(false);
 
   useEffect(() => {
-    // если неактивен — сбрасываем и не слушаем скролл
     if (!enabled) {
       compactRef.current = false;
       setIsCompact(false);
@@ -111,7 +110,7 @@ function MiniPlayerInner() {
     return decoded === status.link;
   }, [location.pathname, status]);
 
-  // скролл-хук ЗАВЖДИ вызываем, но включаем только когда реально нужно
+  // всегда вызываем хук, но активируем только когда миниплеер вообще нужен
   const isCompact = useScrollCompactMode(isActive && !isOnCurrentMoviePage);
 
   const isPlaying = !!(status && (status.is_playing || state === "playing"));
@@ -151,8 +150,13 @@ function MiniPlayerInner() {
     nestifyPlayerClient.playPause();
   }, []);
 
-  // ❗ все хуки уже ВЫШЕ, теперь можно делать ранний return
-  if (!isActive || isOnCurrentMoviePage) return null;
+  // не показываем миниплеер:
+  // - если он неактивен
+  // - если мы уже на странице этого фильма
+  // - если мы на странице полноэкранного плеера /player/...
+  const isOnPlayerPage = location.pathname.startsWith("/player/");
+
+  if (!isActive || isOnCurrentMoviePage || isOnPlayerPage) return null;
 
   return (
     <div className="mini-player-wrapper">

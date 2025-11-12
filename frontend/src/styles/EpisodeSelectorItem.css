@@ -98,7 +98,7 @@
 
 /* выделение выбранного эпизода */
 .episode-item__container.selected .episode-item-details-container {
-  background-color: var(--white);
+  background: var(--main_gradient);
 }
 .episode-item__container.completed .eposide-item__number {
   color: #00ff95;

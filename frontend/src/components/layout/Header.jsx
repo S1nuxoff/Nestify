@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useMediaQuery } from "react-responsive";
-import { ReactComponent as Logo } from "../../assets/icons/logo.svg";
+import { ReactComponent as Logo } from "../../assets/icons/logo_colored.svg";
+import { ReactComponent as SettingsIcon } from "../../assets/icons/settings.svg";
+import { ReactComponent as ExitIcon } from "../../assets/icons/exit.svg";
 import HeaderMenu from "../ui/HeaderMenu";
 import SearchInput from "../ui/SearchInput";
 import { getUsers } from "../../api/utils";
@@ -63,66 +65,127 @@ const Header = ({ categories, currentUser, onSearch, onMovieSelect }) => {
     navigate("/login");
     window.location.reload();
   };
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setIsDropdownOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [isDropdownOpen]);
 
   const renderUserAvatar = () => (
-    <div className="header-user__container" style={{ position: "relative" }}>
-      <div
-        className="header-user__avatar-container"
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-      >
+    <div
+      onClick={() => setIsDropdownOpen((v) => !v)}
+      className="header-user__container"
+      style={{ position: "relative" }}
+    >
+      <div className="header-user__avatar-container">
         <img
           src={`${config.backend_url}${currentUser.avatar_url}`}
           alt="user-avatar"
           className="header-user__avatar"
         />
       </div>
-      <span> {currentUser.name}</span>
+      <span>{currentUser.name}</span>
+
+      {/* backdrop для точного закриття (особливо на мобільному) */}
+      {isDropdownOpen && (
+        <div
+          className="userdd__backdrop"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDropdownOpen(false);
+          }}
+        />
+      )}
 
       {isDropdownOpen && (
         <div
-          className="header-user__dropdown under-avatar"
-          ref={dropdownRef} // <-- вот тут!
+          className={
+            "header-user__dropdown userdd " + (isMobile ? "userdd--sheet" : "")
+          }
+          ref={dropdownRef}
+          role="menu"
+          aria-label="Account menu"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="dropdown-users-list">
-            {sortedUsers.map((user, idx) => (
-              <div
-                key={user.id}
-                className={
-                  "dropdown-user" +
-                  (user.id === currentUser.id ? " dropdown-user--active" : "") +
-                  (idx === 0 ? " dropdown-user--first" : "")
-                }
-                onClick={() => handleUserSwitch(user)}
-              >
-                <div className="dropdown-user-container">
-                  <img
-                    src={`${config.backend_url}${user.avatar_url}`}
-                    alt={user.name}
-                    className="dropdown-user-avatar"
-                  />
-                  <span className="header-dropdown__user-name">
-                    {user.name}
-                  </span>
+          {/* стрілочка для десктопа */}
+          {!isMobile && <span className="userdd__arrow" aria-hidden="true" />}
+
+          {/* хедер */}
+          <div className="userdd__header">
+            <img
+              src={`${config.backend_url}${currentUser.avatar_url}`}
+              alt=""
+              className="userdd__header-avatar"
+            />
+            <div className="userdd__header-meta">
+              <div className="userdd__name">{currentUser.name}</div>
+
+              <div className="userdd__actions">
+                <div className="userdd__badge">Активний профіль</div>
+                <div className="userdd__action--buttons">
+                  <button
+                    className="userdd__btn"
+                    onClick={() => {
+                      navigate("/settings");
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    <SettingsIcon />
+                  </button>
+                  <button
+                    className="userdd__btn userdd__btn--danger"
+                    onClick={handleLogout}
+                  >
+                    <ExitIcon />
+                  </button>
                 </div>
-                {user.id === currentUser.id && (
-                  <>
-                    {/* <button
-                      className="dropdown-button"
-                      onClick={() => navigate("/settings")}
-                    >
-                      Settings
-                    </button> */}
-                    <button
-                      className="dropdown-button logout"
-                      onClick={handleLogout}
-                    >
-                      Exit
-                    </button>
-                  </>
-                )}
               </div>
-            ))}
+            </div>
           </div>
+
+          {/* інші користувачі */}
+          {sortedUsers.filter((u) => u.id !== currentUser.id).length > 0 && (
+            <>
+              <div className="userdd__section-title">Перемкнутися на</div>
+              <div className="userdd__list">
+                {sortedUsers
+                  .filter((u) => u.id !== currentUser.id)
+                  .map((user) => (
+                    <button
+                      key={user.id}
+                      className="userdd__item"
+                      onClick={() => handleUserSwitch(user)}
+                    >
+                      <img
+                        src={`${config.backend_url}${user.avatar_url}`}
+                        alt=""
+                        className="userdd__item-avatar"
+                      />
+                      <span className="userdd__item-name">{user.name}</span>
+                    </button>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {/* дія: налаштування / вихід */}
+
+          {/* хендл для bottom-sheet */}
+          {isMobile && <div className="userdd__handle" aria-hidden="true" />}
         </div>
       )}
     </div>

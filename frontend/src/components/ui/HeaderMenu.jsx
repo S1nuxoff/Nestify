@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/HeaderMenu.css";
 
-// Іконки як React-компоненти (працює у CRA)
 import { ReactComponent as MoviesIcon } from "../../assets/icons/movies.svg";
 import { ReactComponent as SeriesIcon } from "../../assets/icons/series.svg";
 import { ReactComponent as CartoonsIcon } from "../../assets/icons/cartoons.svg";
@@ -40,16 +39,24 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
     [categories]
   );
 
+  const current = items.find((c) => c.title === openDropdown);
+
   return (
-    <div className="header-menu-wrapper" ref={menuRef}>
+    <div
+      className={`header-menu-wrapper ${openDropdown ? "is-open" : ""}`}
+      ref={menuRef}
+    >
       <ul className="header-menu">
         {items.map((cat) => (
           <li
             key={cat.title}
-            className="header-menu-item"
+            className={`header-menu-item ${
+              openDropdown === cat.title ? "is-active" : ""
+            }`}
             onClick={() =>
               setOpenDropdown((prev) => (prev === cat.title ? null : cat.title))
             }
+            aria-expanded={openDropdown === cat.title}
           >
             {cat._Icon ? <cat._Icon className="header-menu-icon" /> : null}
             <span>{cat.title}</span>
@@ -57,23 +64,27 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
         ))}
       </ul>
 
+      {/* Backdrop щоб при кліку поза дропдауном закривалось прицільно */}
       {openDropdown && (
-        <ul className="dropdown">
-          {items
-            .find((cat) => cat.title === openDropdown)
-            ?.subcategories?.map((sub) => (
-              <li
-                key={sub.url}
-                className="dropdown-item"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenDropdown(null);
-                  navigate(`/category${sub.url}`);
-                }}
-              >
-                {sub.title}
-              </li>
-            ))}
+        <div className="menu-backdrop" onClick={() => setOpenDropdown(null)} />
+      )}
+
+      {openDropdown && (
+        <ul className="dropdown" role="menu" aria-label={openDropdown}>
+          {current?.subcategories?.map((sub, idx) => (
+            <li
+              key={sub.url}
+              className="dropdown-item"
+              style={{ "--i": idx }} // для ступінчатої затримки
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenDropdown(null);
+                navigate(`/category${sub.url}`);
+              }}
+            >
+              {sub.title}
+            </li>
+          ))}
         </ul>
       )}
     </div>

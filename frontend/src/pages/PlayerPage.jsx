@@ -578,14 +578,24 @@ export default function PlayerPage() {
                 onTouchEnd={handleScrubEnd}
                 className="cinema-player-progress"
                 style={{
-                  background: `linear-gradient(to right,
-                    #e50914 0%,
-                    #e50914 ${progressPercent}%,
-                    rgba(255,255,255,0.4) ${progressPercent}%,
-                    rgba(255,255,255,0.4) 100%
-                  )`,
+                  backgroundImage: `
+                  linear-gradient(
+                    102.142deg,
+                    #ffd8b5 6%,
+                    #ffb2e8 44%,
+                    #7fa1fd 100%
+                  ),
+                  linear-gradient(
+                    to right,
+                    rgba(255,255,255,0.4),
+                    rgba(255,255,255,0.4)
+                  )
+                `,
+                  backgroundSize: `${progressPercent}% 100%, 100% 100%`,
+                  backgroundRepeat: "no-repeat, no-repeat",
                 }}
               />
+
               <span className="cinema-player-time">{formatTime(duration)}</span>
             </div>
 

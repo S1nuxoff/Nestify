@@ -105,6 +105,16 @@
 
 .video-card-container:hover .video-card_preview-image {
   transform: scale(0.96);
+  border: 2px solid transparent;
+
+  /* 1-й слой — заливка внутри (не прозрачная!) */
+  /* 2-й слой — градиентный бордер */
+  background: linear-gradient(rgba(15, 15, 30, 0.9), rgba(15, 15, 30, 0.9))
+      padding-box,
+    var(--main_gradient) border-box;
+
+  background-clip: padding-box, border-box;
+  backdrop-filter: blur(10px);
 }
 
 .video-card-history-meta {
@@ -143,7 +153,8 @@
 .video-card-preview-wrapper {
   position: relative;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible; /* було hidden */
+  /* інше залишаємо як є */
 }
 
 /* базовая картинка */
@@ -193,4 +204,32 @@
   100% {
     background-position: 200% 0;
   }
+}
+
+.video-card-preview-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -10px; /* наскільки далеко виходить свічення */
+  border-radius: inherit;
+  background: var(--main_gradient);
+  filter: blur(24px);
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+  z-index: -1; /* щоб було під постером */
+}
+
+.video-card-container:hover .video-card-preview-wrapper::before {
+  opacity: 1;
+}
+
+.video-card-container:hover .video-card_preview-image {
+  transform: scale(0.96);
+  border: 2px solid transparent;
+
+  background: linear-gradient(rgba(15, 15, 30, 0.9), rgba(15, 15, 30, 0.9))
+      padding-box,
+    var(--main_gradient) border-box;
+
+  background-clip: padding-box, border-box;
+  backdrop-filter: blur(10px);
 }

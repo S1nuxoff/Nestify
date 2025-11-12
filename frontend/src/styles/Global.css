@@ -82,6 +82,12 @@ body {
 }
 
 :root {
+  --main_gradient: linear-gradient(
+    102.142deg,
+    #ffd8b5 6%,
+    #ffb2e8 44%,
+    #7fa1fd 100%
+  );
   --sub-gray: #1d1d1d;
   --dark: #2d2d2d;
   --white: #eeeeee;
@@ -179,6 +185,7 @@ body {
     padding-left: 16px;
     padding-right: 16px;
   }
+
   .explorer-library-grid {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* Две колонки на планшетах */
   }
@@ -208,12 +215,7 @@ body {
     height: 160px;
   } */
 }
-.row-header-title {
-  font-size: 24px;
-  color: var(--white);
-  font-weight: 600;
-  cursor: pointer;
-}
+
 @media (max-width: 1024px) {
   .continue-overlay {
     -webkit-mask-image: linear-gradient(to right, black 20%, transparent 100%);
@@ -301,6 +303,14 @@ body {
   }
   .explorer-library-grid {
     grid-template-columns: 1fr 1fr; /* Две колонки на планшетах */
+  }
+  .row-header-title {
+    font-size: 24px;
+  }
+  /* стрелка слева */
+  .category-back-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .playback-controls-container {
@@ -445,14 +455,13 @@ body {
 
   .video-card-container-explorer {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
     gap: 16px;
-    align-items: center;
   }
 
   .explorer-library-grid {
-    grid-template-columns: 1fr;
-    gap: 24px 0px;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
   .video-card-meta {
     /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */

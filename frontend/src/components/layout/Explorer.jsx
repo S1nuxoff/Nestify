@@ -12,10 +12,7 @@ function Explorer({ history, title, Page, onMovieSelect }) {
   return (
     <div className="explorer-container">
       <div className="category-content-title">
-        <BackIcon
-          style={{ cursor: "pointer" }}
-          onClick={() => navigate(-1)} // ⬅ назад
-        />
+        <BackIcon className="category-back-btn" onClick={() => navigate(-1)} />
 
         <span className="row-header-title">{title}</span>
       </div>

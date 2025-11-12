@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.9564600a.css",
-    "main.js": "/static/js/main.d3c83ca0.js",
+    "main.css": "/static/css/main.2e44ae78.css",
+    "main.js": "/static/js/main.f2b7ec3b.js",
     "reactPlayerPreview.js": "/static/js/reactPlayerPreview.a3d9f660.chunk.js",
     "static/media/SFPRODISPLAYMEDIUM.OTF": "/static/media/SFPRODISPLAYMEDIUM.b85d841dacb040b84951.OTF",
     "static/media/SFPRODISPLAYBOLD.OTF": "/static/media/SFPRODISPLAYBOLD.b1f4d2c69fa808ebca12.OTF",
@@ -12,8 +12,9 @@
     "static/media/SFPRODISPLAYTHINITALIC.OTF": "/static/media/SFPRODISPLAYTHINITALIC.3d2597acea660678af19.OTF",
     "static/media/SFPRODISPLAYULTRALIGHTITALIC.OTF": "/static/media/SFPRODISPLAYULTRALIGHTITALIC.b90d5d0f41170f11b87e.OTF",
     "static/media/SFPRODISPLAYBLACKITALIC.OTF": "/static/media/SFPRODISPLAYBLACKITALIC.bf4f55c98ce6b6478da6.OTF",
-    "static/media/logo.svg": "/static/media/logo.610bb4409b0b5d88ffdfaf9398e4970f.svg",
+    "static/media/logo_colored.svg": "/static/media/logo_colored.2c86876e00245277bd64b13e265992ac.svg",
     "static/media/settings.svg": "/static/media/settings.1d05b6f506f0041dfd806ea4ae1467f6.svg",
+    "static/media/exit.svg": "/static/media/exit.a87832c7d54685e7e47f47b812c97775.svg",
     "static/media/themoviedb_logo.svg": "/static/media/themoviedb_logo.bf7f470b3821af1da7fa249c87dadea3.svg",
     "static/media/cast.svg": "/static/media/cast.4cafe3bbaeba89c0c796210b0a9b663a.svg",
     "static/media/volume-mute.svg": "/static/media/volume-mute.6c67243f8524e2d2e9d1f384ccb4fc0e.svg",
@@ -40,12 +41,12 @@
     "static/media/player_back_icon.svg": "/static/media/player_back_icon.8469e523a6dafd2d42a09411292dfee4.svg",
     "static/media/plus.svg": "/static/media/plus.ea4164c911066413dfd54ac736e2ba06.svg",
     "static/media/drop-down.svg": "/static/media/drop-down.c5a3189408d2a1369972e1a75846651a.svg",
-    "main.9564600a.css.map": "/static/css/main.9564600a.css.map",
-    "main.d3c83ca0.js.map": "/static/js/main.d3c83ca0.js.map",
+    "main.2e44ae78.css.map": "/static/css/main.2e44ae78.css.map",
+    "main.f2b7ec3b.js.map": "/static/js/main.f2b7ec3b.js.map",
     "reactPlayerPreview.a3d9f660.chunk.js.map": "/static/js/reactPlayerPreview.a3d9f660.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.9564600a.css",
-    "static/js/main.d3c83ca0.js"
+    "static/css/main.2e44ae78.css",
+    "static/js/main.f2b7ec3b.js"
   ]
 }

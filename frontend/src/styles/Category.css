@@ -1,13 +1,31 @@
 .category-content {
   margin-top: 48px;
 }
+
 .category-content-title {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  width: fit-content;
-}
-.category-content-top {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  margin-top: 24px;
+  gap: 16px;
+
+  border-radius: 32px;
+}
+
+/* стрелка слева */
+.category-back-btn {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: 0.1s ease-in-out;
+}
+.category-back-btn:hover {
+  transform: scale(1.2);
+}
+
+.row-header-title {
+  font-size: 32px;
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
 }

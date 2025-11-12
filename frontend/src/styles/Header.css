@@ -16,23 +16,47 @@ header {
   position: sticky;
   top: 16px;
   z-index: 10000000;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  max-width: 1600px; /* ширина контейнера */
-  width: 100%; /* чтобы сужалась на маленьких экранах */
-  margin: 0 auto; /* ЦЕНТРУЕМ по горизонтали */
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto 16px;
 
   padding: 12px 32px;
   border: 1px solid var(--white-opacity-20);
-
-  backdrop-filter: blur(10px);
   border-radius: 64px;
-  background: var(--dark-opacity-10);
-  margin-bottom: 16px;
+
+  /* важливо: новий stacking context, щоб blur-шар не “з’їдав” дітей */
+  isolation: isolate;
+  background: transparent; /* фон переносимо в ::before */
 }
+
+.header-desktop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0; /* під контентом */
+  border-radius: inherit;
+
+  /* саме тут blur */
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+
+  /* напівпрозорий фон як і було */
+  background: var(--dark-opacity-20);
+  border: 1px solid var(--white-opacity-20);
+}
+.header-logo-wrapper,
+.search-container,
+.header-top-row,
+.header-slot-menu,
+.header-slot-account {
+  position: relative;
+  z-index: 1;
+}
+.header-user__dropdown,
 .header-tablet {
   z-index: 10000000;
 }
@@ -78,6 +102,7 @@ header {
   justify-content: space-between;
   box-sizing: border-box;
   flex-direction: column;
+  z-index: 10; /* выше, чем меню */
 
   position: relative;
 }
@@ -109,20 +134,25 @@ header {
 
 .search-suggestions {
   position: absolute;
-  top: 48px;
-  background-color: var(--white-opacity-5);
-  backdrop-filter: blur(10px);
-
+  top: 74px;
+  background-color: var(--dark-opacity-60);
+  border: 1px solid var(--white-opacity-10);
+  backdrop-filter: blur(20px);
+  z-index: 100;
   width: 100%;
   padding: 8px 16px;
   overflow-y: auto;
   z-index: 10;
   margin-top: 4px;
-  border-radius: 16px;
+  border-radius: 24px;
   color: var(--white);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  z-index: 11;
+}
+.search-suggestions {
+  z-index: 10000000000000000; /* больше, чем у .header-menu */
 }
 
 .search-suggestions li {
@@ -170,18 +200,30 @@ header {
   font-weight: 500;
   align-items: center;
   gap: 8px;
+  padding: 0px 24px 0px 0px;
+  height: 50px;
+
+  cursor: pointer;
+  border-radius: 32px;
+
+  transition: 0.2s ease-in-out;
+}
+.header-user__dropdown {
+  z-index: 323293298;
+}
+.header-user__container:hover {
+  background-color: var(--white-opacity-10);
 }
 .header-user__avatar-container {
   cursor: pointer;
   display: flex;
-  width: 44px;
-  height: 44px;
+
   border-radius: 32px;
-  padding: 4px;
-  background-color: var(--white-opacity-10);
 }
 .header-user__avatar {
   border-radius: 32px;
+  width: 50px;
+  height: 50px;
 }
 
 .dropdown-users-list {
@@ -244,6 +286,7 @@ header {
   z-index: 999;
   min-width: 400px;
   max-height: 400px;
+
   overflow: auto;
 }
 
@@ -299,4 +342,330 @@ header {
   justify-content: center;
   align-items: center;
   gap: 8px;
+}
+
+/* ========== Account dropdown (userdd) ========== */
+
+/* напівпрозорий клік-бекдроп тільки в межах header */
+.userdd__backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 99998;
+}
+
+/* контейнер поповера */
+.userdd {
+  position: absolute;
+  top: calc(100% + 24px);
+  right: 0;
+  min-width: 320px;
+  max-width: 420px;
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--dark-opacity-60);
+  padding: 14px;
+  border-radius: 24px;
+
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--white-opacity-10);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  animation: userdd-in 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  z-index: 99999;
+}
+@keyframes userdd-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* маленька стрілочка до аватара (desktop) */
+.userdd__arrow {
+  position: absolute;
+  top: -7px;
+  right: 24px;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-left: 1px solid var(--white-opacity-15);
+  border-top: 1px solid var(--white-opacity-15);
+  transform: rotate(45deg);
+  backdrop-filter: inherit;
+}
+
+/* хедер всередині */
+.userdd__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 12px;
+  border-bottom: 1px solid var(--white-opacity-10);
+  margin-bottom: 12px;
+}
+.userdd__header-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+.userdd__header-meta {
+  width: 100%;
+}
+.userdd__name {
+  font-weight: 700;
+  color: var(--white);
+}
+.userdd__badge {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--white);
+  background: var(--main_gradient);
+  border: 1px solid var(--white-opacity-15);
+  color: var(--dark);
+  padding: 2px 8px;
+  border-radius: 999px;
+  align-self: center;
+}
+
+/* секція списку */
+.userdd__section-title {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--white-gray);
+  margin: 8px 6px;
+}
+
+.userdd__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* рядок користувача */
+.userdd__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--white);
+  cursor: pointer;
+  transition: 140ms ease;
+  text-align: left;
+}
+.userdd__item:hover {
+  background: var(--white);
+  color: var(--dark);
+}
+.userdd__item-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+.userdd__item-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* кнопки дій */
+.userdd__actions {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding-top: 4px;
+  width: 100%;
+  align-items: center;
+}
+.userdd__action--buttons {
+  display: flex;
+  gap: 16px;
+}
+.userdd__btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: 140ms ease;
+}
+.userdd__btn:hover {
+  transform: scale(1);
+  background-color: var(--white-opacity-5);
+}
+.userdd__btn--danger {
+}
+.userdd__btn--danger:hover {
+  filter: brightness(1.05);
+}
+
+/* ===== bottom sheet для мобіли/планшета ===== */
+.userdd--sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  top: auto;
+  right: 0;
+  left: 0;
+
+  max-width: none;
+  min-width: 0;
+  border-radius: 24px 24px 0 0;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  animation: usersheet-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes usersheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* handle зверху в sheet */
+.userdd__handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* підправляємо всередині sheet відступи */
+.userdd--sheet .userdd__header {
+  padding-top: 18px;
+}
+.userdd--sheet .userdd__actions {
+  justify-content: stretch;
+}
+
+/* аватар-таргет під курсор/тап */
+.header-user__container {
+  transition: background 120ms ease;
+}
+.header-user__container:hover {
+  background-color: var(--white-opacity-10);
+}
+
+/* ===== Search Suggestions Fancy Enter ===== */
+
+/* контейнер з’являється м’яко */
+.search-suggestions {
+  /* твої існуючі стилі лишаються */
+  transform-origin: 16px top;
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
+  filter: blur(2px);
+  animation: ss-enter 180ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+/* елементи з’являються “сходинками” */
+.search-suggestions li {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: ss-item 200ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+/* ступінчаті затримки для перших 16 пунктів (можеш розширити) */
+.search-suggestions li:nth-child(1) {
+  animation-delay: 40ms;
+}
+.search-suggestions li:nth-child(2) {
+  animation-delay: 64ms;
+}
+.search-suggestions li:nth-child(3) {
+  animation-delay: 88ms;
+}
+.search-suggestions li:nth-child(4) {
+  animation-delay: 112ms;
+}
+.search-suggestions li:nth-child(5) {
+  animation-delay: 136ms;
+}
+.search-suggestions li:nth-child(6) {
+  animation-delay: 160ms;
+}
+.search-suggestions li:nth-child(7) {
+  animation-delay: 184ms;
+}
+.search-suggestions li:nth-child(8) {
+  animation-delay: 208ms;
+}
+.search-suggestions li:nth-child(9) {
+  animation-delay: 232ms;
+}
+.search-suggestions li:nth-child(10) {
+  animation-delay: 256ms;
+}
+.search-suggestions li:nth-child(11) {
+  animation-delay: 280ms;
+}
+.search-suggestions li:nth-child(12) {
+  animation-delay: 304ms;
+}
+.search-suggestions li:nth-child(13) {
+  animation-delay: 328ms;
+}
+.search-suggestions li:nth-child(14) {
+  animation-delay: 352ms;
+}
+.search-suggestions li:nth-child(15) {
+  animation-delay: 376ms;
+}
+.search-suggestions li:nth-child(16) {
+  animation-delay: 400ms;
+}
+
+/* hover — легке підняття й підсвітка */
+.search-suggestions li:hover {
+  transform: translateY(-1px);
+  background-color: var(--white-opacity-8, rgba(255, 255, 255, 0.08));
+}
+
+/* ключові кадри */
+@keyframes ss-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes ss-item {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Менше рухів для тих, хто просить */
+@media (prefers-reduced-motion: reduce) {
+  .search-suggestions {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .search-suggestions li {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

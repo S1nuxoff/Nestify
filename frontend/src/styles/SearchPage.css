@@ -1,0 +1,253 @@
+/* Empty / Loading state for SearchPage */
+.empty-state {
+  box-sizing: border-box;
+  max-width: 900px;
+  margin: 48px auto;
+  padding: 32px 24px;
+  text-align: center;
+
+  color: var(--white);
+  background: var(--white-opacity-5);
+  border: 1px solid var(--white-opacity-10);
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+
+  animation: emptyFadeIn 240ms ease-out;
+}
+
+@keyframes emptyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-state__icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+
+  background: radial-gradient(
+      120px 120px at 20% 20%,
+      rgba(255, 255, 255, 0.22),
+      transparent 60%
+    ),
+    radial-gradient(
+      120px 120px at 80% 80%,
+      rgba(255, 255, 255, 0.12),
+      transparent 60%
+    ),
+    var(--white-opacity-5);
+  border: 1px solid var(--white-opacity-20);
+  display: grid;
+  place-items: center;
+
+  filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.25));
+}
+
+.empty-state__svg {
+  width: 42px;
+  height: 42px;
+  fill: var(--white);
+  opacity: 0.9;
+}
+
+.empty-state__title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 8px 0 4px 0;
+}
+
+.empty-state__subtitle {
+  font-size: 16px;
+  color: var(--white-gray);
+  margin: 0 0 16px 0;
+}
+
+.empty-state__query {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.empty-state__hints {
+  display: inline-flex;
+  text-align: left;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px auto 20px auto;
+  padding: 0;
+  list-style: none;
+
+  color: var(--white);
+  opacity: 0.9;
+}
+
+.empty-state__hints li::before {
+  content: "•";
+  margin-right: 10px;
+  color: var(--blue);
+}
+
+.empty-state__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.empty-state__btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--white-opacity-10);
+  color: var(--white);
+  border: 1px solid var(--white-opacity-20);
+  cursor: pointer;
+  transition: background 140ms ease, transform 120ms ease,
+    border-color 140ms ease;
+}
+
+.empty-state__btn:hover {
+  background: var(--white);
+  color: var(--dark);
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.empty-state__btn--primary {
+  background: var(--white);
+  color: var(--dark);
+  font-size: 18px;
+  border-color: transparent;
+}
+.empty-state__btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+/* Loading variation */
+.empty-state--loading {
+  padding: 48px 24px 36px;
+}
+
+.empty-state__spinner {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--white);
+  animation: spin 0.8s linear infinite;
+}
+.empty-state__loading-text {
+  color: var(--white-gray);
+  font-size: 14px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==== Skeleton grid під твої картки ==== */
+.skel-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(190px, 1fr)
+  ); /* під постери */
+  gap: 16px;
+  margin: 12px 0 24px;
+}
+
+/* Карточка-обгортка */
+.sk-card {
+  background: transparent; /* як у твоїх карток */
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Постер: високий, з великим радіусом як у тебе */
+.sk-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3; /* високий постер */
+  border-radius: 18px; /* підженеш під свій (виглядає як ~18-20px) */
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.06)
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.2s linear infinite;
+  border: 1px solid var(--white-opacity-10);
+}
+
+/* Підписи під постером */
+.sk-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+/* “Фильм” */
+.sk-type {
+  width: 46px;
+  height: 10px;
+  border-radius: 6px;
+  opacity: 0.8;
+}
+
+/* Назва (жирніше й довше) */
+.sk-title {
+  width: 80%;
+  height: 14px;
+  border-radius: 8px;
+}
+
+/* Рік, країна, жанри */
+.sk-sub {
+  width: 60%;
+  height: 12px;
+  border-radius: 8px;
+  opacity: 0.9;
+}
+
+/* Шиммер заливка для рядків */
+.sk-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.06)
+  );
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.2s linear infinite;
+}
+
+/* Анімація */
+@keyframes sk-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* На дуже маленьких екранах трохи вужчі плитки */
+@media (max-width: 520px) {
+  .skel-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
