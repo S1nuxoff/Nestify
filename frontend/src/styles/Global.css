@@ -183,10 +183,11 @@ body {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* Две колонки на планшетах */
   }
 }
-@media (max-width: 1380px) {
+@media (max-width: 1650px) {
   .header-menu {
     align-items: center;
     justify-content: center;
+    margin-top: 24px;
   }
 }
 @media (max-width: 1200px) {
@@ -238,7 +239,6 @@ body {
 @media (max-width: 860px) {
   .header-menu {
     justify-content: space-between;
-    margin-top: 12px;
   }
   .hdrezka-header-input-container {
     width: 100%;
@@ -614,4 +614,10 @@ body {
   backdrop-filter: blur(10px);
   padding: 24px 32px 24px 32px;
   border-radius: 24px;
+}
+
+@media (max-height: 1000px) {
+  .continue-container {
+    height: 480px;
+  }
 }

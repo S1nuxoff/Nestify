@@ -1,6 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/HeaderMenu.css";
+
+// Іконки як React-компоненти (працює у CRA)
+import { ReactComponent as MoviesIcon } from "../../assets/icons/movies.svg";
+import { ReactComponent as SeriesIcon } from "../../assets/icons/series.svg";
+import { ReactComponent as CartoonsIcon } from "../../assets/icons/cartoons.svg";
+import { ReactComponent as AnimeIcon } from "../../assets/icons/anime.svg";
+
+const ICON_MAP = {
+  Фільми: MoviesIcon,
+  Фильмы: MoviesIcon,
+  Серіали: SeriesIcon,
+  Сериалы: SeriesIcon,
+  Мультфільми: CartoonsIcon,
+  Мультфильмы: CartoonsIcon,
+  Аніме: AnimeIcon,
+  Аниме: AnimeIcon,
+};
 
 function HeaderMenu({ categories = [], onMenuSelect }) {
   const navigate = useNavigate();
@@ -17,10 +34,16 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  const items = useMemo(
+    () =>
+      categories.map((cat) => ({ ...cat, _Icon: ICON_MAP[cat.title] || null })),
+    [categories]
+  );
+
   return (
     <div className="header-menu-wrapper" ref={menuRef}>
       <ul className="header-menu">
-        {categories.map((cat) => (
+        {items.map((cat) => (
           <li
             key={cat.title}
             className="header-menu-item"
@@ -28,6 +51,7 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
               setOpenDropdown((prev) => (prev === cat.title ? null : cat.title))
             }
           >
+            {cat._Icon ? <cat._Icon className="header-menu-icon" /> : null}
             <span>{cat.title}</span>
           </li>
         ))}
@@ -35,7 +59,7 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
 
       {openDropdown && (
         <ul className="dropdown">
-          {categories
+          {items
             .find((cat) => cat.title === openDropdown)
             ?.subcategories?.map((sub) => (
               <li
@@ -43,7 +67,7 @@ function HeaderMenu({ categories = [], onMenuSelect }) {
                 className="dropdown-item"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setOpenDropdown(null); // Закрываем дропдаун при клике
+                  setOpenDropdown(null);
                   navigate(`/category${sub.url}`);
                 }}
               >

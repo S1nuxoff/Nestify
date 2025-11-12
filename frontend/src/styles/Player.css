@@ -18,6 +18,7 @@
   padding-left: 16px;
   padding-right: 16px;
   transition: 0.4s ease-in-out;
+  border: 1px var(--white-opacity-20) solid;
 }
 .continue-content {
   padding: 0px 16px;
@@ -236,7 +237,7 @@
   width: 200px;
   height: 40px;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 32px;
   transition: 0.1s ease-in;
   font-size: 16px;
   font-weight: 700;
@@ -267,7 +268,7 @@
   background-color: var(--white-opacity-10);
   backdrop-filter: blur(40px);
   padding: 4px 12px;
-  border-radius: 8px;
+  border-radius: 32px;
   font-weight: 400;
   color: var(--white);
 }

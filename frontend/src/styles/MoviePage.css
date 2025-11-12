@@ -391,7 +391,7 @@
 }
 
 .movie-page__season-current {
-  background-color: var(--white-opacity-5);
+  background-color: var(--white-opacity-10);
   color: var(--white);
   font-size: 14px;
   font-weight: 500;
@@ -402,6 +402,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  backdrop-filter: blur(10px);
 }
 
 .movie-page__season-arrow {
@@ -413,7 +414,8 @@
   right: 0;
   top: 100%;
   margin-top: 4px;
-  background-color: var(--dark);
+  background-color: var(--dark-opacity-60);
+  backdrop-filter: blur(10px);
   border-radius: 8px;
   width: 260px;
   max-height: 300px;

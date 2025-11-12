@@ -16,7 +16,7 @@
 
 .episode-item-details-container {
   width: 100%;
-  background-color: var(--white-opacity-5);
+  background-color: var(--white-opacity-10);
   backdrop-filter: blur(10px);
   padding: 16px 16px;
   border-radius: 16px;

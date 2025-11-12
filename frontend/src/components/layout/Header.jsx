@@ -11,7 +11,7 @@ import "../../styles/Header.css";
 const Header = ({ categories, currentUser, onSearch, onMovieSelect }) => {
   const isMobile = useMediaQuery({ query: "(max-width: 860px)" });
   const isTablet = useMediaQuery({
-    query: "(min-width: 860px) and (max-width: 1380px)",
+    query: "(min-width: 860px) and (max-width: 1650px)",
   });
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

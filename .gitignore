@@ -36,3 +36,11 @@ frontend/.cache/
 .parcel-cache/
 .next/
 coverage/
+
+backend/venv
+venv
+
+venv/
+.venv/
+**/venv/
+**/.venv/
