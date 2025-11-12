@@ -3,18 +3,19 @@ version: "3.9"
 services:
   backend:
     build:
-      context: .
+      context: ..
       dockerfile: backend/Dockerfile
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://nestify:Afynjv228@188.137.249.105:5432/nestify-db
-    networks:
-      - dokploy-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.nestify-back.rule=Host(`api.opencine.cloud`)
-      - traefik.http.routers.nestify-back.entrypoints=websecure
-      - traefik.http.routers.nestify-back.tls.certresolver=letsencrypt
-      - traefik.http.services.nestify-back.loadbalancer.server.port=8000
+
+      environment:
+        - DATABASE_URL=postgresql+asyncpg://nestify:Afynjv228@188.137.249.105:5432/nestify-db
+      networks:
+        - dokploy-network
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.nestify-back.rule=Host(`api.opencine.cloud`)
+        - traefik.http.routers.nestify-back.entrypoints=websecure
+        - traefik.http.routers.nestify-back.tls.certresolver=letsencrypt
+        - traefik.http.services.nestify-back.loadbalancer.server.port=8000
 
 networks:
   dokploy-network:
