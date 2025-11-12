@@ -22,3 +22,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 /backup
+frontend/node_modules
+
+
+# deps / билды / кеши
+node_modules/
+frontend/node_modules/
+
+dist/
+.cache/
+frontend/.cache/
+**/.cache/
+.parcel-cache/
+.next/
+coverage/
