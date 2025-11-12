@@ -6,8 +6,6 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
 
-      environment:
-        - DATABASE_URL=postgresql+asyncpg://nestify:Afynjv228@188.137.249.105:5432/nestify-db
       networks:
         - dokploy-network
       labels:
