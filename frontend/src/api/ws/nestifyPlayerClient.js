@@ -56,6 +56,7 @@ class NestifyPlayerClient {
     return `ws://${host}:8889`;
   }
 
+  // поки що getHttpBaseUrl можна залишити, але більше не використовується
   getHttpBaseUrl() {
     const host = this.getHost();
     if (!host) {
@@ -302,7 +303,7 @@ class NestifyPlayerClient {
     );
   }
 
-  // ---------- PLAY ON TV (HTTP /play) ----------
+  // ---------- PLAY ON TV (WS: Player.PlayUrl) ----------
 
   /**
    * Викликається з useMovieSource:
@@ -331,57 +332,27 @@ class NestifyPlayerClient {
     userId,
     positionSeconds,
   }) {
-    let base;
     try {
-      base = this.getHttpBaseUrl();
-    } catch (e) {
-      console.error(
-        "[NestifyPlayerClient] playOnTv: host is not configured (kodi_address missing)"
-      );
-      return false;
-    }
-
-    try {
-      const url = new URL(base + "/play");
-
       const params = {
         url: streamUrl,
         link: link || null,
         origin_name: originName || null,
         title: title || null,
         image: image || null,
-        movie_id: movieId != null ? movieId : null,
-        season: season != null ? season : null,
-        episode: episode != null ? episode : null,
-        user_id: userId != null ? userId : null,
-        position_seconds:
-          typeof positionSeconds === "number" ? positionSeconds : null,
+        movie_id: movieId ?? null,
+        season: season ?? null,
+        episode: episode ?? null,
+        user_id: userId ?? null,
       };
 
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== "") {
-          url.searchParams.append(key, String(value));
-        }
-      });
-
-      console.log("[NestifyPlayerClient] playOnTv GET:", url.toString());
-
-      const resp = await fetch(url.toString(), {
-        method: "GET",
-      });
-
-      if (!resp.ok) {
-        console.error(
-          "[NestifyPlayerClient] playOnTv HTTP error:",
-          resp.status,
-          resp.statusText
-        );
-        return false;
+      if (typeof positionSeconds === "number") {
+        params.position_ms = Math.max(0, Math.floor(positionSeconds * 1000));
       }
 
+      await this.sendRpc("Player.PlayUrl", params);
       return true;
     } catch (e) {
-      console.error("[NestifyPlayerClient] playOnTv error:", e);
+      console.error("[NestifyPlayerClient] playOnTv via WS error:", e);
       return false;
     }
   }
