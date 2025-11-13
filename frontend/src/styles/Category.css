@@ -1,15 +1,47 @@
-.category-content {
-  margin-top: 48px;
+/* контейнер секции */
+.explorer-container {
+  position: relative;
+  overflow: visible;
 }
 
 .category-content-title {
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
-  margin-top: 24px;
   gap: 16px;
 
+  margin-top: 24px;
   border-radius: 32px;
+
+  position: static;
+  z-index: 1;
+
+  background: transparent;
+  backdrop-filter: none;
+  padding: 0;
+  border: none;
+
+  width: fit-content; /* 👈 ширина по контенту */
+  max-width: 100%; /* чтобы не вылезало за экран */
+
+  transition: background 0.18s ease, backdrop-filter 0.18s ease,
+    padding 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@media (max-width: 1649px) {
+  .category-content-title {
+  }
+
+  .category-content-title--stuck {
+    position: sticky;
+    top: 32px;
+    z-index: 5;
+    top: 16px;
+    background: var(--white-opacity-10);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--white-opacity-20);
+    padding: 8px 16px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
 }
 
 /* стрелка слева */
@@ -23,9 +55,36 @@
   transform: scale(1.2);
 }
 
+/* заголовок по умолчанию */
 .row-header-title {
-  font-size: 32px;
+  font-size: 24px;
   color: var(--white);
   font-weight: 600;
   cursor: pointer;
+  transition: font-size 0.18s ease, transform 0.18s ease;
+}
+
+/* кнопка по умолчанию */
+.category-back-btn {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: 0.1s ease-in-out, width 0.18s ease, height 0.18s ease;
+}
+
+/* только на маленьких экранах + когда прилип */
+@media (max-width: 1649px) {
+  .category-content-title--stuck .row-header-title {
+    font-size: 18px; /* 👈 стал меньше */
+    transform: translateY(1px);
+  }
+
+  .category-content-title--stuck .category-back-btn {
+    width: 32px;
+    height: 32px; /* 👈 тоже чуть меньше, опционально */
+  }
+  .category-content-title {
+    gap: 4px;
+    align-items: center;
+  }
 }

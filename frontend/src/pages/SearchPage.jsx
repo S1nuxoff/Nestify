@@ -141,9 +141,7 @@ export default function SearchPage({ currentUser }) {
           ) : (
             <Explorer
               Page={results}
-              title={
-                query ? `Результати пошуку: ${query}` : "Результати пошуку"
-              }
+              title={query}
               currentUser={currentUser}
               onMovieSelect={handleMovieSelect}
             />
