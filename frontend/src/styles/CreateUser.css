@@ -112,7 +112,7 @@
   align-items: center;
 }
 .avatar-option {
-  border-radius: 24px;
+  border-radius: 100%;
 }
 
 .avatar-option.selected {

@@ -5,6 +5,7 @@ import MediaCard from "../ui/MediaCard";
 import "swiper/css";
 import "../../styles/Explorer.css";
 import { ReactComponent as BackIcon } from "../../assets/icons/back.svg";
+import StickyCategoryHeader from "../ui/StickyCategoryHeader";
 
 function Explorer({ history, title, Page, onMovieSelect }) {
   const [visibleCount] = useState(100);
@@ -58,38 +59,7 @@ function Explorer({ history, title, Page, onMovieSelect }) {
   return (
     <div className="explorer-container">
       {/* новый рядок: капсула + кнопка вверх */}
-      <div
-        ref={headerRef}
-        className={
-          "explorer-header-row" + (isStuck ? " explorer-header-row--stuck" : "")
-        }
-      >
-        <div
-          className={
-            "category-content-title" +
-            (isStuck ? " category-content-title--stuck" : "")
-          }
-        >
-          <BackIcon
-            className="category-back-btn"
-            onClick={() => navigate(-1)}
-          />
-          <span className="row-header-title">{title}</span>
-        </div>
-
-        {/* кругла кнопка справа, отдельный элемент с gap=8 */}
-        <button
-          type="button"
-          className={
-            "category-scroll-top-circle" +
-            (isStuck ? " category-scroll-top-circle--visible" : "")
-          }
-          onClick={handleScrollTop}
-          aria-label="Прокрутить наверх"
-        >
-          <BackIcon className="category-scroll-top-icon" />
-        </button>
-      </div>
+      <StickyCategoryHeader title={title} onBack={() => navigate(-1)} />
 
       <div className="explorer-library-grid">
         {Page &&

@@ -1,5 +1,8 @@
+// App.jsx
 import React, { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+
 import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import CategoryPage from "./pages/CategoryPage";
@@ -14,94 +17,151 @@ import MiniPlayer from "./components/ui/MiniPlayer";
 import nestifyPlayerClient from "./api/ws/nestifyPlayerClient";
 import PrivateRoute from "./components/PrivateRoute";
 import SessionControls from "./components/SessionControls";
+
 import "./styles/App.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
+
+const PageTransition = ({ children }) => {
+  return (
+    <motion.div
+      className="route-page-wrapper"
+      initial={{ opacity: 0, marginTop: 8 }}
+      animate={{ opacity: 1, marginTop: 0 }}
+      exit={{ opacity: 0, marginTop: -8 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 function App() {
+  const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
+
   useEffect(() => {
     nestifyPlayerClient.init();
   }, []);
+
   return (
     <>
-      {" "}
-      <MiniPlayer /> {/* Full-screen player */}{" "}
+      {/* Мини-плеер поверх всего */}
+      <MiniPlayer />
+
+      {/* Отдельный роут для полноэкранного плеера, без анимации (можно тоже завернуть, если захочешь) */}
       <Routes>
-        {" "}
         <Route
           path="/player/:movieId"
           element={
             <PrivateRoute>
-              {" "}
-              <PlayerPage />{" "}
+              <PlayerPage />
             </PrivateRoute>
           }
-        />{" "}
-      </Routes>{" "}
+        />
+      </Routes>
+
+      {/* Основное приложение с анимированными переходами */}
       <div style={{ position: "relative", zIndex: 1 }} className="App">
-        {" "}
-        <Routes>
-          {" "}
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                {" "}
-                <HomePage currentUser={currentUser} />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route
-            path="/movie/:movieLink"
-            element={
-              <PrivateRoute>
-                {" "}
-                <MoviePage />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route
-            path="/search"
-            element={
-              <PrivateRoute>
-                {" "}
-                <SearchPage currentUser={currentUser} />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route
-            path="/category/*"
-            element={
-              <PrivateRoute>
-                {" "}
-                <CategoryPage currentUser={currentUser} />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route
-            path="/collections"
-            element={
-              <PrivateRoute>
-                {" "}
-                <CollectionsPage />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route path="/settings" element={<UserSettingsPage />} />{" "}
-          <Route
-            path="/history"
-            element={
-              <PrivateRoute>
-                {" "}
-                <HistoryPage />{" "}
-              </PrivateRoute>
-            }
-          />{" "}
-          <Route path="/login" element={<LoginPage />} />{" "}
-          <Route path="/login/create/user" element={<CreateUserPage />} />{" "}
-        </Routes>{" "}
-      </div>{" "}
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <HomePage currentUser={currentUser} />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/movie/:movieLink"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <MoviePage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/search"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <SearchPage currentUser={currentUser} />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/category/*"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <CategoryPage currentUser={currentUser} />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/collections"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <CollectionsPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/settings"
+              element={
+                <PageTransition>
+                  <UserSettingsPage />
+                </PageTransition>
+              }
+            />
+
+            <Route
+              path="/history"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <HistoryPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/login"
+              element={
+                <PageTransition>
+                  <LoginPage />
+                </PageTransition>
+              }
+            />
+
+            <Route
+              path="/login/create/user"
+              element={
+                <PageTransition>
+                  <CreateUserPage />
+                </PageTransition>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
+      </div>
     </>
   );
 }
+
 export default App;

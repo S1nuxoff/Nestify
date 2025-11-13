@@ -5,47 +5,203 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
+  position: relative;
+  padding: 64px 16px 80px;
+  text-align: center;
+
+  animation: login-fade-in 0.6s ease-out forwards;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
 }
 
 .login-title {
-  font-size: 32px;
-  margin-bottom: 64px;
-  margin-top: 64px;
-  font-weight: 500;
+  font-size: 36px;
+  margin-bottom: 48px;
+  margin-top: 32px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+
+  background: linear-gradient(120deg, var(--blue), #ffffff, var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
 }
 
-.login-users-list {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
+/* список пользователей */
 .login-users-list {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
   width: 100%;
-  max-width: 100vw;
+  max-width: 960px;
   overflow-x: visible;
   padding-bottom: 24px;
 }
 
+/* обёртка над UserLoginCard, чтобы не трогать сам компонент */
+.login-user-card-wrapper {
+  animation: login-card-pop 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transform-origin: center;
+}
+
+/* лёгкий stagger по карточкам */
+.login-user-card-wrapper:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.login-user-card-wrapper:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.login-user-card-wrapper:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.login-user-card-wrapper:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.login-user-card-wrapper:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+/* кнопка "создать юзера" */
 .login-create-user {
   border-radius: 50%;
   overflow: hidden;
   width: 150px;
   height: 150px;
   display: flex;
-  transition: 0.1s ease-in;
-  background-color: var(--white-opacity-10);
   justify-content: center;
   align-items: center;
+
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0.05)
+  );
+  border: 1px solid var(--white-opacity-20);
+
   cursor: pointer;
-  transition: 0.1s ease-in;
+  transition: transform 0.16s ease-out, box-shadow 0.16s ease-out,
+    background 0.16s ease-out, border-color 0.16s ease-out;
+}
+
+.login-create-user svg {
+  width: 42px;
+  height: 42px;
+  opacity: 0.9;
 }
 
 .login-create-user:hover {
-  transition: 0.1s ease-in;
-  background-color: var(--white-opacity-20);
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.08)
+  );
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+/* фоновый блюр */
+.background-blur-100 {
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  position: fixed;
+  backdrop-filter: blur(150px);
+  background: radial-gradient(
+    circle at 10% 10%,
+    rgba(255, 255, 255, 0.08),
+    rgba(0, 0, 0, 0.9)
+  );
+  top: 0;
+  left: 0;
+  opacity: 0;
+  animation: login-backdrop-fade 0.6s ease-out forwards;
+}
+
+/* центральный glow */
+.background-glow-center {
+  width: 520px;
+  height: 520px;
+  background-color: var(--blue);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: -2;
+  opacity: 0.25;
+  border-radius: 100%;
+  filter: blur(40px);
+
+  animation: glow-pulse 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* анимации */
+@keyframes login-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes login-card-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes login-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.18;
+  }
+}
+
+/* немного адаптива */
+@media (max-width: 600px) {
+  .login-title {
+    font-size: 28px;
+    margin-bottom: 32px;
+  }
+
+  .background-glow-center {
+    width: 420px;
+    height: 420px;
+  }
 }

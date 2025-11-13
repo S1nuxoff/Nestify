@@ -14,6 +14,7 @@ import { ReactComponent as BackIcon } from "../assets/icons/back.svg";
 import useMovieDetails from "../hooks/useMovieDetails";
 import useMovieSource from "../hooks/useMovieSource";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
+import StickyCategoryHeader from "../components/ui/StickyCategoryHeader";
 
 import VoiceoverOption from "../components/ui/VoiceoverOption";
 import EpisodeSelector from "../components/ui/EpisodeSelector";
@@ -714,10 +715,7 @@ const MoviePage = () => {
 
       <main className="movie-page-main">
         <div className="movie-page-container">
-          <div className="category-content-title">
-            <BackIcon style={{ cursor: "pointer" }} onClick={handleBack} />
-            <span className="row-header-title">Назад</span>
-          </div>
+          <StickyCategoryHeader title="Назад" onBack={handleBack} />
 
           {/* skeleton-хедер при загрузке */}
           {loading && (

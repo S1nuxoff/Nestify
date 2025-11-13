@@ -5,6 +5,7 @@ import { ReactComponent as PlusIcon } from "../assets/icons/plus.svg";
 import { useNavigate } from "react-router-dom";
 import { getUsers } from "../api/utils";
 import config from "../core/config";
+
 function LoginPage() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -15,7 +16,7 @@ function LoginPage() {
 
   const handleUserSelect = (user) => {
     localStorage.setItem("current_user", JSON.stringify(user));
-    navigate("/"); // 👈 или другой нужный путь
+    navigate("/");
   };
 
   useEffect(() => {
@@ -34,23 +35,34 @@ function LoginPage() {
   return (
     <div className="container">
       <div className="login-container">
-        <h2 className="login-title">Who's watching?</h2>
+        <h2 className="login-title">Who&apos;s watching?</h2>
+
         <div className="login-users-list">
           {users.map((user) => (
-            <UserLoginCard
+            <div
               key={user.id}
-              name={user.name}
-              image={`${config.backend_url}${user.avatar_url}`}
-              onUserSelect={() => handleUserSelect(user)}
-            />
+              className="login-user-card-wrapper"
+              onClick={() => handleUserSelect(user)}
+            >
+              <UserLoginCard
+                name={user.name}
+                image={`${config.backend_url}${user.avatar_url}`}
+              />
+            </div>
           ))}
-          <div onClick={handleAddUser} className="login-create-user">
+
+          <button
+            type="button"
+            onClick={handleAddUser}
+            className="login-create-user login-user-card-wrapper"
+          >
             <PlusIcon />
-          </div>
+          </button>
         </div>
       </div>
-      <div className="background-blur-100"></div>
-      <div className="background-glow-center-green"></div>
+
+      <div className="background-blur-100" />
+      <div className="background-glow-center" />
     </div>
   );
 }

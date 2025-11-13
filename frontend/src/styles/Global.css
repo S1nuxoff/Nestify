@@ -125,38 +125,6 @@ body {
   --blue: #ffb2e8;
 }
 
-.background-glow-center-green {
-  width: 200px;
-  height: 200px;
-  background-color: var(--blue);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%); /* центрирует по обеим осям */
-  z-index: -2;
-  opacity: 0.2;
-}
-.background-glow-center-red {
-  width: 200px;
-  height: 200px;
-  background-color: var(--red);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%); /* центрирует по обеим осям */
-  z-index: -2;
-  opacity: 0.2;
-}
-.background-blur-100 {
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  position: fixed;
-  backdrop-filter: blur(100px);
-  background-color: rgba(0, 0, 0, 0.1);
-  top: 0;
-  left: 0;
-}
 .body-backdrop {
   position: absolute; /* 👈 fixed — чтобы не зависело от родителя */
   top: 0;
