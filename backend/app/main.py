@@ -9,7 +9,7 @@ from app.api.v1.api import api_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.base import create_all_tables
 from app.websockets import live_session
-
+from app.websockets import player_hub
 
 from fastapi.responses import StreamingResponse
 import httpx
@@ -23,7 +23,7 @@ app = FastAPI(
 
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(live_session.router)
-
+app.include_router(player_hub.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # или конкретный список доменов
