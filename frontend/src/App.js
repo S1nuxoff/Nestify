@@ -17,6 +17,7 @@ import MiniPlayer from "./components/ui/MiniPlayer";
 import nestifyPlayerClient from "./api/ws/nestifyPlayerClient";
 import PrivateRoute from "./components/PrivateRoute";
 import SessionControls from "./components/SessionControls";
+import ConnectPlayerPage from "./pages/ConnectPlayerPage";
 
 import "./styles/App.css";
 import "@vidstack/react/player/styles/default/theme.css";
@@ -41,6 +42,16 @@ function App() {
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
 
   useEffect(() => {
+    // пробуємо підняти збережений deviceId
+    try {
+      const savedDeviceId = window.localStorage.getItem("current_device_id");
+      if (savedDeviceId) {
+        nestifyPlayerClient.setDeviceId(savedDeviceId);
+      }
+    } catch (e) {
+      console.warn("[App] failed to read current_device_id:", e);
+    }
+
     nestifyPlayerClient.init();
   }, []);
 
@@ -49,7 +60,7 @@ function App() {
       {/* Мини-плеер поверх всего */}
       <MiniPlayer />
 
-      {/* Отдельный роут для полноэкранного плеера, без анимации (можно тоже завернуть, если захочешь) */}
+      {/* Отдельный роут для полноэкранного плеера */}
       <Routes>
         <Route
           path="/player/:movieId"
@@ -135,6 +146,18 @@ function App() {
                 <PrivateRoute>
                   <PageTransition>
                     <HistoryPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            {/* новий роут: підключення до TV-плеєра */}
+            <Route
+              path="/connect"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <ConnectPlayerPage />
                   </PageTransition>
                 </PrivateRoute>
               }

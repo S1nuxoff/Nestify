@@ -1,107 +1,161 @@
 // src/api/ws/nestifyPlayerClient.js
 
+/**
+ * NestifyPlayerClient v2
+ *
+ * Тепер схема така:
+ *   Frontend  <->  Backend (PlayerHub)  <->  TV app
+ *
+ * Front конектиться по WS на бекенд:
+ *   ws(s)://<WS_BASE>/ws/control/{device_id}
+ *
+ * JSON-RPC протокол той самий, що й був раніше.
+ */
+
 class NestifyPlayerClient {
   constructor() {
     this.ws = null;
     this.isConnected = false;
 
+    // поточний статус, який приходить нотифікаціями Player.OnPlay/OnPause/etc
     this.status = null;
 
+    // підписники
     this.listeners = {
       connected: new Set(),
       status: new Set(),
       error: new Set(),
     };
 
+    // JSON-RPC
     this.requestId = 1;
     this.pending = new Map();
 
+    // reconnect
     this.shouldReconnect = true;
     this.reconnectDelay = 3000;
     this.reconnectTimer = null;
+
+    // TV / Player
+    this.deviceId = null;
   }
 
-  // ---------- HOST / URL ----------
+  // ---------- CONFIG ----------
 
   /**
-   * IP/host берем из current_user.kodi_address, который приходит из БД.
-   * Никаких дефолтов.
+   * Задаємо deviceId (той, що показує TV-апка).
+   * Можна викликати хоч 100 раз — при зміні deviceId клієнт перепідключиться.
    */
-  getHost() {
-    try {
-      const raw = window.localStorage.getItem("current_user");
-      if (!raw) return null;
-      const user = JSON.parse(raw);
-      const addr = user?.kodi_address;
-      if (addr && typeof addr === "string" && addr.trim()) {
-        return addr.trim();
-      }
-      return null;
-    } catch (e) {
-      console.error(
-        "[NestifyPlayerClient] failed to read current_user.kodi_address:",
-        e
-      );
-      return null;
+  setDeviceId(deviceId) {
+    const trimmed = (deviceId || "").trim();
+    if (!trimmed) {
+      console.warn("[NestifyPlayerClient] setDeviceId: empty");
+      this.deviceId = null;
+      this._cleanupSocket();
+      return;
     }
+
+    if (this.deviceId === trimmed) {
+      return; // нічого не змінилось
+    }
+
+    console.log("[NestifyPlayerClient] setDeviceId:", trimmed);
+    this.deviceId = trimmed;
+
+    // якщо вже ініціалізовано — перепідключаємось
+    if (this.ws) {
+      this._cleanupSocket();
+    }
+    this.connect();
+  }
+
+  /**
+   * Базовий WS-URL бекенда.
+   *
+   * Можеш перевизначити через REACT_APP_WS_BASE:
+   *   REACT_APP_WS_BASE=wss://api.opencine.cloud
+   *
+   * або залишити дефолт:
+   *   https → wss://api.opencine.cloud
+   *   http  → ws://localhost:8000  (для девелопменту)
+   */
+  getBackendWsBase() {
+    // 👇 Найпростіший варіант:
+    // якщо задано REACT_APP_WS_BASE — юзаємо його,
+    // інакше — завжди api.opencine.cloud
+    if (process.env.REACT_APP_WS_BASE) {
+      return process.env.REACT_APP_WS_BASE;
+    }
+    return "wss://api.opencine.cloud";
   }
 
   getWsUrl() {
-    const host = this.getHost();
-    if (!host) {
-      throw new Error(
-        "Nestify Player host is not configured (kodi_address is empty)"
-      );
+    if (!this.deviceId) {
+      throw new Error("NestifyPlayerClient: deviceId is not set");
     }
-    return `ws://${host}:8889`;
-  }
-
-  // поки що getHttpBaseUrl можна залишити, але більше не використовується
-  getHttpBaseUrl() {
-    const host = this.getHost();
-    if (!host) {
-      throw new Error(
-        "Nestify Player host is not configured (kodi_address is empty)"
-      );
-    }
-    return `http://${host}:8888`;
+    const base = this.getBackendWsBase().replace(/\/+$/, "");
+    // бекенд-роут: /ws/control/{device_id}
+    return `${base}/ws/control/${encodeURIComponent(this.deviceId)}`;
   }
 
   // ---------- INIT / WS ----------
 
+  /**
+   * Старий init() можна викликати як і раніше,
+   * але тепер він просто намагається підключитись, якщо deviceId вже заданий.
+   */
   init() {
     if (this.ws) return;
+    if (!this.deviceId) {
+      console.warn(
+        "[NestifyPlayerClient] init() called but deviceId is not set yet"
+      );
+      return;
+    }
     this.connect();
   }
 
   connect() {
+    if (this.ws) {
+      // вже є конект (open/closing) — не плодимо
+      if (
+        this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING
+      ) {
+        return;
+      }
+    }
+
     let url;
     try {
       url = this.getWsUrl();
     } catch (e) {
       console.warn("[NestifyPlayerClient] WS connect skipped:", e.message);
-      // пробуем ещё раз через reconnectDelay — вдруг користувач потім збереже kodi_address
       this.scheduleReconnect();
       return;
     }
 
+    let ws;
     try {
-      this.ws = new WebSocket(url);
+      ws = new WebSocket(url);
     } catch (e) {
       console.error("[NestifyPlayerClient] WS create error:", e);
       this.scheduleReconnect();
       return;
     }
 
-    this.ws.onopen = () => {
+    this.ws = ws;
+
+    ws.onopen = () => {
       console.log("[NestifyPlayerClient] WS connected:", url);
       this.isConnected = true;
       this.emit("connected", true);
 
+      // одразу запросимо статус плеєра
       this.getStatusRpc().catch(() => {});
     };
 
-    this.ws.onclose = (evt) => {
+    ws.onclose = (evt) => {
       console.warn(
         "[NestifyPlayerClient] WS closed:",
         evt.code,
@@ -110,6 +164,7 @@ class NestifyPlayerClient {
       this.isConnected = false;
       this.emit("connected", false);
 
+      // відбиваємо всі "висячі" проміси
       this.pending.forEach(({ reject }) =>
         reject(new Error("WS closed before response"))
       );
@@ -122,21 +177,40 @@ class NestifyPlayerClient {
       }
     };
 
-    this.ws.onerror = (err) => {
+    ws.onerror = (err) => {
       console.error("[NestifyPlayerClient] WS error:", err);
       this.emit("error", err);
     };
 
-    this.ws.onmessage = (evt) => {
+    ws.onmessage = (evt) => {
       this.handleMessage(evt.data);
     };
+  }
+
+  _cleanupSocket() {
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch (e) {
+        console.warn("[NestifyPlayerClient] close error:", e);
+      }
+      this.ws = null;
+    }
+    this.isConnected = false;
+    this.pending.forEach(({ reject }) =>
+      reject(new Error("WS reset before response"))
+    );
+    this.pending.clear();
   }
 
   scheduleReconnect() {
     if (this.reconnectTimer) return;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      this.connect();
+      // якщо deviceId ще є — пробуємо знову
+      if (this.deviceId) {
+        this.connect();
+      }
     }, this.reconnectDelay);
   }
 
@@ -217,7 +291,7 @@ class NestifyPlayerClient {
       return;
     }
 
-    // нотифікації
+    // нотифікації від плеєра
     if (msg.method) {
       const params = msg.params || {};
       const data = params.data || params;
@@ -268,7 +342,7 @@ class NestifyPlayerClient {
     return this.status;
   }
 
-  // ---------- CONTROL (через WS) ----------
+  // ---------- CONTROL ----------
 
   playPause() {
     return this.sendRpc("Player.PlayPause").catch((e) =>
@@ -303,7 +377,7 @@ class NestifyPlayerClient {
     );
   }
 
-  // ---------- PLAY ON TV (WS: Player.PlayUrl) ----------
+  // ---------- PLAY ON TV ----------
 
   /**
    * Викликається з useMovieSource:
