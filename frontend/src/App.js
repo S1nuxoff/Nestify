@@ -42,17 +42,23 @@ function App() {
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
 
   useEffect(() => {
-    // пробуємо підняти збережений deviceId
+    // піднімаємо WS до TV-плеєра, якщо вже є збережений deviceId
     try {
-      const savedDeviceId = window.localStorage.getItem("current_device_id");
-      if (savedDeviceId) {
-        nestifyPlayerClient.setDeviceId(savedDeviceId);
+      const savedDeviceId = window.localStorage.getItem(
+        "nestify_player_device_id"
+      );
+      if (savedDeviceId && savedDeviceId.trim()) {
+        console.log(
+          "[App] found saved nestify_player_device_id:",
+          savedDeviceId.trim()
+        );
+        nestifyPlayerClient.setDeviceId(savedDeviceId.trim());
+      } else {
+        console.log("[App] no saved nestify_player_device_id yet");
       }
     } catch (e) {
-      console.warn("[App] failed to read current_device_id:", e);
+      console.warn("[App] failed to read nestify_player_device_id:", e);
     }
-
-    nestifyPlayerClient.init();
   }, []);
 
   return (
@@ -151,7 +157,7 @@ function App() {
               }
             />
 
-            {/* новий роут: підключення до TV-плеєра */}
+            {/* сторінка підключення до TV-плеєра */}
             <Route
               path="/connect"
               element={
