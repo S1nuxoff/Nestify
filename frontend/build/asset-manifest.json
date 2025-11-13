@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/static/css/main.dc3f74db.css",
-    "main.js": "/static/js/main.380e8f9b.js",
+    "main.css": "/static/css/main.ab1361db.css",
+    "main.js": "/static/js/main.798a3095.js",
     "reactPlayerPreview.js": "/static/js/reactPlayerPreview.a3d9f660.chunk.js",
     "static/media/SFPRODISPLAYMEDIUM.OTF": "/static/media/SFPRODISPLAYMEDIUM.b85d841dacb040b84951.OTF",
     "static/media/SFPRODISPLAYBOLD.OTF": "/static/media/SFPRODISPLAYBOLD.b1f4d2c69fa808ebca12.OTF",
@@ -41,12 +41,12 @@
     "static/media/player_back_icon.svg": "/static/media/player_back_icon.8469e523a6dafd2d42a09411292dfee4.svg",
     "static/media/plus.svg": "/static/media/plus.ea4164c911066413dfd54ac736e2ba06.svg",
     "static/media/drop-down.svg": "/static/media/drop-down.c5a3189408d2a1369972e1a75846651a.svg",
-    "main.dc3f74db.css.map": "/static/css/main.dc3f74db.css.map",
-    "main.380e8f9b.js.map": "/static/js/main.380e8f9b.js.map",
+    "main.ab1361db.css.map": "/static/css/main.ab1361db.css.map",
+    "main.798a3095.js.map": "/static/js/main.798a3095.js.map",
     "reactPlayerPreview.a3d9f660.chunk.js.map": "/static/js/reactPlayerPreview.a3d9f660.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.dc3f74db.css",
-    "static/js/main.380e8f9b.js"
+    "static/css/main.ab1361db.css",
+    "static/js/main.798a3095.js"
   ]
 }

@@ -17,15 +17,13 @@ function Explorer({ history, title, Page, onMovieSelect }) {
     const el = headerRef.current;
     if (!el) return;
 
-    const STICKY_OFFSET = 32; // должен совпадать с top в CSS
-
+    const STICKY_OFFSET = 32; // ≈ top, при котором считаем "прилип"
     const isSmallScreen = () => window.innerWidth < 1650;
 
     let enabled = isSmallScreen();
 
     const handleScroll = () => {
       if (!enabled) {
-        // на больших экранах гарантируем обычное состояние
         if (isStuck) setIsStuck(false);
         return;
       }
@@ -40,7 +38,7 @@ function Explorer({ history, title, Page, onMovieSelect }) {
       handleScroll();
     };
 
-    handleScroll(); // инициируем
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
 
@@ -50,17 +48,47 @@ function Explorer({ history, title, Page, onMovieSelect }) {
     };
   }, [isStuck]);
 
+  const handleScrollTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <div className="explorer-container">
+      {/* новый рядок: капсула + кнопка вверх */}
       <div
         ref={headerRef}
         className={
-          "category-content-title" +
-          (isStuck ? " category-content-title--stuck" : "")
+          "explorer-header-row" + (isStuck ? " explorer-header-row--stuck" : "")
         }
       >
-        <BackIcon className="category-back-btn" onClick={() => navigate(-1)} />
-        <span className="row-header-title">{title}</span>
+        <div
+          className={
+            "category-content-title" +
+            (isStuck ? " category-content-title--stuck" : "")
+          }
+        >
+          <BackIcon
+            className="category-back-btn"
+            onClick={() => navigate(-1)}
+          />
+          <span className="row-header-title">{title}</span>
+        </div>
+
+        {/* кругла кнопка справа, отдельный элемент с gap=8 */}
+        <button
+          type="button"
+          className={
+            "category-scroll-top-circle" +
+            (isStuck ? " category-scroll-top-circle--visible" : "")
+          }
+          onClick={handleScrollTop}
+          aria-label="Прокрутить наверх"
+        >
+          <BackIcon className="category-scroll-top-icon" />
+        </button>
       </div>
 
       <div className="explorer-library-grid">
