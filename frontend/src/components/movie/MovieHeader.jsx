@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { ReactComponent as CastIcon } from "../../assets/icons/cast.svg";
 import "../../styles/MoviePage.css";
-
+import { ReactComponent as PlayIcon } from "../../assets/icons/play.svg";
 function formatTime(sec) {
   const total = Math.floor(sec || 0);
   const h = Math.floor(total / 3600);
@@ -165,7 +165,7 @@ const MovieHeader = ({
                 className="movie-page__play-button"
                 onClick={onMainPlayClick}
               >
-                ▶ Дивитися
+                <PlayIcon /> Дивитися
               </div>
 
               {/* Cast → або last_watch, або попап */}
