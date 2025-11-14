@@ -1,15 +1,23 @@
 import asyncio
 import aiohttp
 import re
+from urllib.parse import quote_plus
 
 from sqlalchemy import select, delete
+
 from app.db.session import async_session
 from app.models.featured import Featured
-from app.services.rezka import get_search, get_movie
+from app.services.rezka import search, get_movie
+from app.core.config import settings  # <- вытягиваем из core/config
 
 TMDB_API_KEY = "4ef0d7355d9ffb5151e987764708ce96"
 TMDB_API_URL = "https://api.themoviedb.org/3"
 HEADERS = {"Accept": "application/json"}
+
+# из конфига (проверь имя поля в settings)
+SEARCH_URL_BASE: str = settings.SEARCH_URL_BASE
+# если у тебя в config прямо константа, то можешь вместо этого:
+# from app.core.config import SEARCH_URL_BASE
 
 
 def extract_tmdb_year(movie: dict) -> int | None:
@@ -52,11 +60,9 @@ def extract_rezka_year(details: dict) -> int | None:
 def normalize_title(title: str | None) -> str:
     """
     Простейшая нормализация: lower + trim + схлопывание пробелов.
-    Можно потом усложнить (убрать скобки, год, и т.д.).
     """
     if not title:
         return ""
-    # убираем лишние пробелы
     cleaned = " ".join(title.split())
     return cleaned.lower()
 
@@ -92,14 +98,16 @@ async def refresh_featured(limit: int = 10):
             print("⚠️ У фильма из TMDB нет title, скипаем")
             continue
 
+        # формируем URL для поиска на Rezka
+        search_url = f"{SEARCH_URL_BASE}{quote_plus(tmdb_title_ru)}"
+
         try:
-            # Поиск на HDRezka уже по РУССКОМУ названию
-            search_results = await get_search(tmdb_title_ru)
+            # новый search(url) — возвращает список фильмов
+            candidates = await search(search_url)
         except Exception as e:
-            print(f"❌ Ошибка get_search('{tmdb_title_ru}'): {e}")
+            print(f"❌ Ошибка search('{search_url}'): {e}")
             continue
 
-        candidates = search_results.get("results") or []
         if not candidates:
             print(f"⚠️ Не найдено результатов на HDRezka для: {tmdb_title_ru}")
             continue
