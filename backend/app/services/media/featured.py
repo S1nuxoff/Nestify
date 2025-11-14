@@ -2,7 +2,6 @@ import asyncio
 import aiohttp
 import re
 
-
 from sqlalchemy import select, delete
 from app.db.session import async_session
 from app.models.featured import Featured
@@ -50,18 +49,30 @@ def extract_rezka_year(details: dict) -> int | None:
     return None
 
 
+def normalize_title(title: str | None) -> str:
+    """
+    Простейшая нормализация: lower + trim + схлопывание пробелов.
+    Можно потом усложнить (убрать скобки, год, и т.д.).
+    """
+    if not title:
+        return ""
+    # убираем лишние пробелы
+    cleaned = " ".join(title.split())
+    return cleaned.lower()
+
+
 async def refresh_featured(limit: int = 10):
-    """Очищает таблицу featured и добавляет новые фильмы из TMDb/HDRezka с проверкой года."""
+    """Очищает таблицу featured и добавляет новые фильмы из TMDb/HDRezka с проверкой года и title."""
     # 1) чистим таблицу
     async with async_session() as db_session:
         async with db_session.begin():
             await db_session.execute(delete(Featured))
             print("🗑️ Таблица featured очищена")
 
-    # 2) берём трендовые фильмы с TMDB
+    # 2) берём трендовые фильмы с TMDB (РУССКИЙ ЯЗЫК)
     async with aiohttp.ClientSession() as http_session:
         url = (
-            f"{TMDB_API_URL}/trending/movie/week?api_key={TMDB_API_KEY}&language=en-US"
+            f"{TMDB_API_URL}/trending/movie/week" f"?api_key={TMDB_API_KEY}&language=ru"
         )
         try:
             async with http_session.get(url, headers=HEADERS) as response:
@@ -74,24 +85,26 @@ async def refresh_featured(limit: int = 10):
 
     # 3) пробегаемся по фильмам TMDB
     for movie in movies:
-        title_en = movie.get("title")
+        tmdb_title_ru = (movie.get("title") or "").strip()
         tmdb_year = extract_tmdb_year(movie)
 
-        if not title_en:
+        if not tmdb_title_ru:
+            print("⚠️ У фильма из TMDB нет title, скипаем")
             continue
 
         try:
-            search_results = await get_search(title_en)
+            # Поиск на HDRezka уже по РУССКОМУ названию
+            search_results = await get_search(tmdb_title_ru)
         except Exception as e:
-            print(f"❌ Ошибка get_search('{title_en}'): {e}")
+            print(f"❌ Ошибка get_search('{tmdb_title_ru}'): {e}")
             continue
 
         candidates = search_results.get("results") or []
         if not candidates:
-            print(f"⚠️ Не найдено результатов на HDRezka для: {title_en}")
+            print(f"⚠️ Не найдено результатов на HDRezka для: {tmdb_title_ru}")
             continue
 
-        # 👉 пытаемся найти лучший матч по году
+        # 👉 пытаемся найти лучший матч по году + title
         details = None
         for candidate in candidates:
             film_link = candidate.get("filmLink")
@@ -109,15 +122,32 @@ async def refresh_featured(limit: int = 10):
                 continue
 
             rezka_year = extract_rezka_year(candidate_details)
+            rezka_title = (candidate_details.get("title") or "").strip()
 
-            # если оба года известны и НЕ совпадают — пропускаем
+            norm_tmdb_title = normalize_title(tmdb_title_ru)
+            norm_rezka_title = normalize_title(rezka_title)
+
+            # 1) проверка по году — если оба известны и НЕ совпадают, скипаем
             if (
                 tmdb_year is not None
                 and rezka_year is not None
                 and tmdb_year != rezka_year
             ):
                 print(
-                    f"↩️ Мисматч по году для '{title_en}': TMDB={tmdb_year}, Rezka={rezka_year}, пропускаем этот результат"
+                    f"↩️ Мисматч по году для '{tmdb_title_ru}': "
+                    f"TMDB={tmdb_year}, Rezka={rezka_year}, пропускаем этот результат"
+                )
+                continue
+
+            # 2) проверка по названию — если оба есть и сильно различаются, тоже скипаем
+            if (
+                norm_tmdb_title
+                and norm_rezka_title
+                and norm_tmdb_title != norm_rezka_title
+            ):
+                print(
+                    f"↩️ Мисматч по title для TMDB='{tmdb_title_ru}' / "
+                    f"Rezka='{rezka_title}', пропускаем этот результат"
                 )
                 continue
 
@@ -127,7 +157,7 @@ async def refresh_featured(limit: int = 10):
 
         # если так и не нашли нормальный матч — скип
         if not details:
-            print(f"⚠️ Не найден подходящий матч по году для: {title_en}")
+            print(f"⚠️ Не найден подходящий матч по году/title для: {tmdb_title_ru}")
             continue
 
         # 4) фон / постер
@@ -165,7 +195,10 @@ async def refresh_featured(limit: int = 10):
                         imdb_id=details.get("imdb_id"),
                     )
                     session.add(new_featured)
-                    print(f"✅ Сохранено в БД: {details['title']} ({tmdb_year})")
+                    print(
+                        f"✅ Сохранено в БД: {details['title']} "
+                        f"(год TMDB={tmdb_year}, title TMDB='{tmdb_title_ru}')"
+                    )
         except Exception as e:
             print(f"❌ Ошибка при сохранении в БД: {e}")
 
