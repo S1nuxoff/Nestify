@@ -9,6 +9,7 @@ import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import "../styles/Category.css";
 import { ReactComponent as BackIcon } from "../assets/icons/back.svg";
+import { toRezkaSlug } from "../core/rezkaLink";
 import "../styles/HistoryPage.css";
 
 function HistoryPage() {
@@ -20,9 +21,11 @@ function HistoryPage() {
     selectedMovie?.filmLink || selectedMovie?.link
   );
   const handleMovieSelect = (movie) => {
-    const link = movie.link || movie.filmLink || movie.navigate_to;
-    if (!link) return;
-    navigate(`/movie/${encodeURIComponent(link)}`);
+    const rawLink = movie.link || movie.filmLink || movie.navigate_to;
+    if (!rawLink) return;
+
+    const slug = toRezkaSlug(rawLink);
+    navigate(`/movie/${slug}`);
   };
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
   useEffect(() => {

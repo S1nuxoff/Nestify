@@ -153,6 +153,9 @@ body {
     padding-left: 16px;
     padding-right: 16px;
   }
+  .hdrezka-header-search-input {
+    border: 1px solid var(--white-opacity-20);
+  }
 
   .explorer-library-grid {
     grid-template-columns: 1fr 1fr 1fr 1fr; /* Две колонки на планшетах */

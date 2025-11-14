@@ -94,7 +94,7 @@ function App() {
             />
 
             <Route
-              path="/movie/:movieLink"
+              path="/movie/*"
               element={
                 <PrivateRoute>
                   <PageTransition>

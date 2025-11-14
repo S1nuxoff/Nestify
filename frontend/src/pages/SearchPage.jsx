@@ -5,7 +5,10 @@ import { search, getCategories } from "../api/hdrezka";
 import Explorer from "../components/layout/Explorer";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import { toRezkaSlug } from "../core/rezkaLink";
+
 import "../styles/SearchPage.css";
+
 function EmptyState({ query, onClear, onHome }) {
   const safeQuery = useMemo(() => (query || "").trim(), [query]);
 
@@ -48,9 +51,11 @@ export default function SearchPage({ currentUser }) {
   const navigate = useNavigate();
 
   const handleMovieSelect = (movie) => {
-    const link = movie.link || movie.filmLink || movie.navigate_to;
-    if (!link) return;
-    navigate(`/movie/${encodeURIComponent(link)}`);
+    const rawLink = movie.link || movie.filmLink || movie.navigate_to;
+    if (!rawLink) return;
+
+    const slug = toRezkaSlug(rawLink); // series/drama/...
+    navigate(`/movie/${slug}`);
   };
 
   // пошук по query
@@ -100,7 +105,6 @@ export default function SearchPage({ currentUser }) {
   const onGoHome = () => navigate("/");
 
   // Лоадер
-  // ...всередині SearchPage.jsx
   const Loading = (
     <div className="skel-grid">
       {Array.from({ length: 12 }).map((_, i) => (

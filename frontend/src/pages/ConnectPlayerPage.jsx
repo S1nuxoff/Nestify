@@ -1,19 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 
 import "../styles/ConnectPlayerPage.css";
 
+const CODE_LENGTH = 8;
+
 const ConnectPlayerPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [deviceCode, setDeviceCode] = useState("");
+  const [codeDigits, setCodeDigits] = useState(Array(CODE_LENGTH).fill("")); // ["", "", ...]
   const [savedDeviceCode, setSavedDeviceCode] = useState("");
   const [status, setStatus] = useState(null); // { type: "success" | "error", message: string }
   const [isSaving, setIsSaving] = useState(false);
 
-  // дістаємо device з query (?device=XXXX)
+  const inputsRef = useRef([]);
+
+  // допоміжна: заповнити бокси з довільного рядка
+  const fillFromString = (value) => {
+    const clean = (value || "").replace(/[^0-9a-zA-Z]/g, "").toUpperCase();
+
+    const next = Array(CODE_LENGTH).fill("");
+    for (let i = 0; i < CODE_LENGTH && i < clean.length; i++) {
+      next[i] = clean[i];
+    }
+    setCodeDigits(next);
+  };
+
+  // дістаємо device з query (?device=XXXX) / localStorage
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get("device");
@@ -22,20 +37,88 @@ const ConnectPlayerPage = () => {
       window.localStorage.getItem("nestify_player_device_id") || "";
 
     if (fromUrl) {
-      setDeviceCode(fromUrl);
+      fillFromString(fromUrl);
       setStatus({
         type: "success",
         message: "Код плеєра автоматично підставлено з QR 🎯",
       });
+      setSavedDeviceCode(fromStorage || fromUrl);
     } else if (fromStorage) {
-      setDeviceCode(fromStorage);
+      fillFromString(fromStorage);
+      setSavedDeviceCode(fromStorage);
     }
-
-    setSavedDeviceCode(fromStorage);
   }, [location.search]);
 
+  const handleDigitChange = (index, raw) => {
+    let value = raw;
+
+    // беремо останній введений символ
+    if (value.length > 1) {
+      value = value.slice(-1);
+    }
+
+    // тільки цифри/букви
+    if (value && !/[0-9a-zA-Z]/.test(value)) {
+      return;
+    }
+
+    const upper = value.toUpperCase();
+
+    setCodeDigits((prev) => {
+      const next = [...prev];
+      next[index] = upper;
+      return next;
+    });
+
+    // якщо ввели символ — переходимо на наступне поле
+    if (upper && index < CODE_LENGTH - 1) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace") {
+      if (codeDigits[index]) {
+        // просто очищаємо поточне
+        setCodeDigits((prev) => {
+          const next = [...prev];
+          next[index] = "";
+          return next;
+        });
+      } else if (index > 0) {
+        // якщо вже пусто — перескакуємо назад
+        inputsRef.current[index - 1]?.focus();
+      }
+    }
+
+    if (e.key === "ArrowLeft" && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
+    if (e.key === "ArrowRight" && index < CODE_LENGTH - 1) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text") || "";
+    const clean = pasted.replace(/[^0-9a-zA-Z]/g, "").toUpperCase();
+
+    const next = Array(CODE_LENGTH).fill("");
+    for (let i = 0; i < CODE_LENGTH && i < clean.length; i++) {
+      next[i] = clean[i];
+    }
+    setCodeDigits(next);
+
+    const lastFilledIndex = Math.min(clean.length, CODE_LENGTH) - 1;
+    if (lastFilledIndex >= 0) {
+      inputsRef.current[lastFilledIndex]?.focus();
+    }
+  };
+
   const handleSave = () => {
-    const trimmed = deviceCode.trim();
+    const trimmed = codeDigits.join("").trim();
+
     if (!trimmed) {
       setStatus({ type: "error", message: "Введи код плеєра." });
       return;
@@ -46,7 +129,7 @@ const ConnectPlayerPage = () => {
       // 1) зберігаємо в localStorage
       window.localStorage.setItem("nestify_player_device_id", trimmed);
 
-      // 2) оновлюємо current_user (щоб було видно в профілі, якщо захочеш)
+      // 2) оновлюємо current_user
       const rawUser = window.localStorage.getItem("current_user");
       if (rawUser) {
         try {
@@ -58,7 +141,7 @@ const ConnectPlayerPage = () => {
         }
       }
 
-      // 3) якщо в nestifyPlayerClient є спец-метод — пінгаємо його
+      // 3) оновлюємо клієнт, якщо є метод
       if (typeof nestifyPlayerClient.setDeviceId === "function") {
         nestifyPlayerClient.setDeviceId(trimmed);
       }
@@ -69,8 +152,10 @@ const ConnectPlayerPage = () => {
         message: "Плеєр підключено. Можна запускати фільми на ТВ 🚀",
       });
 
-      // опціонально: легкий редірект додому
-      // setTimeout(() => navigate("/", { replace: true }), 600);
+      // невелика пауза і редірект на головну
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 700);
     } catch (e) {
       console.error("[ConnectPlayerPage] save error:", e);
       setStatus({
@@ -84,7 +169,7 @@ const ConnectPlayerPage = () => {
 
   const handleClear = () => {
     window.localStorage.removeItem("nestify_player_device_id");
-    setDeviceCode("");
+    setCodeDigits(Array(CODE_LENGTH).fill(""));
     setSavedDeviceCode("");
     setStatus({
       type: "success",
@@ -95,28 +180,42 @@ const ConnectPlayerPage = () => {
   return (
     <div className="connect-page">
       <div className="connect-card">
+        <div className="connect-chip">TV · Nestify Player</div>
+
         <h1 className="connect-title">Підключення Nestify Player</h1>
 
         <p className="connect-subtitle">
-          1. Відкрий <b>Nestify Player</b> на TV. <br />
-          2. Відскануй QR з телефона або перепиши код плеєра. <br />
-          3. Введи код нижче і збережи.
+          Введи код з екрана TV, щоб лінканути браузер з Nestify Player. Потім
+          просто тисни <b>“Play на TV”</b> у фільмах.
         </p>
 
-        <label className="connect-label">Код плеєра</label>
-        <input
-          className="connect-input"
-          type="text"
-          placeholder="Напр. A1B2-C3D4"
-          value={deviceCode}
-          onChange={(e) => setDeviceCode(e.target.value)}
-        />
+        <ol className="connect-steps">
+          <li>
+            Відкрий <b>Nestify Player</b> на TV.
+          </li>
+          <li>Знайди код (або відскануй QR з цього сайту).</li>
+          <li>
+            Введи код нижче й натисни <b>“Зберегти”</b>.
+          </li>
+        </ol>
 
-        {savedDeviceCode && (
-          <p className="connect-current">
-            Зараз підключено: <code>{savedDeviceCode}</code>
-          </p>
-        )}
+        {/* OTP-бокси */}
+        <div className="connect-otp-wrapper" onPaste={handlePaste}>
+          {codeDigits.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={(el) => (inputsRef.current[idx] = el)}
+              type="text"
+              inputMode="text"
+              autoComplete="one-time-code"
+              maxLength={1}
+              className="connect-otp-input"
+              value={digit}
+              onChange={(e) => handleDigitChange(idx, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(idx, e)}
+            />
+          ))}
+        </div>
 
         {status && (
           <div
@@ -149,14 +248,6 @@ const ConnectPlayerPage = () => {
             </button>
           )}
         </div>
-
-        <button
-          className="connect-link-back"
-          type="button"
-          onClick={() => navigate(-1)}
-        >
-          ← Назад
-        </button>
       </div>
     </div>
   );

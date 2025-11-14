@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getPage, getCategories } from "../api/hdrezka";
 import Explorer from "../components/layout/Explorer";
-
+import { toRezkaSlug } from "../core/rezkaLink";
 import config from "../core/config";
 import Header from "../components/layout/Header";
 import Pagination from "../components/layout/Pagination";
@@ -61,9 +61,11 @@ function CategoryPage() {
 
   // 👇 тепер при виборі фільму завжди відкриваємо MoviePage
   const handleMovieSelect = (movie) => {
-    const link = movie.link || movie.filmLink || movie.navigate_to;
-    if (!link) return;
-    navigate(`/movie/${encodeURIComponent(link)}`);
+    const rawLink = movie.link || movie.filmLink || movie.navigate_to;
+    if (!rawLink) return;
+
+    const slug = toRezkaSlug(rawLink);
+    navigate(`/movie/${slug}`);
   };
 
   return (

@@ -1,130 +1,241 @@
 .connect-page {
   min-height: 100vh;
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 32px 16px;
-  background: radial-gradient(circle at top, #20242f 0, #05060a 55%, #000 100%);
-  color: #fff;
+  padding: 120px 16px 40px; /* відступ зверху під стікі-хедер */
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .connect-page {
+    padding-top: 96px;
+    padding-bottom: 24px;
+  }
 }
 
 .connect-card {
   width: 100%;
-  max-width: 480px;
-  background: rgba(15, 17, 25, 0.9);
+  max-width: 520px;
+  margin: 0 auto;
+
+  position: relative;
   border-radius: 24px;
-  padding: 24px 24px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.8);
+  padding: 20px 20px 18px;
+
+  /* glass */
+  background: var(--dark-opacity-40, rgba(7, 10, 18, 0.8));
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* маленький бейдж зверху (як в userdd) */
+.connect-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.14));
+  color: var(--white-gray, #c8cedd);
+  margin-bottom: 10px;
 }
 
 .connect-title {
   font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 650;
+  margin-bottom: 6px;
+  color: var(--white, #ffffff);
 }
 
 .connect-subtitle {
   font-size: 14px;
   line-height: 1.5;
-  color: #a9afc1;
-  margin-bottom: 20px;
+  color: var(--white-gray, #a9afc1);
+  margin-bottom: 16px;
+}
+
+/* кроки під стилі сайту, без маркерів браузера */
+.connect-steps {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--white-gray, #a9afc1);
+}
+
+.connect-steps li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 6px;
+}
+
+.connect-steps li::before {
+  content: counter(step);
+  counter-increment: step;
+}
+.connect-steps {
+  counter-reset: step;
+}
+
+.connect-steps li::before {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+
+  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
+  color: var(--white, #ffffff);
 }
 
 .connect-label {
   display: block;
-  font-size: 13px;
-  color: #c5cad8;
+  font-size: 12px;
+  color: var(--white-gray, #c5cad8);
   margin-bottom: 6px;
 }
 
+.connect-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .connect-input {
+  flex: 1;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 8, 14, 0.9);
-  color: #fff;
-  font-size: 16px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.16));
+  background: var(--white-opacity-5, rgba(255, 255, 255, 0.04));
+  color: var(--white, #ffffff);
+  font-size: 15px;
+  font-weight: 500;
   outline: none;
+  transition: 0.15s ease-in-out;
 }
 
 .connect-input::placeholder {
-  color: #5c6478;
+  color: var(--white-opacity-40, #5c6478);
+  font-weight: 400;
 }
 
 .connect-input:focus {
-  border-color: #4f8cff;
-  box-shadow: 0 0 0 1px rgba(79, 140, 255, 0.4);
+  border-color: var(--blue, #283de6);
+  background: var(--white-opacity-8, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 0 0 1px var(--blue, #283de6), 0 16px 40px rgba(0, 0, 0, 0.6);
 }
 
 .connect-current {
   margin-top: 8px;
-  font-size: 13px;
-  color: #a9afc1;
+  font-size: 12px;
+  color: var(--white-gray, #a2a9bb);
 }
 
 .connect-current code {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2px 6px;
-  border-radius: 8px;
+  background: var(--white-opacity-8, rgba(255, 255, 255, 0.08));
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 12px;
+  font-weight: 500;
+  color: var(--white, #ffffff);
 }
 
+/* статус */
 .connect-status {
   margin-top: 12px;
   font-size: 13px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .connect-status--success {
   background: rgba(46, 204, 113, 0.12);
   color: #2ecc71;
-  border: 1px solid rgba(46, 204, 113, 0.4);
+  border-color: rgba(46, 204, 113, 0.45);
 }
 
 .connect-status--error {
   background: rgba(231, 76, 60, 0.12);
   color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-color: rgba(231, 76, 60, 0.45);
 }
 
 .connect-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 18px;
+}
+
+@media (max-width: 480px) {
+  .connect-actions {
+    flex-direction: column;
+  }
 }
 
 .connect-btn {
   flex: 1;
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-radius: 999px;
   border: none;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 550;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease,
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease,
     opacity 0.12s ease;
 }
 
+/* primary — у стилі градієнтних кнопок */
 .connect-btn-primary {
-  background: linear-gradient(135deg, #4f8cff, #8b5bff);
-  color: #fff;
-  box-shadow: 0 10px 30px rgba(80, 140, 255, 0.6);
+  background: var(--main_gradient, linear-gradient(135deg, #283de6, #8b5bff));
+  color: var(--dark, #05060a);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-.connect-btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: 0 5px 18px rgba(80, 140, 255, 0.5);
+.connect-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
+.connect-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* secondary — прозорий “ghost” */
 .connect-btn-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: #d0d5e4;
+  background: var(--white-opacity-6, rgba(255, 255, 255, 0.04));
+  color: var(--white, #ffffff);
+  border: 1px solid var(--white-opacity-12, rgba(255, 255, 255, 0.12));
 }
 
-.connect-btn-secondary:active {
+.connect-btn-secondary:hover:not(:disabled) {
+  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
+}
+
+.connect-btn-secondary:active:not(:disabled) {
   transform: translateY(1px);
 }
 
@@ -132,19 +243,148 @@
   opacity: 0.5;
   cursor: default;
   box-shadow: none;
+  transform: none;
 }
 
+/* назад */
 .connect-link-back {
   margin-top: 16px;
   background: none;
   border: none;
-  color: #9ba3ba;
+  color: var(--white-gray, #9ba3ba);
   font-size: 13px;
   cursor: pointer;
   padding: 0;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.12s ease, transform 0.08s ease;
 }
 
 .connect-link-back:hover {
-  color: #ffffff;
+  color: var(--white, #ffffff);
+  transform: translateX(-1px);
+}
+
+.connect-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+
+  /* ідеальне центрування по екрану */
+  align-items: center;
+  justify-content: center;
+
+  padding: 32px 16px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .connect-page {
+    padding: 24px 12px;
+  }
+}
+
+.connect-card {
+  width: 100%;
+  max-width: 560px; /* було 480 / 520 – зробив трохи більше */
+  margin: 0 auto;
+
+  position: relative;
+  border-radius: 28px;
+  padding: 26px 26px 22px; /* трохи більше паддінгів */
+
+  /* glass / blur, як на сайті */
+  background: var(--dark-opacity-40, rgba(7, 10, 18, 0.88));
+  backdrop-filter: blur(24px) saturate(135%);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* центроване вікно ми вже робили,
+   нижче тільки блок коду */
+
+.connect-otp-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+}
+
+@media (max-width: 480px) {
+  .connect-otp-wrapper {
+    gap: 6px;
+  }
+}
+
+.connect-otp-input {
+  width: 60px;
+  height: 70px;
+  border-radius: 18px;
+  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.16));
+  background: var(--white-opacity-5, rgba(255, 255, 255, 0.04));
+
+  text-align: center;
+  font-size: 32px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+
+  color: var(--white, #ffffff);
+  outline: none;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+
+  transition: border-color 0.14s ease, background 0.14s ease,
+    transform 0.08s ease, box-shadow 0.1s ease;
+}
+
+@media (max-width: 480px) {
+  .connect-otp-input {
+    width: 46px;
+    height: 60px;
+    font-size: 26px;
+    border-radius: 16px;
+  }
+}
+
+.connect-otp-input:focus {
+  border-color: var(--blue, #283de6);
+  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
+  transform: translateY(-1px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(40, 61, 230, 0.5);
+}
+
+.connect-otp-input::placeholder {
+  color: transparent;
+}
+
+.connect-otp-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 8px; /* було 10 */
+  margin: 10px 0 6px;
+}
+
+@media (max-width: 480px) {
+  .connect-otp-wrapper {
+    gap: 4px;
+  }
+}
+
+.connect-otp-input {
+  width: 52px; /* було 60 */
+  height: 64px; /* було 70 */
+  border-radius: 16px;
+  /* все інше як було */
+}
+
+@media (max-width: 480px) {
+  .connect-otp-input {
+    width: 40px; /* було 46 */
+    height: 56px; /* було 60 */
+    font-size: 24px;
+    border-radius: 14px;
+  }
 }

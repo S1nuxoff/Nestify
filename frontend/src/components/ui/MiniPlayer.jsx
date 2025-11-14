@@ -12,13 +12,15 @@ import { ReactComponent as PlayerPauseIcon } from "../../assets/icons/player_pau
 
 import usePlayerStatus from "../../hooks/usePlayerStatus";
 import nestifyPlayerClient from "../../api/ws/nestifyPlayerClient";
+import { toRezkaSlug } from "../../core/rezkaLink";
 
 import "../../styles/MiniPlayer.css";
 
 const formatTime = (sec) => {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
+  const total = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
   return h > 0
     ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
     : `${m}:${String(s).padStart(2, "0")}`;
@@ -95,20 +97,26 @@ function MiniPlayerInner() {
     state !== "stopped" &&
     state !== "idle";
 
+  // slug для текущего статуса (из полной ссылки)
+  const currentSlug = useMemo(() => {
+    if (!status?.link) return null;
+    try {
+      return toRezkaSlug(status.link);
+    } catch {
+      return null;
+    }
+  }, [status?.link]);
+
   // на странице текущего фильма?
   const isOnCurrentMoviePage = useMemo(() => {
-    if (!status?.link) return false;
+    if (!currentSlug) return false;
     const path = location.pathname || "";
     if (!path.startsWith("/movie/")) return false;
-    const raw = path.slice("/movie/".length);
-    let decoded;
-    try {
-      decoded = decodeURIComponent(raw);
-    } catch {
-      decoded = raw;
-    }
-    return decoded === status.link;
-  }, [location.pathname, status]);
+
+    // после /movie/ у нас как раз slug (без encodeURIComponent)
+    const slugFromPath = path.slice("/movie/".length);
+    return slugFromPath === currentSlug;
+  }, [location.pathname, currentSlug]);
 
   // всегда вызываем хук, но активируем только когда миниплеер вообще нужен
   const isCompact = useScrollCompactMode(isActive && !isOnCurrentMoviePage);
@@ -141,9 +149,9 @@ function MiniPlayerInner() {
   }, [state, status]);
 
   const handleCardClick = useCallback(() => {
-    if (!status?.link) return;
-    navigate(`/movie/${encodeURIComponent(status.link)}`);
-  }, [status, navigate]);
+    if (!currentSlug) return;
+    navigate(`/movie/${currentSlug}`);
+  }, [currentSlug, navigate]);
 
   const handlePlayPause = useCallback((e) => {
     e.stopPropagation();

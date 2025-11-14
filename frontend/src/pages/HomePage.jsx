@@ -1,7 +1,7 @@
 // src/pages/HomePage.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { toRezkaSlug } from "../core/rezkaLink";
 import {
   getPage,
   search,
@@ -123,9 +123,11 @@ function HomePage() {
   }, []);
 
   const handleMovieSelect = (movie) => {
-    const link = movie.link || movie.filmLink || movie.navigate_to;
-    if (!link) return;
-    navigate(`/movie/${encodeURIComponent(link)}`);
+    const rawLink = movie.link || movie.filmLink || movie.navigate_to;
+    if (!rawLink) return;
+
+    const slug = toRezkaSlug(rawLink);
+    navigate(`/movie/${slug}`);
   };
 
   return (
