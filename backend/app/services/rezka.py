@@ -5,7 +5,10 @@ import base64
 import datetime
 import urllib.parse
 from app.utils.utils import check_video_exists, get_imdb_id
-from app.services.themoviedb import get_themoviedb_movie
+from app.services.themoviedb import tmdb_by_imdb
+from app.services.movie_mapper import build_movie_payload
+
+
 import httpx
 import os
 import json
@@ -315,6 +318,72 @@ async def film_poster_parser(url):
     except Exception as e:
         print("Error in film_poster_parser:", e)
         raise
+
+
+def parse_actors(soup: BeautifulSoup) -> list[dict]:
+    """
+    Витягує акторів із блоку "В ролях".
+    Повертає список об'єктів:
+    {
+      "id": "...",          # data-id
+      "pid": "...",         # data-pid
+      "name": "...",        # span[itemprop=name]
+      "url": "...",         # href
+      "photo": "...",       # data-photo (може бути "null")
+      "job": "...",         # data-job (Актер/Актриса)
+      "itemprop": "actor"   # itemprop на person-name-item
+    }
+    """
+    actors: list[dict] = []
+
+    # 1) Знаходимо tr, де є "В ролях" (може бути "В ролях актеры" і т.п.)
+    cast_tr = None
+    for tr in soup.select(".b-post__info tr"):
+        h2 = tr.select_one("h2")
+        if not h2:
+            continue
+        t = h2.get_text(" ", strip=True).lower()
+        if "в ролях" in t:
+            cast_tr = tr
+            break
+
+    if not cast_tr:
+        return actors
+
+    # 2) В цьому tr дістаємо всі person-name-item з itemprop="actor"
+    for p in cast_tr.select(".person-name-item[itemprop='actor']"):
+        a = p.select_one("a[itemprop='url']") or p.select_one("a[href]")
+        name_el = p.select_one("[itemprop='name']")
+
+        actor = {
+            "id": p.get("data-id") or "",
+            "pid": p.get("data-pid") or "",
+            "name": name_el.get_text(strip=True) if name_el else "",
+            "url": a.get("href") if a else "",
+            "photo": (
+                None
+                if (p.get("data-photo") in (None, "", "null"))
+                else p.get("data-photo")
+            ),
+            "job": p.get("data-job") or "",
+            "itemprop": p.get("itemprop") or "actor",
+        }
+
+        # захист від пустих
+        if actor["id"] or actor["name"] or actor["url"]:
+            actors.append(actor)
+
+    # 3) Дедуп по id або name+url
+    unique = []
+    seen = set()
+    for a in actors:
+        key = a["id"] or f'{a["name"]}|{a["url"]}'
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(a)
+
+    return unique
 
 
 async def get_movie_ifo(url):
@@ -781,7 +850,11 @@ async def get_movie(url: str) -> dict:
     if not translators and basic_data["match_data"]:
         translators.append({"id": basic_data["match_data"].group(3), "name": "default"})
     info_data = parse_info_table(soup)
+    actors = parse_actors(soup)
     imdb_id = basic_data["imdb_id"]
+    tmdb_pack = await tmdb_by_imdb(imdb_id) if imdb_id else {}
+    tmdb = tmdb_pack.get("tmdb")  # тут dict або None
+
     result = {
         "id": basic_data["film_id"] or "",
         "title": basic_data["title"] or "",
@@ -797,14 +870,17 @@ async def get_movie(url: str) -> dict:
         "favs": basic_data["ctrl_favs_value"] or "",
         "season_ids": season_ids,
         "episodes_schedule": episodes_schedule,
-        # "backdrop_path": themovie_db.get("backdrop_path"),
-        # Добавляем инфо из parse_info_table
         "imdb_id": imdb_id,
         "release_date": info_data.get("release_date"),
         "country": info_data.get("country"),
         "genre": info_data.get("genre"),  # список
         "director": info_data.get("director"),  # список
         "age": info_data.get("age"),
+        "actors": actors,
+        "backdrop": (tmdb or {}).get("backdrop_url_original"),
+        "logo_url": (tmdb or {}).get("logo_url"),
+        "poster_tmdb": (tmdb or {}).get("poster_url"),
+        "trailer_tmdb": (tmdb or {}).get("trailer_youtube"),
     }
 
     return result

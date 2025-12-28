@@ -1,11 +1,4 @@
-# app/services/media/add_movie.py
-
-from __future__ import annotations
-
-from typing import Any, Optional
-
 from sqlalchemy import select
-
 from app.db.session import async_session
 from app.models.movies import Movie
 
@@ -31,7 +24,6 @@ UPDATABLE_FIELDS = [
     "episodes_schedule",
     "release_date",
     "actors",
-    # ✅ новые поля
     "backdrop",
     "logo_url",
     "poster_tmdb",
@@ -41,48 +33,45 @@ UPDATABLE_FIELDS = [
 ]
 
 
-def _is_empty(val: Any) -> bool:
-    if val is None:
-        return True
-    if isinstance(val, str) and val.strip() == "":
-        return True
-    if isinstance(val, (list, dict)) and len(val) == 0:
-        return True
-    return False
+def _should_update_value(value) -> bool:
+    """
+    Чтобы не затирать поля пустыми значениями.
+    - None / "" / [] / {} не пишем поверх существующего
+    - но 0 и False (если вдруг) можно писать
+    """
+    if value is None:
+        return False
+    if isinstance(value, str) and value.strip() == "":
+        return False
+    if isinstance(value, (list, dict)) and len(value) == 0:
+        return False
+    return True
 
 
-async def add_movie(movie: dict) -> Movie:
-    """
-    Backward-compatible upsert:
-    - if movie exists -> updates fields (won't overwrite with empty values)
-    - if not exists -> creates it
-    Returns ORM Movie.
-    """
+async def add_or_update_movie(movie: dict) -> Movie:
     if not movie or not movie.get("id"):
         raise ValueError("movie dict must contain non-empty 'id'")
 
     async with async_session() as session:
-        # 1) load existing
-        res = await session.execute(select(Movie).where(Movie.id == str(movie["id"])))
-        obj: Optional[Movie] = res.scalars().first()
+        res = await session.execute(select(Movie).where(Movie.id == movie["id"]))
+        obj = res.scalars().first()
 
-        # 2) create if absent
         if not obj:
             obj = Movie(
-                id=str(movie["id"]),
+                id=movie["id"],
                 title=movie.get("title") or "",
                 link=movie.get("link") or "",
             )
             session.add(obj)
 
-        # 3) update fields
         for key in UPDATABLE_FIELDS:
             if key not in movie:
                 continue
+
             val = movie.get(key)
 
-            # защита: не затираем существующие значения пустыми
-            if _is_empty(val):
+            # если хочешь всегда обновлять даже пустыми — убери эту проверку
+            if not _should_update_value(val):
                 continue
 
             setattr(obj, key, val)

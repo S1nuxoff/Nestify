@@ -1,0 +1,58 @@
+<!-- app/templates/index.html -->
+<!doctype html>
+<html lang="uk">
+
+<head>
+    <meta charset="utf-8" />
+
+    <!-- SEO -->
+    <title>{{ title or "Nestify – домашній кінотеатр" }}</title>
+    <meta name="description"
+        content="{{ description or 'Дивись фільми та серіали онлайн в домашньому кінотеатрі Nestify.' }}" />
+    <link rel="canonical" href="{{ url or 'https://app.opencine.cloud' }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ title or 'Nestify – домашній кінотеатр' }}" />
+    <meta property="og:description"
+        content="{{ description or 'Дивись фільми та серіали онлайн в домашньому кінотеатрі Nestify.' }}" />
+    <meta property="og:image" content="{{ image or 'https://app.opencine.cloud/static/default_poster.jpg' }}" />
+    <meta property="og:url" content="{{ url or 'https://app.opencine.cloud' }}" />
+    <meta property="og:type" content="{{ og_type or 'website' }}" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ title or 'Nestify – домашній кінотеатр' }}" />
+    <meta name="twitter:description"
+        content="{{ description or 'Дивись фільми та серіали онлайн в домашньому кінотеатрі Nestify.' }}" />
+    <meta name="twitter:image" content="{{ image or 'https://app.opencine.cloud/static/default_poster.jpg' }}" />
+
+    <!-- schema.org JSON-LD -->
+    {% if schema_json %}
+    <script type="application/ld+json">
+      {{ schema_json | tojson }}
+    </script>
+    {% endif %}
+
+    <!-- ДАЛЬШЕ — React билд -->
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Иконки / манифест из билда -->
+    <link rel="icon" href="/frontend/favicon.png" />
+    <link rel="apple-touch-icon" href="/frontend/static/media/logo_colored.2c86876e00245277bd64b13e265992ac.svg" />
+    <link rel="manifest" href="/frontend/asset-manifest.json" />
+
+    <!-- CSS React билда -->
+    <link rel="stylesheet" href="/frontend/static/css/main.1cc51eff.css" />
+
+    <!-- JS React билда -->
+    <script defer src="/frontend/static/js/main.23f28b03.js"></script>
+</head>
+
+<body>
+    <noscript>Для роботи Nestify потрібен JavaScript.</noscript>
+    <div id="root"></div>
+</body>
+
+</html>

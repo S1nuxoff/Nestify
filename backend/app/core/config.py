@@ -8,10 +8,12 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "HomeRezka-API"
-    VERSION: str = "0.1.0"
+    VERSION: str = "1.4.5"
     DESCRIPTION: str = "HomeRezka-API"
     MAIN_PAGE_URL: str = "https://rezka.ag"
     SEARCH_URL_BASE: str = "https://rezka.fi/search/?do=search&subaction=search&q="
+    REZKA_BASE_URL: str = "https://hdrezka.ag"
+    FRONTEND_BASE_URL: str = "https://opencine.cloud"
 
     class Config:
         case_sensitive = True

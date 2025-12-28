@@ -1,22 +1,27 @@
+# app/schemas/rezka.py
+
+from __future__ import annotations
+
 from datetime import datetime
-from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class Translator(BaseModel):
-    id: Optional[str]
-    name: Optional[str]
+    id: Optional[str] = None
+    name: Optional[str] = None
 
 
 class SourceLink(BaseModel):
-    quality: Optional[str]
-    url: Optional[str]
+    quality: Optional[str] = None
+    url: Optional[str] = None
 
 
 class Source(BaseModel):
-    translate_id: Optional[str]
-    translate_name: Optional[str]
-    source_links: List[SourceLink] = []
+    translate_id: Optional[str] = None
+    translate_name: Optional[str] = None
+    source_links: List[SourceLink] = Field(default_factory=list)
 
 
 class EpisodeSchedule(BaseModel):
@@ -29,11 +34,11 @@ class EpisodeSchedule(BaseModel):
 
 class SeasonSchedule(BaseModel):
     season_number: int
-    episodes: List[EpisodeSchedule] = []
+    episodes: List[EpisodeSchedule] = Field(default_factory=list)
 
 
 class GetSourceResponse(BaseModel):
-    sources: List[Source]
+    sources: List[Source] = Field(default_factory=list)
 
 
 class WatchLastProgress(BaseModel):
@@ -41,54 +46,123 @@ class WatchLastProgress(BaseModel):
     season: Optional[int] = None
     episode: Optional[int] = None
     duration: Optional[int] = None
-    position_seconds: int
+    position_seconds: int = 0
     watched_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
-# 👇 НОВОЕ: last_watch объект, который будем слать клиенту
 class LastWatch(BaseModel):
     translator_id: Optional[str] = None
     season: Optional[int] = None
     episode: Optional[int] = None
-    duration: Optional[int] = None  # сек, общая длина
-    position_seconds: int = 0  # где остановились
+    duration: Optional[int] = None
+    position_seconds: int = 0
     watched_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
-class Rezka(BaseModel):
-    id: Optional[str]
-    title: Optional[str]
-    origin_name: Optional[str]
-    image: Optional[str]
-    duration: Optional[str]
-    description: Optional[str]
-    rate: Optional[str]
-    translator_ids: List[Translator] = []
-    trailer: Optional[str]
-    link: Optional[str]
-    action: Optional[str]
-    favs: Optional[str]
-    season_ids: List[str] = []
-    episodes_schedule: List[SeasonSchedule] = []
+class Actor(BaseModel):
+    id: Optional[str] = None
+    pid: Optional[str] = None
+    name: Optional[str] = None
+    url: Optional[str] = None
+    photo: Optional[str] = None
+    job: Optional[str] = None
+    itemprop: Optional[str] = None
 
-    # Новые поля (из инфо-таблицы):
+
+class TmdbCast(BaseModel):
+    tmdb_id: Optional[int] = None
+    name: Optional[str] = None
+    character: Optional[str] = None
+    order: Optional[int] = None
+    profile_url: Optional[str] = None
+    profile_url_original: Optional[str] = None
+
+
+class TmdbInfo(BaseModel):
+    type: Optional[str] = None
+    id: Optional[int] = None
+    imdb_id: Optional[str] = None
+    title: Optional[str] = None
+    original_title: Optional[str] = None
+    overview: Optional[str] = None
+    tagline: Optional[str] = None
+    release_date: Optional[str] = None
+    runtime: Optional[int] = None
+    number_of_seasons: Optional[int] = None
+    number_of_episodes: Optional[int] = None
+    status: Optional[str] = None
+    homepage: Optional[str] = None
+    popularity: Optional[float] = None
+    vote_average: Optional[float] = None
+    vote_count: Optional[int] = None
+
+    genres: List[str] = Field(default_factory=list)
+    production_countries: List[str] = Field(default_factory=list)
+    spoken_languages: List[str] = Field(default_factory=list)
+
+    poster_url: Optional[str] = None
+    poster_url_original: Optional[str] = None
+    backdrop_url: Optional[str] = None
+    backdrop_url_original: Optional[str] = None
+
+    trailer_youtube: Optional[str] = None
+    cast: List[TmdbCast] = Field(default_factory=list)
+
+
+class Rezka(BaseModel):
+    id: Optional[str] = None
+    title: Optional[str] = None
+    origin_name: Optional[str] = None
+    image: Optional[str] = None
+    duration: Optional[str] = None
+    description: Optional[str] = None
+    rate: Optional[str] = None
+
+    translator_ids: List[Translator] = Field(default_factory=list)
+    trailer: Optional[str] = None
+    link: Optional[str] = None
+    action: Optional[str] = None
+    favs: Optional[str] = None
+
+    season_ids: List[str] = Field(default_factory=list)
+    episodes_schedule: List[SeasonSchedule] = Field(default_factory=list)
+
     release_date: Optional[str] = None
     country: Optional[str] = None
-    genre: List[str] = []
-    director: List[str] = []
+    genre: List[str] = Field(default_factory=list)
+    director: List[str] = Field(default_factory=list)
     age: Optional[str] = None
+    actors: List[Actor] = Field(default_factory=list)
     imdb_id: Optional[str] = None
 
-    # 👇 НОВОЕ:
-    # все просмотры пользователя по этому фильму/сериалу
-    watch_history: List[LastWatch] = []
-    # последняя запись (для удобства)
+    tmdb: Optional[TmdbInfo] = None
+
+    backdrop: Optional[str] = None
+    logo_url: Optional[str] = None
+    poster_tmdb: Optional[str] = None
+    trailer_tmdb: Optional[str] = None
+
+    cast_tmdb: List[TmdbCast] = Field(default_factory=list)
+
+    watch_history: List[LastWatch] = Field(default_factory=list)
     last_watch: Optional[LastWatch] = None
 
-    class Config:
-        from_attributes = True
+    # --- FIX: БД может отдавать NULL, а API должен отдавать [] ---
+    @field_validator(
+        "actors",
+        "cast_tmdb",
+        "season_ids",
+        "episodes_schedule",
+        "translator_ids",
+        mode="before",
+    )
+    @classmethod
+    def _none_to_list(cls, v):
+        return [] if v is None else v
+
+    model_config = {"from_attributes": True}
 
 
 class FilmCard(BaseModel):
