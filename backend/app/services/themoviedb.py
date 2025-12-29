@@ -144,7 +144,7 @@ def _norm_seasons_episodes(
 def _norm_cast(credits: dict | None) -> list[dict]:
     cast = (credits or {}).get("cast") or []
     out: list[dict] = []
-    for c in cast[:hook := 20]:
+    for c in cast[:20]:
         out.append(
             {
                 "tmdb_id": c.get("id"),
@@ -217,11 +217,15 @@ def _norm_images(
         # ✅ OLD FALLBACK: pick best backdrop from images array
         backdrop_best = _pick_best(backdrops, prefer_langs=prefer_langs)
         backdrop_url = tmdb_img((backdrop_best or {}).get("file_path"), "w1280")
-        backdrop_url_original = tmdb_img((backdrop_best or {}).get("file_path"), "original")
+        backdrop_url_original = tmdb_img(
+            (backdrop_best or {}).get("file_path"), "original"
+        )
 
     return {
         "poster_url": tmdb_img((poster_best or {}).get("file_path"), "w500"),
-        "poster_url_original": tmdb_img((poster_best or {}).get("file_path"), "original"),
+        "poster_url_original": tmdb_img(
+            (poster_best or {}).get("file_path"), "original"
+        ),
         "backdrop_url": backdrop_url,
         "backdrop_url_original": backdrop_url_original,
         "logo_url": tmdb_img((logo_best or {}).get("file_path"), "w500"),
