@@ -87,14 +87,7 @@ def _norm_countries(d: dict, tmdb_type: TmdbType) -> list[str]:
 
 
 def _norm_languages(d: dict, tmdb_type: TmdbType) -> list[str]:
-    if tmdb_type == "movie":
-        langs = d.get("spoken_languages") or []
-        return [
-            x.get("english_name") or x.get("name")
-            for x in langs
-            if (x.get("english_name") or x.get("name"))
-        ]
-    # tv
+    # movie/tv both have spoken_languages
     langs = d.get("spoken_languages") or []
     return [
         x.get("english_name") or x.get("name")
@@ -151,7 +144,7 @@ def _norm_seasons_episodes(
 def _norm_cast(credits: dict | None) -> list[dict]:
     cast = (credits or {}).get("cast") or []
     out: list[dict] = []
-    for c in cast[:20]:
+    for c in cast[:hook := 20]:
         out.append(
             {
                 "tmdb_id": c.get("id"),
@@ -195,25 +188,42 @@ def _norm_crew(credits: dict | None) -> list[dict]:
     return out
 
 
-def _norm_images(images: dict | None, *, prefer_langs: list[str]) -> dict:
+def _norm_images(
+    d: dict,
+    images: dict | None,
+    *,
+    prefer_langs: list[str],
+) -> dict:
+    """
+    UPDATED LOGIC (as requested):
+    1) First try "backdrop_path" from details (like your 2nd script) -> w1280/original
+    2) If backdrop_path missing -> fallback to the old logic: pick best from images.backdrops
+    Posters/logos remain with the old "pick best" logic.
+    """
     images = images or {}
     posters = images.get("posters") or []
     backdrops = images.get("backdrops") or []
     logos = images.get("logos") or []
 
     poster_best = _pick_best(posters, prefer_langs=prefer_langs)
-    backdrop_best = _pick_best(backdrops, prefer_langs=prefer_langs)
     logo_best = _pick_best(logos, prefer_langs=prefer_langs)
+
+    # ✅ NEW: prefer details.backdrop_path (like script #2)
+    details_backdrop_path = d.get("backdrop_path")
+    if details_backdrop_path:
+        backdrop_url = tmdb_img(details_backdrop_path, "w1280")
+        backdrop_url_original = tmdb_img(details_backdrop_path, "original")
+    else:
+        # ✅ OLD FALLBACK: pick best backdrop from images array
+        backdrop_best = _pick_best(backdrops, prefer_langs=prefer_langs)
+        backdrop_url = tmdb_img((backdrop_best or {}).get("file_path"), "w1280")
+        backdrop_url_original = tmdb_img((backdrop_best or {}).get("file_path"), "original")
 
     return {
         "poster_url": tmdb_img((poster_best or {}).get("file_path"), "w500"),
-        "poster_url_original": tmdb_img(
-            (poster_best or {}).get("file_path"), "original"
-        ),
-        "backdrop_url": tmdb_img((backdrop_best or {}).get("file_path"), "w1280"),
-        "backdrop_url_original": tmdb_img(
-            (backdrop_best or {}).get("file_path"), "original"
-        ),
+        "poster_url_original": tmdb_img((poster_best or {}).get("file_path"), "original"),
+        "backdrop_url": backdrop_url,
+        "backdrop_url_original": backdrop_url_original,
         "logo_url": tmdb_img((logo_best or {}).get("file_path"), "w500"),
         "logo_url_original": tmdb_img((logo_best or {}).get("file_path"), "original"),
     }
@@ -262,7 +272,7 @@ async def tmdb_by_imdb(
             params={
                 **params,
                 "append_to_response": append,
-                # важное: чтобы логотипы/постеры норм приходили
+                # важно: чтобы логотипы/постеры норм приходили
                 "include_image_language": include_image_language,
             },
             headers={"accept": "application/json"},
@@ -285,7 +295,8 @@ async def tmdb_by_imdb(
         elif x:
             prefer_langs.append(x)
 
-    img_pack = _norm_images(d.get("images") or {}, prefer_langs=prefer_langs)
+    # ✅ changed call: pass full details `d` so we can use d["backdrop_path"] first
+    img_pack = _norm_images(d, d.get("images") or {}, prefer_langs=prefer_langs)
 
     best_video = _pick_best_video(d.get("videos"))
     trailer_url = None
