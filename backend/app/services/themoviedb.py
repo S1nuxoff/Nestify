@@ -1,4 +1,3 @@
-# app/services/themoviedb.py
 from __future__ import annotations
 
 import os
@@ -179,7 +178,7 @@ def _prefer_langs_from_include(include_image_language: str) -> list[str]:
             prefer_langs.append(None)  # type: ignore[arg-type]
         elif x:
             prefer_langs.append(x)
-    return prefer_langs or ["ru", "en", None]
+    return prefer_langs or ["uk", "en", None]
 
 
 def _norm_images(d: dict, images: dict | None, *, prefer_langs: list[str]) -> dict:
@@ -191,7 +190,6 @@ def _norm_images(d: dict, images: dict | None, *, prefer_langs: list[str]) -> di
     poster_best = _pick_best(posters, prefer_langs=prefer_langs)
     logo_best = _pick_best(logos, prefer_langs=prefer_langs)
 
-    # prefer details.backdrop_path first
     details_backdrop_path = d.get("backdrop_path")
     if details_backdrop_path:
         backdrop_url = tmdb_img(details_backdrop_path, "w1280")
@@ -218,8 +216,8 @@ def _norm_images(d: dict, images: dict | None, *, prefer_langs: list[str]) -> di
 async def tmdb_by_imdb(
     imdb_id: str,
     *,
-    language="ru-RU",
-    include_image_language="ru,en,null",
+    language: str = "uk-UA",
+    include_image_language: str = "uk,en,null",
     timeout_s: float = 15.0,
 ) -> dict[str, Any]:
     if not TMDB_API_KEY or not imdb_id:
@@ -262,14 +260,10 @@ async def tmdb_by_id(
     tmdb_id: int,
     *,
     tmdb_type: TmdbType = "movie",
-    language="ru-RU",
-    include_image_language="ru,en,null",
+    language: str = "uk-UA",
+    include_image_language: str = "uk,en,null",
     timeout_s: float = 15.0,
 ) -> dict[str, Any]:
-    """
-    Fallback: fetch TMDB details directly by tmdb_id (from trending/movie/week).
-    Returns {"tmdb": {...}} or {}
-    """
     if not TMDB_API_KEY or not tmdb_id:
         return {}
 
