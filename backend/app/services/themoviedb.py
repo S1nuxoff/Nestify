@@ -22,10 +22,6 @@ def tmdb_img(path: Optional[str], size: str = "w1280") -> Optional[str]:
 def _pick_best(
     items: list[dict], *, prefer_langs: list[str] | None = None
 ) -> Optional[dict]:
-    """
-    Picks the best image item (poster/backdrop/logo) from TMDB images arrays.
-    Score is based on language preference + vote_average + resolution.
-    """
     if not items:
         return None
     prefer_langs = prefer_langs or ["en", "uk", "pl", "ru", None]
@@ -38,9 +34,8 @@ def _pick_best(
             return len(prefer_langs) + 1
 
     def score(x: dict) -> tuple:
-        # higher is better
         return (
-            -lang_rank(x),  # preferred language first
+            -lang_rank(x),
             float(x.get("vote_average") or 0.0),
             int(x.get("width") or 0),
             int(x.get("height") or 0),
@@ -50,9 +45,6 @@ def _pick_best(
 
 
 def _pick_best_video(videos: dict | None) -> Optional[dict]:
-    """
-    Prefer YouTube Trailer > Teaser, official first, by size.
-    """
     results = (videos or {}).get("results") or []
     if not results:
         return None
@@ -65,8 +57,7 @@ def _pick_best_video(videos: dict | None) -> Optional[dict]:
         size = int(v.get("size") or 0)
         return (is_yt, type_rank, official, size)
 
-    best = sorted(results, key=score, reverse=True)[0]
-    return best
+    return sorted(results, key=score, reverse=True)[0]
 
 
 def _norm_genres(genres: list[dict] | None) -> list[str]:
@@ -76,18 +67,14 @@ def _norm_genres(genres: list[dict] | None) -> list[str]:
 
 
 def _norm_countries(d: dict, tmdb_type: TmdbType) -> list[str]:
-    # movie: production_countries[{name, iso_3166_1}]
-    # tv: origin_country["US", ...] or production_countries sometimes absent
     if tmdb_type == "movie":
         pcs = d.get("production_countries") or []
         return [c.get("name") for c in pcs if c.get("name")] or []
-    # tv fallback
     oc = d.get("origin_country") or []
     return [x for x in oc if x]
 
 
-def _norm_languages(d: dict, tmdb_type: TmdbType) -> list[str]:
-    # movie/tv both have spoken_languages
+def _norm_languages(d: dict) -> list[str]:
     langs = d.get("spoken_languages") or []
     return [
         x.get("english_name") or x.get("name")
@@ -100,7 +87,6 @@ def _norm_runtime(d: dict, tmdb_type: TmdbType) -> Optional[int]:
     if tmdb_type == "movie":
         r = d.get("runtime")
         return int(r) if isinstance(r, (int, float)) else None
-    # tv: episode_run_time is list[int]
     runtimes = d.get("episode_run_time") or []
     if runtimes:
         try:
@@ -119,12 +105,10 @@ def _norm_title(d: dict, tmdb_type: TmdbType) -> tuple[Optional[str], Optional[s
 def _norm_dates(d: dict, tmdb_type: TmdbType) -> tuple[Optional[str], Optional[str]]:
     if tmdb_type == "movie":
         return d.get("release_date"), None
-    # tv
     return d.get("first_air_date"), d.get("last_air_date")
 
 
-def _norm_status(d: dict, tmdb_type: TmdbType) -> Optional[str]:
-    # both have "status"
+def _norm_status(d: dict) -> Optional[str]:
     return d.get("status")
 
 
@@ -161,7 +145,6 @@ def _norm_cast(credits: dict | None) -> list[dict]:
 def _norm_crew(credits: dict | None) -> list[dict]:
     crew = (credits or {}).get("crew") or []
     out: list[dict] = []
-    # keep only key roles (optional, but useful)
     keep_jobs = {
         "Director",
         "Writer",
@@ -188,18 +171,18 @@ def _norm_crew(credits: dict | None) -> list[dict]:
     return out
 
 
-def _norm_images(
-    d: dict,
-    images: dict | None,
-    *,
-    prefer_langs: list[str],
-) -> dict:
-    """
-    UPDATED LOGIC (as requested):
-    1) First try "backdrop_path" from details (like your 2nd script) -> w1280/original
-    2) If backdrop_path missing -> fallback to the old logic: pick best from images.backdrops
-    Posters/logos remain with the old "pick best" logic.
-    """
+def _prefer_langs_from_include(include_image_language: str) -> list[str]:
+    prefer_langs: list[str] = []
+    for x in (include_image_language or "").split(","):
+        x = x.strip()
+        if x == "null":
+            prefer_langs.append(None)  # type: ignore[arg-type]
+        elif x:
+            prefer_langs.append(x)
+    return prefer_langs or ["ru", "en", None]
+
+
+def _norm_images(d: dict, images: dict | None, *, prefer_langs: list[str]) -> dict:
     images = images or {}
     posters = images.get("posters") or []
     backdrops = images.get("backdrops") or []
@@ -208,13 +191,12 @@ def _norm_images(
     poster_best = _pick_best(posters, prefer_langs=prefer_langs)
     logo_best = _pick_best(logos, prefer_langs=prefer_langs)
 
-    # ✅ NEW: prefer details.backdrop_path (like script #2)
+    # prefer details.backdrop_path first
     details_backdrop_path = d.get("backdrop_path")
     if details_backdrop_path:
         backdrop_url = tmdb_img(details_backdrop_path, "w1280")
         backdrop_url_original = tmdb_img(details_backdrop_path, "original")
     else:
-        # ✅ OLD FALLBACK: pick best backdrop from images array
         backdrop_best = _pick_best(backdrops, prefer_langs=prefer_langs)
         backdrop_url = tmdb_img((backdrop_best or {}).get("file_path"), "w1280")
         backdrop_url_original = tmdb_img(
@@ -236,18 +218,16 @@ def _norm_images(
 async def tmdb_by_imdb(
     imdb_id: str,
     *,
-    language="uk-UA",
-    include_image_language="uk,en,null",
+    language="ru-RU",
+    include_image_language="ru,en,null",
     timeout_s: float = 15.0,
 ) -> dict[str, Any]:
-
     if not TMDB_API_KEY or not imdb_id:
         return {}
 
     params = {"api_key": TMDB_API_KEY, "language": language}
 
     async with httpx.AsyncClient(timeout=timeout_s) as client:
-        # 1) find by IMDb id
         r = await client.get(
             f"{TMDB_BASE}/find/{imdb_id}",
             params={**params, "external_source": "imdb_id"},
@@ -269,37 +249,47 @@ async def tmdb_by_imdb(
         if not tmdb_type or not tmdb_id:
             return {}
 
-        # 2) details in one call
-        append = "credits,videos,images,external_ids,alternative_titles,release_dates,content_ratings"
-        r2 = await client.get(
+    return await tmdb_by_id(
+        tmdb_id,
+        tmdb_type=tmdb_type,
+        language=language,
+        include_image_language=include_image_language,
+        timeout_s=timeout_s,
+    )
+
+
+async def tmdb_by_id(
+    tmdb_id: int,
+    *,
+    tmdb_type: TmdbType = "movie",
+    language="ru-RU",
+    include_image_language="ru,en,null",
+    timeout_s: float = 15.0,
+) -> dict[str, Any]:
+    """
+    Fallback: fetch TMDB details directly by tmdb_id (from trending/movie/week).
+    Returns {"tmdb": {...}} or {}
+    """
+    if not TMDB_API_KEY or not tmdb_id:
+        return {}
+
+    params = {"api_key": TMDB_API_KEY, "language": language}
+    append = "credits,videos,images,external_ids,alternative_titles,release_dates,content_ratings"
+
+    async with httpx.AsyncClient(timeout=timeout_s) as client:
+        r = await client.get(
             f"{TMDB_BASE}/{tmdb_type}/{tmdb_id}",
             params={
                 **params,
                 "append_to_response": append,
-                # важно: чтобы логотипы/постеры норм приходили
                 "include_image_language": include_image_language,
             },
             headers={"accept": "application/json"},
         )
-        r2.raise_for_status()
-        d: dict = r2.json() or {}
+        r.raise_for_status()
+        d: dict = r.json() or {}
 
-    # normalize base fields
-    title, original_title = _norm_title(d, tmdb_type)
-    release_date, last_air_date = _norm_dates(d, tmdb_type)
-    runtime = _norm_runtime(d, tmdb_type)
-    ns, ne = _norm_seasons_episodes(d, tmdb_type)
-
-    # prefer language ordering for images: from include_image_language
-    prefer_langs: list[str] = []
-    for x in (include_image_language or "").split(","):
-        x = x.strip()
-        if x == "null":
-            prefer_langs.append(None)  # type: ignore[arg-type]
-        elif x:
-            prefer_langs.append(x)
-
-    # ✅ changed call: pass full details `d` so we can use d["backdrop_path"] first
+    prefer_langs = _prefer_langs_from_include(include_image_language)
     img_pack = _norm_images(d, d.get("images") or {}, prefer_langs=prefer_langs)
 
     best_video = _pick_best_video(d.get("videos"))
@@ -307,10 +297,17 @@ async def tmdb_by_imdb(
     if best_video and best_video.get("site") == "YouTube" and best_video.get("key"):
         trailer_url = f"https://www.youtube.com/watch?v={best_video['key']}"
 
+    title, original_title = _norm_title(d, tmdb_type)
+    release_date, last_air_date = _norm_dates(d, tmdb_type)
+    runtime = _norm_runtime(d, tmdb_type)
+    ns, ne = _norm_seasons_episodes(d, tmdb_type)
+
+    external_ids = d.get("external_ids") or {}
+
     tmdb_payload = {
         "type": tmdb_type,
         "id": tmdb_id,
-        "imdb_id": imdb_id,
+        "imdb_id": external_ids.get("imdb_id"),
         "title": title,
         "original_title": original_title,
         "overview": d.get("overview"),
@@ -320,31 +317,26 @@ async def tmdb_by_imdb(
         "runtime": runtime,
         "number_of_seasons": ns,
         "number_of_episodes": ne,
-        "status": _norm_status(d, tmdb_type),
+        "status": _norm_status(d),
         "homepage": d.get("homepage"),
         "popularity": d.get("popularity"),
         "vote_average": d.get("vote_average"),
         "vote_count": d.get("vote_count"),
         "genres": _norm_genres(d.get("genres")),
         "production_countries": _norm_countries(d, tmdb_type),
-        "spoken_languages": _norm_languages(d, tmdb_type),
-        # images (main)
+        "spoken_languages": _norm_languages(d),
         "images": img_pack,
-        # convenience (внутри tmdb — ок)
         "poster_url": img_pack.get("poster_url"),
         "poster_url_original": img_pack.get("poster_url_original"),
         "backdrop_url": img_pack.get("backdrop_url"),
         "backdrop_url_original": img_pack.get("backdrop_url_original"),
         "logo_url": img_pack.get("logo_url"),
         "logo_url_original": img_pack.get("logo_url_original"),
-        # trailer
         "trailer_youtube": trailer_url,
         "trailer": best_video,
-        # credits
         "cast": _norm_cast(d.get("credits")),
         "crew": _norm_crew(d.get("credits")),
-        # optional ids (can be useful later)
-        "external_ids": d.get("external_ids") or {},
+        "external_ids": external_ids,
     }
 
     return {"tmdb": tmdb_payload}
