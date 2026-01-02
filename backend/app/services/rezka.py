@@ -861,7 +861,7 @@ async def get_movie(url: str) -> dict:
         "origin_name": basic_data["origin_name"] or "",
         "image": basic_data["source_link"] or "",
         "duration": basic_data["duration"] or "",
-        "description": basic_data["description"] or "",
+        "description": (tmdb or {}).get("overview") or basic_data["description"],
         "rate": basic_data["rate"] or "",
         "translator_ids": translators,
         "trailer": trailer or "",
