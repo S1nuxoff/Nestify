@@ -51,15 +51,15 @@ HEADERS = {
 
 COOKIES = {
     "dle_user_taken": "1",
-    "dle_user_id": "2577499",
-    "dle_password": "716f8eddd6072caeef0f83c579a10bee",
-    "dle_user_token": "14b40c48f85618b57cd2a23e36a8923e",
-    "_ym_uid": "1747164624821225746",
-    "_ym_d": "1747164624",
-    "PHPSESSID": "gtm62ph9sfid0lipng8kg0je0v",
+    "dle_user_id": "2845490",
+    "dle_password": "a14b50a72bf0e906f244c849b848d8a4",
+    "dle_user_token": "aa8daa7b85f26deb0463fed69fd2d451",
+    "_ym_uid": "1767384762395958986",
+    "_ym_d": "1767384762",
+    "PHPSESSID": "ako14crpcr3k841k9co5spb6vn",
     "_ym_isad": "1",
-    "_clck": "y5ju17%7C2%7Cfw3%7C0%7C1959",
-    "_clsk": "zaywcc%7C1747806750123%7C1%7C0%7Ca.clarity.ms%2Fcollect",
+    "_clck": "19tdp4p%5E2%5Eg2d%5E0%5E2193",
+    "_clsk": "1rqznfn%5E1767384817260%5E2%5E0%5Eo.clarity.ms%2Fcollect",
 }
 
 COLLECTIONS_JSON_PATH = os.path.join("app", "data", "collections.json")
