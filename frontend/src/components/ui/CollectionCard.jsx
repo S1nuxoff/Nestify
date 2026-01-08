@@ -1,7 +1,7 @@
 import React from "react";
-import "../../styles/MediaCard.css";
-import config from "../../core/config";
 import { useNavigate } from "react-router-dom";
+import config from "../../core/config";
+import "../../styles/CollectionCard.css";
 
 function CollectionCardInner(props) {
   const navigate = useNavigate();
@@ -13,12 +13,10 @@ function CollectionCardInner(props) {
 
   const handleClick = (e) => {
     e.stopPropagation();
-    if (navigate_to) {
-      navigate(`/category/${navigate_to}`);
-    }
+    if (navigate_to) navigate(`/category/${navigate_to}`);
   };
 
-  let imgSrc;
+  let imgSrc = "";
   if (local_url) {
     imgSrc = local_url.startsWith("http")
       ? local_url
@@ -26,13 +24,13 @@ function CollectionCardInner(props) {
   }
 
   return (
-    <div className="video-card-container" onClick={handleClick}>
-      <div className="video-card-preview-wrapper-explorer">
+    <div className="collection-card" onClick={handleClick}>
+      <div className="collection-card__preview">
         {imgSrc && (
           <img
             src={imgSrc}
             alt={title || filename || "collection"}
-            className="video-card_preview-image"
+            className="collection-card__img"
             loading="lazy"
             decoding="async"
           />

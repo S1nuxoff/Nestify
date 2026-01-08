@@ -28,9 +28,9 @@
 }
 
 .time-label {
-  font-size: 16px;
+  font-size: 12px;
   color: var(--white);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .seek-bar {
@@ -41,7 +41,7 @@
   outline: none;
   width: 100%;
   border-radius: 16px;
-  height: 10px;
+  height: 3px;
 }
 
 .seek-bar-container {
@@ -63,18 +63,17 @@
   height: 6px;
   border-radius: 3px;
   background-color: transparent;
-  backdrop-filter: blur(4px);
 }
 
 /* WebKit thumb */
 .seek-bar::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--white);
   cursor: pointer;
-  margin-top: -7px;
+  margin-top: -4px;
 }
 
 /* Firefox track */
@@ -95,7 +94,7 @@
 
 /* Firefox filled range */
 .seek-bar::-moz-range-progress {
-  background: var(--red);
+  background: var(--white);
   border-radius: 3px;
   height: 6px;
 }
@@ -202,4 +201,21 @@
   font-weight: 600;
   pointer-events: none; /* чтобы не мешала кликам по слайдеру */
   margin-bottom: 0; /* если было ранее */
+}
+
+.movie-page__tv-session-container {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1223232;
+
+  width: min(100vw - 32px, 700px);
+
+  background: var(--dark);
+  border-radius: 32px;
+  backdrop-filter: blur(10px);
+
+  padding: 16px 16px 4px 16px;
+  overflow: auto;
 }

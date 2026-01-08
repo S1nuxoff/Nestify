@@ -75,24 +75,26 @@ function CategoryPage() {
         onMovieSelect={handleMovieSelect} // ⬅️ замість setSelectedMovie
         currentUser={currentUser}
       />
+      <div className="page-content">
+        <div className="page-content"></div>
+        {isLoading ? (
+          <div className="spinner-wrapper">
+            <div className="spinner"></div>
+          </div>
+        ) : (
+          <div className="category-content">
+            <Explorer
+              Page={pageData.items}
+              title={pageData.title}
+              currentUser={currentUser}
+              onMovieSelect={handleMovieSelect} // ⬅️ теж відкриваємо сторінку
+            />
+            <Pagination totalPages={pageData.pages_count} baseUrl={baseUrl} />
+          </div>
+        )}
+      </div>
 
-      {isLoading ? (
-        <div className="spinner-wrapper">
-          <div className="spinner"></div>
-        </div>
-      ) : (
-        <div className="category-content">
-          <Explorer
-            Page={pageData.items}
-            title={pageData.title}
-            currentUser={currentUser}
-            onMovieSelect={handleMovieSelect} // ⬅️ теж відкриваємо сторінку
-          />
-          <Pagination totalPages={pageData.pages_count} baseUrl={baseUrl} />
-        </div>
-      )}
-
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

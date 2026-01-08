@@ -22,6 +22,8 @@ import MediaCard from "../components/ui/MediaCard";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 import Alert from "../components/ui/Alert";
 
+import { Flame, FolderClock, Group, TrendingUp, Star, Zap } from "lucide-react";
+
 function HomePage() {
   const [showPlayerConnected, setShowPlayerConnected] = useState(false);
   const [page, setPage] = useState({});
@@ -138,7 +140,6 @@ function HomePage() {
         title="Nestify Player підключено"
         message="З'єднання з плеєром встановлено успішно!"
       />
-
       <div className="container">
         <Header
           categories={categories}
@@ -146,43 +147,44 @@ function HomePage() {
           onSearch={handleSearch}
           onMovieSelect={handleMovieSelect}
         />
-
-        <Featured onMovieSelect={handleMovieSelect} featured={featured} />
-
+      </div>
+      <Featured onMovieSelect={handleMovieSelect} featured={featured} />
+      <div className="container">
         <div className="home-page-content">
-          {!isHistoryLoading &&
-            Array.isArray(history) &&
-            history.length > 0 && (
-              <ContentRowSwiper
-                data={history}
-                title="Історія перегляду"
-                navigate_to="/history"
-                CardComponent={MediaCard}
-                cardProps={{
-                  type: "history",
-                  onMovieSelect: handleMovieSelect,
-                }}
-              />
-            )}
-
           {!isPageLoading && (
             <>
               <ContentRowSwiper
                 data={page.newest?.items || []}
-                title="Новинки"
+                // title="Новинки"
                 navigate_to="/new"
                 CardComponent={MediaCard}
                 cardProps={{ onMovieSelect: handleMovieSelect }}
                 navPrefix="/category"
                 rows={2}
+                // leftIcon={<Flame size={24} className="row-title-icon" />}
               />
-
               <ContentRowSwiper
                 data={page.collections}
                 title="Колекції"
                 navigate_to="/collections"
                 CardComponent={CollectionCard}
+                // leftIcon={<Group size={24} className="row-title-icon" />}
               />
+              {!isHistoryLoading &&
+                Array.isArray(history) &&
+                history.length > 0 && (
+                  <ContentRowSwiper
+                    data={history}
+                    title="Історія перегляду"
+                    navigate_to="/history"
+                    CardComponent={MediaCard}
+                    cardProps={{
+                      type: "history",
+                      onMovieSelect: handleMovieSelect,
+                    }}
+                    // leftIcon={<FolderClock size={24} className="row-title-icon" />}
+                  />
+                )}
 
               <ContentRowSwiper
                 data={page.popular?.items || []}
@@ -192,8 +194,8 @@ function HomePage() {
                 cardProps={{ onMovieSelect: handleMovieSelect }}
                 navPrefix="/category"
                 rows={2}
+                // leftIcon={<TrendingUp size={32} className="row-title-icon" />}
               />
-
               <ContentRowSwiper
                 data={page.watching?.items || []}
                 title="Зараз дивляться"
@@ -202,16 +204,15 @@ function HomePage() {
                 cardProps={{ onMovieSelect: handleMovieSelect }}
                 navPrefix="/category"
                 rows={2}
+                // leftIcon={<Zap size={24} className="row-title-icon" />}
               />
             </>
           )}
-
           {isPageLoading && (
             <div className="spinner-wrapper">
               <div className="spinner"></div>
             </div>
           )}
-
           <Footer />
         </div>
       </div>

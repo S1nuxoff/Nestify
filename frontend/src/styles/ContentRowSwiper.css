@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  height: 24px;
+  /* height: 24px; */
   transition: 0.2s ease-in-out;
   justify-content: space-between;
   /* margin: 14px 0px; */
@@ -133,5 +133,57 @@
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
+  }
+}
+
+.row-title-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.row-title-icon {
+  color: var(--white);
+}
+
+/* 1) Пока тащим — УБИВАЕМ любые анимации/фильтры (они реально тормозят) */
+.movie_card_swiper.is-dragging .card-appear {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.movie_card_swiper.is-dragging .video-card-preview-wrapper,
+.movie_card_swiper.is-dragging .video-card_preview-image,
+.movie_card_swiper.is-dragging .video-card-more-btn-container,
+.movie_card_swiper.is-dragging .video-card-container {
+  transition: none !important;
+}
+
+/* 2) На touch-устройствах (hover:none) полностью упрощаем поведение */
+@media (hover: none) and (pointer: coarse) {
+  .video-card-preview-wrapper,
+  .video-card_preview-image,
+  .video-card-more-btn-container,
+  .video-card-container {
+    transition: none !important;
+  }
+
+  /* вырубаем "подъём" карточек на таче даже если где-то остался hover */
+  .video-card-container:hover .video-card-preview-wrapper,
+  .video-card-container:active .video-card-preview-wrapper {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .video-card-container:hover .video-card_preview-image,
+  .video-card-container:active .video-card_preview-image {
+    transform: none !important;
+  }
+
+  /* иконку "more" можно оставить всегда скрытой на мобиле */
+  .video-card-more-btn-container {
+    opacity: 0 !important;
   }
 }

@@ -1,76 +1,95 @@
-// components/ui/EpisodeSelector.jsx
 import React from "react";
+import { Play, CheckCircle2 } from "lucide-react";
 import "../../styles/EpisodeSelectorItem.css";
 
+const ProgressCircle = ({ percent, isWatched }) => {
+  const radius = 14;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+
+  return (
+    <div className="progress-ring-container">
+      <svg width="32" height="32">
+        {/* Фоновый круг */}
+        <circle
+          stroke="rgba(255, 255, 255, 0.1)"
+          strokeWidth="2.5"
+          fill="transparent"
+          r={radius}
+          cx="16"
+          cy="16"
+        />
+        {/* Прогресс */}
+        <circle
+          className="progress-ring-circle"
+          stroke={isWatched ? "var(--accent-success)" : "var(--white)"}
+          strokeWidth="2.5"
+          strokeDasharray={circumference}
+          style={{ strokeDashoffset: offset }}
+          fill="transparent"
+          r={radius}
+          cx="16"
+          cy="16"
+        />
+      </svg>
+    </div>
+  );
+};
+
 function EpisodeSelector({
-  index = 0, // ← для stagger
-  isLoaded = true, // ← коли список готовий
+  index = 0,
+  isLoaded = true,
   episde_id,
   episde_title,
   episde_origin,
   episde_date,
   isSelected,
   isWatched,
-  progressPercent, // 0–100 або null
+  progressPercent = 0,
   onSelect,
 }) {
   const containerClass = [
     "episode-item__container",
     isSelected ? "selected" : "",
     isWatched ? "completed" : "",
-    isLoaded ? "in" : "pre", // ← класи для анімації
+    isLoaded ? "in" : "pre",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const handleClick = () => onSelect?.(episde_id);
-
-  const hasProgress =
-    typeof progressPercent === "number" && progressPercent > 0;
-  const clampedPercent = hasProgress
-    ? Math.min(Math.max(progressPercent, 0), 100)
-    : 0;
-
   return (
     <div
       className={containerClass}
-      onClick={handleClick}
-      style={{ "--i": index }} // ← затримка для кожного елемента
+      onClick={() => onSelect?.(episde_id)}
+      style={{ "--i": index }}
     >
-      <span className="eposide-item__number">{episde_id}</span>
+      <div className="eposide-item__number">
+        {isSelected ? (
+          <Play size={20} fill="currentColor" stroke="none" />
+        ) : (
+          episde_id
+        )}
+      </div>
 
       <div className="episode-item-details-container">
         <div className="episode-item-main">
-          <div className="episode-item-title-container">
-            <span className="episode-item-title">{episde_title}</span>
-            <span className="episode-item-origin">{episde_origin}</span>
-          </div>
+          <span className="episode-item-title">{episde_title}</span>
+          <span className="episode-item-origin">{episde_origin}</span>
         </div>
 
         <div className="episode-item-meta-right">
           <span className="episode-item-date">{episde_date}</span>
-          {hasProgress && (
-            <span
-              className={
-                "episode-item-status" + (isWatched ? " status-completed" : "")
-              }
-            >
-              {isWatched ? "Переглянуто" : `${Math.round(clampedPercent)}%`}
-            </span>
+
+          {isWatched ? (
+            <CheckCircle2
+              size={22}
+              color="var(--accent-success)"
+              strokeWidth={2.5}
+            />
+          ) : (
+            <ProgressCircle percent={progressPercent} isWatched={isWatched} />
           )}
         </div>
-
-        {hasProgress && (
-          <div className="episode-item-progress">
-            <div
-              className={
-                "episode-item-progress-inner" +
-                (isWatched ? " episode-item-progress-inner--done" : "")
-              }
-              style={{ width: `${clampedPercent}%` }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

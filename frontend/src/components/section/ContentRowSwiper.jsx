@@ -104,8 +104,8 @@ function RowSwiper({
         observer={false}
         observeParents={false}
         breakpoints={{
-          0: { spaceBetween: 8 },
-          530: { spaceBetween: 16 },
+          0: { spaceBetween: 16 },
+          530: { spaceBetween: 24 },
         }}
       >
         {itemsToRender.map((item, index) => {
@@ -138,6 +138,7 @@ const ContentRowSwiper = ({
   cardProps = {},
   navPrefix = "",
   rows = 1,
+  leftIcon = null,
 }) => {
   const navigate = useNavigate();
   const instanceIdRaw = useId();
@@ -160,8 +161,11 @@ const ContentRowSwiper = ({
     <div className="content-row__container">
       <div className="content-row__top">
         <div className="content-row__top-title" onClick={handleNavigate}>
+          {leftIcon ? (
+            <span className="row-title-icon-wrap">{leftIcon}</span>
+          ) : null}
           <span className="row-header-title">{title}</span>
-          <ArrowRightIcon className="arrow-right-icon" />
+          {/* <ArrowRightIcon className="arrow-right-icon" /> */}
         </div>
         <div className="content-row__top-action" onClick={handleNavigate}>
           <MoreIcon />

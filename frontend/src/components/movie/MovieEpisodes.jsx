@@ -63,7 +63,7 @@ const MovieEpisodes = ({
   return (
     <section className="movie-page__episodes">
       <div className="movie-page__episodes-header">
-        <span className="movie-page__section-title">Серії</span>
+        <span className="row-header-title">Серії</span>
 
         <div
           className="movie-page__season-selector"

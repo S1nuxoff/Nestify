@@ -1,390 +1,190 @@
-.connect-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 120px 16px 40px; /* відступ зверху під стікі-хедер */
-  box-sizing: border-box;
+:root {
+  --hbo-primary: var(--blue); /* Фірмовий синій Max */
+  --hbo-accent: var(--blue); /* Фіолетовий акцент */
+  --hbo-text: #ffffff;
+  --hbo-text-dim: rgba(255, 255, 255, 0.6);
 }
 
-@media (max-width: 768px) {
-  .connect-page {
-    padding-top: 96px;
-    padding-bottom: 24px;
+.hbo-container {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  font-family: "Inter", -apple-system, sans-serif;
+  color: var(--hbo-text);
+}
+
+.hbo-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 580px;
+  padding: 40px;
+  text-align: center;
+  animation: hboFadeUp 1s ease-out;
+}
+
+@keyframes hboFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.connect-card {
-  width: 100%;
-  max-width: 520px;
-  margin: 0 auto;
-
-  position: relative;
-  border-radius: 24px;
-  padding: 20px 20px 18px;
-
-  /* glass */
-  background: var(--dark-opacity-40, rgba(7, 10, 18, 0.8));
-  backdrop-filter: blur(22px) saturate(130%);
-  -webkit-backdrop-filter: blur(22px) saturate(130%);
-  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.12));
-  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-/* маленький бейдж зверху (як в userdd) */
-.connect-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 999px;
-
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.14));
-  color: var(--white-gray, #c8cedd);
-  margin-bottom: 10px;
-}
-
-.connect-title {
-  font-size: 24px;
-  font-weight: 650;
-  margin-bottom: 6px;
-  color: var(--white, #ffffff);
-}
-
-.connect-subtitle {
+.hbo-logo-text {
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--white-gray, #a9afc1);
-  margin-bottom: 16px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  margin-bottom: 30px;
+  opacity: 0.9;
 }
 
-/* кроки під стилі сайту, без маркерів браузера */
-.connect-steps {
-  margin: 0 0 20px;
-  padding: 0;
-  list-style: none;
-  font-size: 13px;
-  color: var(--white-gray, #a9afc1);
+.hbo-logo-text span {
+  color: var(--white);
 }
 
-.connect-steps li {
-  position: relative;
-  padding-left: 22px;
-  margin-bottom: 6px;
+.hbo-title {
+  font-size: 48px;
+  font-weight: 300; /* Тонкий шрифт як у Max */
+  margin-bottom: 20px;
+  letter-spacing: -1px;
 }
 
-.connect-steps li::before {
-  content: counter(step);
-  counter-increment: step;
-}
-.connect-steps {
-  counter-reset: step;
+.hbo-description {
+  font-size: 18px;
+  color: var(--hbo-text-dim);
+  line-height: 1.6;
+  margin-bottom: 50px;
+  font-weight: 300;
 }
 
-.connect-steps li::before {
-  position: absolute;
-  left: 0;
-  top: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-
+/* OTP Група */
+.hbo-otp-group {
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-
-  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
-  color: var(--white, #ffffff);
+  gap: 12px;
+  margin-bottom: 50px;
 }
 
-.connect-label {
-  display: block;
-  font-size: 12px;
-  color: var(--white-gray, #c5cad8);
-  margin-bottom: 6px;
+.hbo-otp-box {
+  position: relative;
 }
 
-.connect-input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.connect-input {
-  flex: 1;
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.16));
-  background: var(--white-opacity-5, rgba(255, 255, 255, 0.04));
-  color: var(--white, #ffffff);
-  font-size: 15px;
-  font-weight: 500;
+.hbo-otp-input {
+  width: 50px;
+  height: 70px;
+  background: transparent;
+  border: none;
+  font-size: 36px;
+  font-weight: 200;
+  color: #fff;
+  text-align: center;
   outline: none;
-  transition: 0.15s ease-in-out;
+  transition: all 0.3s ease;
 }
 
-.connect-input::placeholder {
-  color: var(--white-opacity-40, #5c6478);
-  font-weight: 400;
+.hbo-otp-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
-.connect-input:focus {
-  border-color: var(--blue, #283de6);
-  background: var(--white-opacity-8, rgba(255, 255, 255, 0.08));
-  box-shadow: 0 0 0 1px var(--blue, #283de6), 0 16px 40px rgba(0, 0, 0, 0.6);
+.hbo-otp-input:focus ~ .hbo-otp-underline {
+  height: 2px;
+  background: var(--hbo-primary);
 }
 
-.connect-current {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--white-gray, #a2a9bb);
+.hbo-otp-input.has-value ~ .hbo-otp-underline {
+  background: rgba(255, 255, 255, 0.8);
 }
 
-.connect-current code {
-  background: var(--white-opacity-8, rgba(255, 255, 255, 0.08));
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--white, #ffffff);
-}
-
-/* статус */
-.connect-status {
-  margin-top: 12px;
-  font-size: 13px;
-  padding: 9px 11px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.connect-status--success {
-  background: rgba(46, 204, 113, 0.12);
-  color: #2ecc71;
-  border-color: rgba(46, 204, 113, 0.45);
-}
-
-.connect-status--error {
-  background: rgba(231, 76, 60, 0.12);
-  color: #e74c3c;
-  border-color: rgba(231, 76, 60, 0.45);
-}
-
-.connect-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-@media (max-width: 480px) {
-  .connect-actions {
-    flex-direction: column;
-  }
-}
-
-.connect-btn {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
+/* Статус */
+.hbo-status {
+  margin-bottom: 30px;
   font-size: 14px;
-  font-weight: 550;
+  letter-spacing: 0.5px;
+}
+.hbo-status--error {
+  color: #ff3b30;
+}
+.hbo-status--success {
+  color: #00ff85;
+}
+
+/* Кнопки */
+.hbo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.hbo-btn {
+  width: 100%;
+  max-width: 380px;
+  padding: 16px 32px;
+  border-radius: 16px; /* Квадратні кнопки HBO */
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease,
-    opacity 0.12s ease;
-}
-
-/* primary — у стилі градієнтних кнопок */
-.connect-btn-primary {
-  background: var(--main_gradient, linear-gradient(135deg, #283de6, #8b5bff));
-  color: var(--dark, #05060a);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.connect-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.connect-btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-/* secondary — прозорий “ghost” */
-.connect-btn-secondary {
-  background: var(--white-opacity-6, rgba(255, 255, 255, 0.04));
-  color: var(--white, #ffffff);
-  border: 1px solid var(--white-opacity-12, rgba(255, 255, 255, 0.12));
-}
-
-.connect-btn-secondary:hover:not(:disabled) {
-  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
-}
-
-.connect-btn-secondary:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.connect-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-  box-shadow: none;
-  transform: none;
-}
-
-/* назад */
-.connect-link-back {
-  margin-top: 16px;
-  background: none;
   border: none;
-  color: var(--white-gray, #9ba3ba);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.hbo-btn-primary {
+  background: var(--hbo-text);
+  color: #000;
+}
+
+.hbo-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.hbo-btn-link {
+  background: transparent;
+  color: var(--hbo-text-dim);
   text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: color 0.12s ease, transform 0.08s ease;
 }
 
-.connect-link-back:hover {
-  color: var(--white, #ffffff);
-  transform: translateX(-1px);
+.hbo-btn-link:hover {
+  letter-spacing: 3px;
 }
 
-.connect-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-
-  /* ідеальне центрування по екрану */
-  align-items: center;
-  justify-content: center;
-
-  padding: 32px 16px;
-  box-sizing: border-box;
+.hbo-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .connect-page {
-    padding: 24px 12px;
+/* Мобільна адаптація */
+@media (max-width: 600px) {
+  .hbo-content {
+    padding: 20px;
   }
-}
-
-.connect-card {
-  width: 100%;
-  max-width: 560px; /* було 480 / 520 – зробив трохи більше */
-  margin: 0 auto;
-
-  position: relative;
-  border-radius: 28px;
-  padding: 26px 26px 22px; /* трохи більше паддінгів */
-
-  /* glass / blur, як на сайті */
-  background: var(--dark-opacity-40, rgba(7, 10, 18, 0.88));
-  backdrop-filter: blur(24px) saturate(135%);
-  -webkit-backdrop-filter: blur(24px) saturate(135%);
-  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.14));
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-/* центроване вікно ми вже робили,
-   нижче тільки блок коду */
-
-.connect-otp-wrapper {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 10px 0 6px;
-}
-
-@media (max-width: 480px) {
-  .connect-otp-wrapper {
+  .hbo-title {
+    font-size: 32px;
+  }
+  .hbo-description {
+    font-size: 16px;
+  }
+  .hbo-otp-group {
     gap: 6px;
   }
-}
-
-.connect-otp-input {
-  width: 60px;
-  height: 70px;
-  border-radius: 18px;
-  border: 1px solid var(--white-opacity-15, rgba(255, 255, 255, 0.16));
-  background: var(--white-opacity-5, rgba(255, 255, 255, 0.04));
-
-  text-align: center;
-  font-size: 32px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-
-  color: var(--white, #ffffff);
-  outline: none;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
-
-  transition: border-color 0.14s ease, background 0.14s ease,
-    transform 0.08s ease, box-shadow 0.1s ease;
-}
-
-@media (max-width: 480px) {
-  .connect-otp-input {
-    width: 46px;
-    height: 60px;
-    font-size: 26px;
-    border-radius: 16px;
-  }
-}
-
-.connect-otp-input:focus {
-  border-color: var(--blue, #283de6);
-  background: var(--white-opacity-10, rgba(255, 255, 255, 0.08));
-  transform: translateY(-1px);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(40, 61, 230, 0.5);
-}
-
-.connect-otp-input::placeholder {
-  color: transparent;
-}
-
-.connect-otp-wrapper {
-  display: flex;
-  justify-content: center;
-  gap: 8px; /* було 10 */
-  margin: 10px 0 6px;
-}
-
-@media (max-width: 480px) {
-  .connect-otp-wrapper {
-    gap: 4px;
-  }
-}
-
-.connect-otp-input {
-  width: 52px; /* було 60 */
-  height: 64px; /* було 70 */
-  border-radius: 16px;
-  /* все інше як було */
-}
-
-@media (max-width: 480px) {
-  .connect-otp-input {
-    width: 40px; /* було 46 */
-    height: 56px; /* було 60 */
+  .hbo-otp-input {
+    width: 35px;
+    height: 50px;
     font-size: 24px;
-    border-radius: 14px;
   }
 }

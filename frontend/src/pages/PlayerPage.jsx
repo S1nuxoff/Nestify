@@ -496,11 +496,12 @@ export default function PlayerPage() {
 
   return (
     <div
-      className="cinema-player-root"
+      className={"cinema-player-root" + (showControls ? " is-ui" : " is-no-ui")}
       ref={rootRef}
       onMouseMove={handleUserActivity}
       onTouchStart={handleUserActivity}
     >
+      {/* video */}
       <video
         ref={videoRef}
         className="cinema-player-video"
@@ -515,114 +516,164 @@ export default function PlayerPage() {
         playsInline
       />
 
+      {/* cinematic scrims (как Netflix/Apple TV) */}
+      <div className="cinema-player-scrim cinema-player-scrim--top" />
+      <div className="cinema-player-scrim cinema-player-scrim--bottom" />
+
+      {/* buffering */}
       {isBuffering && (
         <div className="cinema-player-loading">
           <div className="cinema-player-spinner" />
         </div>
       )}
 
+      {/* Controls */}
       {showControls && (
         <>
+          {/* TOP BAR */}
           <div className="cinema-player-top-bar">
             <button
               className="cinema-player-back-btn"
               onClick={() => navigate("/")}
+              aria-label="Back"
             >
               <BackIcon className="cinema-player-back-icon" />
             </button>
-            <span className="cinema-player-title">
-              {movieDetails.title}
-              {selectedSeason != null &&
-                selectedEpisode != null &&
-                ` • S${selectedSeason}E${selectedEpisode}`}
-            </span>
+
+            <div className="cinema-player-top-meta">
+              <div className="cinema-player-title">
+                {movieDetails.title}
+                {selectedSeason != null &&
+                  selectedEpisode != null &&
+                  ` • S${selectedSeason}E${selectedEpisode}`}
+              </div>
+              <div className="cinema-player-subtitle">
+                {currentQuality
+                  ? `Quality: ${String(currentQuality).replace("_Ultra", "")}`
+                  : ""}
+              </div>
+            </div>
+
+            <div className="cinema-player-top-actions">
+              <button
+                className="cinema-player-pill"
+                onClick={toggleFullscreen}
+                aria-label="Fullscreen"
+                title="Fullscreen (F)"
+              >
+                {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+              </button>
+            </div>
           </div>
 
+          {/* CENTER */}
           <div className="cinema-player-center">
             <button
-              className="cinema-player-circle-btn"
+              className="cinema-player-skip"
               onClick={() => seekBy(-10)}
+              aria-label="Rewind 10s"
+              title="-10s (←)"
             >
               <RotateCcwIcon />
               <span>10</span>
             </button>
 
-            <button className="cinema-player-main-btn" onClick={togglePlay}>
-              {isPlaying ? <PauseIcon size={38} /> : <PlayIcon size={38} />}
+            <button
+              className="cinema-player-main-btn"
+              onClick={togglePlay}
+              aria-label="Play/Pause"
+              title="Play/Pause (Space)"
+            >
+              {isPlaying ? <PauseIcon size={40} /> : <PlayIcon size={40} />}
             </button>
 
             <button
-              className="cinema-player-circle-btn"
+              className="cinema-player-skip"
               onClick={() => seekBy(10)}
+              aria-label="Forward 10s"
+              title="+10s (→)"
             >
               <RotateCwIcon />
               <span>10</span>
             </button>
           </div>
 
+          {/* BOTTOM */}
           <div className="cinema-player-bottom">
+            {/* progress */}
             <div className="cinema-player-progress-row">
               <span className="cinema-player-time">
                 {formatTime(currentTime)}
               </span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={1}
-                value={currentTime}
-                onMouseDown={handleScrubStart}
-                onTouchStart={handleScrubStart}
-                onChange={handleScrubChange}
-                onMouseUp={handleScrubEnd}
-                onTouchEnd={handleScrubEnd}
-                className="cinema-player-progress"
-                style={{
-                  backgroundImage: `
-                  linear-gradient(
-                    102.142deg,
-                    #ffd8b5 6%,
-                    #ffb2e8 44%,
-                    #7fa1fd 100%
-                  ),
-                  linear-gradient(
-                    to right,
-                    rgba(255,255,255,0.4),
-                    rgba(255,255,255,0.4)
-                  )
-                `,
-                  backgroundSize: `${progressPercent}% 100%, 100% 100%`,
-                  backgroundRepeat: "no-repeat, no-repeat",
-                }}
-              />
+
+              <div className="cinema-player-progress-wrap">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 0}
+                  step={1}
+                  value={currentTime}
+                  onMouseDown={handleScrubStart}
+                  onTouchStart={handleScrubStart}
+                  onChange={handleScrubChange}
+                  onMouseUp={handleScrubEnd}
+                  onTouchEnd={handleScrubEnd}
+                  className="cinema-player-progress"
+                  style={{
+                    backgroundSize: `${progressPercent}% 100%, 100% 100%`,
+                  }}
+                />
+              </div>
 
               <span className="cinema-player-time">{formatTime(duration)}</span>
             </div>
 
+            {/* controls row */}
             <div className="cinema-player-controls-row">
               <div className="cinema-player-controls-left">
-                <button onClick={togglePlay}>
+                <button
+                  className="cinema-player-icon-btn"
+                  onClick={togglePlay}
+                  aria-label="Play/Pause"
+                >
                   {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
-                <button onClick={() => seekBy(-10)}>
+
+                <button
+                  className="cinema-player-icon-btn"
+                  onClick={() => seekBy(-10)}
+                  aria-label="Rewind 10s"
+                >
                   <RotateCcwIcon />
                 </button>
-                <button onClick={() => seekBy(10)}>
+
+                <button
+                  className="cinema-player-icon-btn"
+                  onClick={() => seekBy(10)}
+                  aria-label="Forward 10s"
+                >
                   <RotateCwIcon />
                 </button>
-                <button onClick={toggleMute}>
+
+                <button
+                  className="cinema-player-icon-btn"
+                  onClick={toggleMute}
+                  aria-label="Mute"
+                >
                   {isMuted ? <VolumeXIcon /> : <Volume2Icon />}
                 </button>
 
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="cinema-player-volume"
-                />
+                <div className="cinema-player-volume-wrap">
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="cinema-player-volume"
+                  />
+                </div>
               </div>
 
               <div className="cinema-player-controls-center">
@@ -638,39 +689,52 @@ export default function PlayerPage() {
                 {normalizedSources.length > 1 && (
                   <>
                     <button
-                      className="cinema-player-settings-btn"
+                      className="cinema-player-pill cinema-player-pill--settings"
                       onClick={() => setIsQualityMenuOpen((prev) => !prev)}
+                      aria-label="Quality"
+                      title="Quality"
                     >
                       <SettingsIcon className="cinema-player-settings-icon" />
+                      <span className="cinema-player-pill-text">
+                        {String(currentQuality || "auto").replace("_Ultra", "")}
+                      </span>
                     </button>
+
                     {isQualityMenuOpen && (
                       <div className="cinema-player-quality-menu">
                         <div className="cinema-player-quality-menu-title">
                           Якість
                         </div>
-                        {normalizedSources
-                          .slice()
-                          .reverse()
-                          .map((s) => (
-                            <button
-                              key={s.quality}
-                              className={
-                                "cinema-player-quality-option" +
-                                (s.quality === currentQuality
-                                  ? " cinema-player-quality-option--active"
-                                  : "")
-                              }
-                              onClick={() => handleChangeQuality(s.quality)}
-                            >
-                              {s.quality.replace("_Ultra", "")}
-                            </button>
-                          ))}
+                        <div className="cinema-player-quality-list">
+                          {normalizedSources
+                            .slice()
+                            .reverse()
+                            .map((s) => (
+                              <button
+                                key={s.quality}
+                                className={
+                                  "cinema-player-quality-option" +
+                                  (s.quality === currentQuality
+                                    ? " cinema-player-quality-option--active"
+                                    : "")
+                                }
+                                onClick={() => handleChangeQuality(s.quality)}
+                              >
+                                <span className="cinema-player-quality-dot" />
+                                {s.quality.replace("_Ultra", "")}
+                              </button>
+                            ))}
+                        </div>
                       </div>
                     )}
                   </>
                 )}
 
-                <button onClick={toggleFullscreen}>
+                <button
+                  className="cinema-player-pill"
+                  onClick={toggleFullscreen}
+                  aria-label="Fullscreen"
+                >
                   {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
                 </button>
               </div>

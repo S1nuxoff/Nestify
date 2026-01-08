@@ -1,6 +1,6 @@
 .alert-container {
   position: fixed;
-  top: 16px;
+  top: 32px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 100000000;
@@ -10,12 +10,12 @@
   width: 300px;
   padding: 16px 20px;
   border-radius: 24px;
-  background: var(--white-opacity-10);
-  backdrop-filter: blur(50px);
+  background: var(--dark);
+
   opacity: 0;
   transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
   transform: translate(-50%, -20px);
-  border: 1px solid var(--white-opacity-20);
+  border: 1px solid var(--white-opacity-10);
   pointer-events: none;
 }
 

@@ -24,12 +24,12 @@
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  color: var(--white);
+  color: var(--white-opacity-80);
 }
 
 .pagination-item.active {
-  /* background-color: var(--blue); */
-  color: var(--blue);
+  /* background-color: var(--w); */
+  color: var(--white);
 }
 
 .pagination-item.dots {
@@ -51,7 +51,7 @@
 }
 
 .pagination-item:not(.active):not(.dots):hover {
-  color: var(--blue);
+  color: var(--white);
 }
 
 .pagination-nav {

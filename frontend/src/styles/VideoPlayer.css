@@ -1,12 +1,86 @@
-/* Повноекранний root, поверх усього */
+/* =========================
+   CINEMA PLAYER — PRO UI
+   Netflix / Apple TV / HBO-ish
+   ========================= */
+
+:root {
+  --cp-bg: #000;
+  --cp-white: rgba(255, 255, 255, 0.92);
+  --cp-white-2: rgba(255, 255, 255, 0.72);
+  --cp-white-3: rgba(255, 255, 255, 0.5);
+  --cp-line: rgba(255, 255, 255, 0.12);
+  --cp-line-2: rgba(255, 255, 255, 0.18);
+
+  --cp-panel: rgba(20, 20, 20, 0.55);
+  --cp-panel-2: rgba(20, 20, 20, 0.35);
+
+  --cp-blur: blur(18px);
+  --cp-radius: 22px;
+  --cp-radius-lg: 28px;
+
+  /* твой градиент */
+  --cp-accent: var(--main_gradient);
+}
+
+/* Повноекранний root */
 .cinema-player-root {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--cp-bg);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+
+  /* чтобы UI выглядел “дорого” */
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+/* video */
+.cinema-player-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* scrims */
+.cinema-player-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.cinema-player-scrim--top {
+  top: 0;
+  height: 34vh;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.86),
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+.cinema-player-scrim--bottom {
+  bottom: 0;
+  height: 44vh;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92),
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0)
+  );
+}
+
+/* когда UI скрыт — scrim легче */
+.cinema-player-root.is-no-ui .cinema-player-scrim {
+  opacity: 0.22;
 }
 
 /* fallback */
@@ -19,288 +93,39 @@
   justify-content: center;
   color: #fff;
 }
+
 .cinema-player-fallback-content {
   text-align: center;
+  max-width: 520px;
+  padding: 24px;
 }
+
+.cinema-player-fallback-content h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.cinema-player-fallback-content p {
+  margin: 0;
+  opacity: 0.8;
+}
+
 .cinema-player-fallback-btn {
   margin-top: 16px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-radius: 999px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-/* Відео займає весь root */
-.cinema-player-video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: #000;
-}
-
-/* TOP BAR */
-.cinema-player-top-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #fff;
-  font-size: 14px;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
-}
-
-.cinema-player-back-btn {
-  border: none;
-  background: transparent;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.cinema-player-back-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.cinema-player-title {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 20px;
-}
-
-/* CENTER CONTROLS */
-.cinema-player-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 32px;
-  pointer-events: none;
-}
-
-.cinema-player-center button {
-  pointer-events: all;
-}
-
-.cinema-player-circle-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 1px solid var(--white-opacity-20);
-  background: var(--dark-opacity-20);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  backdrop-filter: blur(0px);
-}
-
-.cinema-player-circle-btn span {
-  font-size: 12px;
-}
-
-.cinema-player-main-btn {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: none;
-  background: var(--white-opacity-10);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--white);
-}
-
-/* BOTTOM BAR – завжди ПРИЖАТИЙ ДО НИЗУ В’ЮПОРТА */
-.cinema-player-bottom {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%);
-  right: 0;
-  bottom: 32px;
-  padding: 10px 18px 32px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: 900px;
-  background: var(--white-opacity-20);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--white-opacity-20);
-  border-radius: 24px;
-}
-
-/* Прогрес */
-.cinema-player-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cinema-player-time {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.cinema-player-progress {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--white-opacity-10);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-}
-.cinema-player-progress::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--white);
-  border: none;
-}
-.cinema-player-progress::-moz-range-thumb {
-  width: 24px;
-  height: 242px;
-  border-radius: 50%;
-  background: var(--white);
-  border: none;
-}
-
-/* Нижній ряд кнопок */
-.cinema-player-controls-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: var(--cp-blur);
 }
 
-.cinema-player-controls-left,
-.cinema-player-controls-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.cinema-player-controls-center {
-  flex: 1;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cinema-player-controls-row button {
-  border: none;
-  background: transparent;
-  color: var(--white);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-}
-
-.cinema-player-now-playing {
-  opacity: 0.9;
-}
-
-/* volume slider */
-.cinema-player-volume {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 90px;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--white-opacity-40);
-  cursor: pointer;
-  outline: none;
-}
-
-/* thumb Chrome / Safari / Edge */
-.cinema-player-volume::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #ffffff;
-}
-
-/* thumb Firefox */
-.cinema-player-volume::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid #ffffff;
-}
-
-.cinema-player-volume::-moz-range-track {
-  height: 4px;
-  border-radius: 999px;
-  background: #444;
-}
-
-.cinema-player-volume:active::-webkit-slider-thumb,
-.cinema-player-volume:active::-moz-range-thumb {
-  transform: scale(1.1);
-}
-
-/* адаптив */
-@media (max-width: 900px) {
-  .cinema-player-bottom {
-    width: 100%;
-    bottom: 0;
-    border-radius: 0px;
-    background: transparent;
-    border: none;
-    backdrop-filter: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .cinema-player-center {
-    gap: 20px;
-  }
-  .cinema-player-circle-btn {
-    width: 56px;
-    height: 56px;
-  }
-  .cinema-player-main-btn {
-    width: 72px;
-    height: 72px;
-  }
-  .cinema-player-controls-row {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .cinema-player-volume {
-    width: 70px;
-  }
-  .cinema-player-title {
-    max-width: 60%;
-  }
-}
-
-/* Лоадер */
+/* loading */
 .cinema-player-loading {
   position: absolute;
   inset: 0;
@@ -308,15 +133,17 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 50;
 }
 
 .cinema-player-spinner {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #ffffff;
-  animation: cinema-player-spin 0.8s linear infinite;
+  border: 4px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  animation: cinema-player-spin 0.85s linear infinite;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55));
 }
 
 @keyframes cinema-player-spin {
@@ -325,101 +152,530 @@
   }
 }
 
-/* ховаємо volume на мобілках */
-@media (max-width: 768px) {
-  .cinema-player-volume {
-    display: none;
-  }
-}
+/* ================= TOP BAR ================= */
+.cinema-player-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 
-.cinema-player-controls-right {
+  z-index: 10;
+
+  padding: 18px 22px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: relative; /* щоб меню якості прив'язати сюди */
+  gap: 14px;
+
+  color: var(--cp-white);
 }
 
-/* Кнопка settings */
-.cinema-player-settings-btn {
+.cinema-player-back-btn {
   border: none;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 999px;
-  padding: 6px 8px;
+  background: transparent;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   cursor: pointer;
+  opacity: 0.95;
+  transition: transform 120ms ease, opacity 120ms ease;
 }
 
+.cinema-player-back-btn:hover {
+  opacity: 1;
+  transform: translateX(-1px);
+}
+
+.cinema-player-back-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.cinema-player-top-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cinema-player-title {
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+.cinema-player-subtitle {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+.cinema-player-top-actions {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 10px;
+}
+
+/* pill button */
+.cinema-player-pill {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: var(--cp-blur);
+  color: var(--cp-white);
+  border-radius: 999px;
+  padding: 9px 12px;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+}
+
+.cinema-player-pill:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cinema-player-pill:active {
+  transform: translateY(0px);
+}
+
+.cinema-player-pill svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cinema-player-pill-text {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+.cinema-player-pill--settings {
+  padding: 9px 12px 9px 10px;
+}
+
+/* settings icon */
 .cinema-player-settings-icon {
   width: 18px;
   height: 18px;
   fill: none;
   stroke: #fff;
+  opacity: 0.95;
 }
 
-/* Меню якості */
-.cinema-player-quality-menu {
+/* ================= CENTER ================= */
+.cinema-player-center {
   position: absolute;
-  bottom: 42px; /* над нижньою панеллю */
-  right: 0;
-  min-width: 300px;
-  padding: 8px 0;
-  border-radius: 12px;
-  background: var(--dark-opacity-70);
-  backdrop-filter: blur(10px);
+  inset: 0;
+  z-index: 12;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+
+  pointer-events: none;
+}
+
+.cinema-player-center button {
+  pointer-events: all;
+}
+
+.cinema-player-main-btn {
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: var(--cp-blur);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cp-white);
+
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  transition: transform 130ms ease, background 130ms ease, border 130ms ease;
+}
+
+.cinema-player-main-btn:hover {
+  transform: scale(1.04);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cinema-player-main-btn:active {
+  transform: scale(0.99);
+}
+
+/* skip buttons like Netflix */
+.cinema-player-skip {
+  width: 74px;
+  height: 74px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  background: rgba(20, 20, 20, 0.35);
+  backdrop-filter: var(--cp-blur);
+
+  color: var(--cp-white);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  transition: transform 130ms ease, background 130ms ease, border 130ms ease;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.cinema-player-skip:hover {
+  transform: scale(1.03);
+  background: rgba(20, 20, 20, 0.48);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.cinema-player-skip span {
+  font-size: 12px;
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+
+/* ================= BOTTOM PANEL ================= */
+.cinema-player-bottom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 26px;
+
+  z-index: 20;
+  width: var(--container-w);
+
+  padding: 14px 16px 14px;
+  border-radius: var(--cp-radius-lg);
+
+  /* background: rgba(20, 20, 20, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: var(--cp-blur);
+
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08); */
+
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  z-index: 20;
+  gap: 12px;
+}
+
+/* progress row */
+.cinema-player-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cinema-player-time {
+  font-size: 12px;
+  color: var(--cp-white-2);
+  min-width: 44px;
+  text-align: center;
+}
+
+.cinema-player-progress-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* progress slider */
+.cinema-player-progress {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+
+  /* 2-layer background: accent progress + base track */
+  background-image: var(--cp-accent),
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.18)
+    );
+  background-size: 0% 100%, 100% 100%;
+  background-repeat: no-repeat;
+
+  cursor: pointer;
+  outline: none;
+}
+
+.cinema-player-progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+
+  transition: transform 120ms ease;
+}
+
+.cinema-player-progress:active::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.cinema-player-progress::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 3px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* controls row */
+.cinema-player-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cinema-player-controls-left,
+.cinema-player-controls-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cinema-player-controls-center {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.cinema-player-now-playing {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 13px;
+  color: var(--cp-white-2);
+  letter-spacing: -0.01em;
+}
+
+/* icon buttons */
+.cinema-player-icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: var(--cp-blur);
+
+  color: var(--cp-white);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
+}
+
+.cinema-player-icon-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.cinema-player-icon-btn:active {
+  transform: translateY(0px);
+}
+
+.cinema-player-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* volume */
+.cinema-player-volume-wrap {
+  width: 120px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+}
+
+.cinema-player-volume {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  outline: none;
+
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.65),
+    rgba(255, 255, 255, 0.22)
+  );
+}
+
+.cinema-player-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+}
+
+.cinema-player-volume::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.35);
+}
+
+/* Quality menu */
+.cinema-player-controls-right {
+  position: relative;
+}
+
+.cinema-player-quality-menu {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+
+  min-width: 280px;
+  border-radius: 16px;
+  padding: 10px;
+
+  background: rgba(12, 12, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: var(--cp-blur);
+
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.85);
+  z-index: 50;
 }
 
 .cinema-player-quality-menu-title {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
-  padding: 2px 12px 6px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.58);
+  padding: 6px 8px 10px;
 }
 
-.cinema-player-quality-option--active,
-.cinema-player-quality-option--active:hover {
-  background: var(--main_gradient);
-  font-weight: 600;
-  border-radius: 8px;
-}
-.cinema-player-quality-option--active {
-  font-weight: 600;
-
-  color: var(--blue);
-}
-
-/* якщо хочеш сховати менюшку на мобілці */
-@media (max-width: 768px) {
-  .cinema-player-quality-menu {
-    right: 8px;
-  }
+.cinema-player-quality-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .cinema-player-quality-option {
-  border: none;
-  color: #fff;
-  padding: 4px 12px;
-  font-size: 20px;
-  font-weight: 600;
-  cursor: pointer;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
 
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  cursor: pointer;
   text-align: left;
-  padding-left: 24px;
+  font-size: 14px;
+  font-weight: 650;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  transition: transform 120ms ease, background 120ms ease, border 120ms ease;
 }
 
 .cinema-player-quality-option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* АКТИВНА ЯКІСТЬ – завжди синя */
-.cinema-player-quality-option--active,
-.cinema-player-quality-option--active:hover {
-  color: var(--blue) !important; /* завжди синій текст */
-  font-weight: 600;
+.cinema-player-quality-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+.cinema-player-quality-option--active {
+  background-image: var(--cp-accent);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(0, 0, 0, 0.92);
+}
+
+.cinema-player-quality-option--active .cinema-player-quality-dot {
+  background: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.18);
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .cinema-player-bottom {
+    bottom: 12px;
+    width: calc(100% - 16px);
+    border-radius: 18px;
+    padding: 12px;
+  }
+
+  .cinema-player-volume-wrap {
+    width: 92px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cinema-player-center {
+    gap: 16px;
+  }
+
+  .cinema-player-main-btn {
+    width: 78px;
+    height: 78px;
+  }
+
+  .cinema-player-skip {
+    width: 62px;
+    height: 62px;
+  }
+
+  .cinema-player-controls-row {
+    gap: 8px;
+  }
+
+  /* прячем volume на мобилках как у тебя было */
+  .cinema-player-volume-wrap {
+    display: none;
+  }
+
+  .cinema-player-title {
+    font-size: 16px;
+  }
+
+  .cinema-player-quality-menu {
+    right: 0;
+    min-width: 240px;
+  }
 }

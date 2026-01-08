@@ -76,28 +76,31 @@ function CollectionsPage() {
           onMovieSelect={setSelectedMovie}
           currentUser={currentUser}
         />
-        <div className="collections-content">
-          <div className="category-content-top">
-            <div className="category-content-title">
-              <BackIcon
-                style={{ cursor: "pointer" }}
-                onClick={() => navigate(-1)} // ⬅ назад в истории
-              />
+        <div className="page-content">
+          <div className="collections-content">
+            <div className="category-content-top">
+              <div className="category-content-title">
+                <BackIcon
+                  style={{ cursor: "pointer" }}
+                  onClick={() => navigate(-1)} // ⬅ назад в истории
+                />
 
-              <span className="row-header-title">Колекції</span>
+                <span className="row-header-title">Колекції</span>
+              </div>
+            </div>
+
+            <div className="collection-container">
+              {collections.slice(0, visibleCount).map((collection) => (
+                <CollectionCard
+                  key={collection.filename}
+                  collection={collection}
+                />
+              ))}
             </div>
           </div>
-
-          <div className="collection-container">
-            {collections.slice(0, visibleCount).map((collection) => (
-              <CollectionCard
-                key={collection.filename}
-                collection={collection}
-              />
-            ))}
-          </div>
         </div>
-        <Footer />
+
+        {/* <Footer /> */}
       </div>
     </>
   );

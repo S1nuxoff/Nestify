@@ -49,7 +49,7 @@ function HistoryPage() {
     };
     fetchData();
   }, []);
-  console.log(history);
+
   return (
     <>
       <div className="container">
@@ -59,16 +59,18 @@ function HistoryPage() {
           currentUser={currentUser}
         />
         <>
-          <div className="history-page__content">
-            <Explorer
-              Page={history}
-              title={"Історія перегляду"}
-              currentUser={currentUser}
-              onMovieSelect={handleMovieSelect}
-            />
+          <div className="page-content">
+            <div className="history-page__content">
+              <Explorer
+                Page={history}
+                title={"Історія перегляду"}
+                currentUser={currentUser}
+                onMovieSelect={handleMovieSelect}
+              />
+            </div>
           </div>
         </>
-        <Footer />
+        {/* <Footer /> */}
       </div>
     </>
   );

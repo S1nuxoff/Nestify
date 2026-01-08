@@ -1,8 +1,8 @@
 // App.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-
+import { Camera } from "lucide-react";
 import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import CategoryPage from "./pages/CategoryPage";
@@ -18,10 +18,12 @@ import nestifyPlayerClient from "./api/ws/nestifyPlayerClient";
 import PrivateRoute from "./components/PrivateRoute";
 import SessionControls from "./components/SessionControls";
 import ConnectPlayerPage from "./pages/ConnectPlayerPage";
-
+import BrowseCategory from "./pages/BrowseCategory";
+import BrowsePage from "./pages/BrowsePage";
 import "./styles/App.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
+import { getPage, getCategories, getWatchHistory } from "./api/hdrezka";
 
 const PageTransition = ({ children }) => {
   return (
@@ -38,8 +40,20 @@ const PageTransition = ({ children }) => {
 };
 
 function App() {
+  const [categories, setCategories] = useState([]);
   const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { categories: list = [] } = await getCategories();
+        setCategories(list);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     // піднімаємо WS до TV-плеєра, якщо вже є збережений deviceId
@@ -143,6 +157,16 @@ function App() {
                 <PageTransition>
                   <UserSettingsPage />
                 </PageTransition>
+              }
+            />
+            <Route
+              path="/browse/:categoryTitle"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <BrowsePage categories={categories} />
+                  </PageTransition>
+                </PrivateRoute>
               }
             />
 

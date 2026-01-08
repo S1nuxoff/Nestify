@@ -13,16 +13,15 @@ import { getMovieSources } from "../api/hdrezka/getMovieStreamUrl";
 import useMovieDetails from "../hooks/useMovieDetails";
 import useMovieSource from "../hooks/useMovieSource";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
-import StickyCategoryHeader from "../components/ui/StickyCategoryHeader";
 import Alert from "../components/ui/Alert";
 
 import { fromRezkaSlug } from "../core/rezkaLink";
 import config from "../core/config";
 
-import MovieBackground from "../components/movie/MovieBackground";
 import MovieHeader from "../components/movie/MovieHeader";
 import MovieEpisodes from "../components/movie/MovieEpisodes";
 import MoviePlayDialog from "../components/movie/MoviePlayDialog";
+import MovieCast from "../components/movie/MovieCast";
 
 import "../styles/MoviePage.css";
 
@@ -60,6 +59,9 @@ const MoviePage = () => {
 
   const [playDialogOpen, setPlayDialogOpen] = useState(false);
   const [playMode, setPlayMode] = useState("browser"); // "browser" | "tv"
+
+  // Tabs: default episodes
+  const [activeTab, setActiveTab] = useState("episodes"); // "episodes" | "details"
 
   const { playMovieSource } = useMovieSource();
   const { movieDetails, loading } = useMovieDetails(fullMovieLink);
@@ -126,9 +128,26 @@ const MoviePage = () => {
       (playerStatus.state || "").toString().toLowerCase()
     );
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  // Episodes exist?
+  const hasEpisodes =
+    !!movieDetails &&
+    movieDetails.action === "get_stream" &&
+    Array.isArray(movieDetails.episodes_schedule) &&
+    movieDetails.episodes_schedule.length > 0 &&
+    Array.isArray(movieDetails.episodes_schedule[0]?.episodes) &&
+    movieDetails.episodes_schedule[0].episodes.length > 0;
+
+  // Автовибір таба: якщо серій нема — "Деталі", якщо є — дефолт "Серії"
+  useEffect(() => {
+    if (!movieDetails) return;
+
+    if (!hasEpisodes) {
+      setActiveTab("details");
+    } else {
+      // не перебивати вручну обрані "Деталі"
+      setActiveTab((prev) => (prev === "details" ? "details" : "episodes"));
+    }
+  }, [movieDetails, hasEpisodes]);
 
   // ---------- helper: дефолтний S1E1 ----------
   const resolveSeasonEpisode = () => {
@@ -406,17 +425,20 @@ const MoviePage = () => {
   const handleSelectSeason = (seasonNumber) => {
     setSelectedSeason(seasonNumber);
     setSelectedEpisode(null);
+    setActiveTab("episodes");
   };
 
   const handleSelectEpisode = (episodeNumber) => {
     setSelectedEpisode(episodeNumber);
     setValidationMessage("");
+    setActiveTab("episodes");
     setPlayDialogOpen(true);
   };
 
   return (
-    <div className="container">
+    <div className="">
       {isCurrentMovieOnTv && (
+        // MoviePage.jsx (там где контейнер)
         <div className="movie-page__tv-session-container">
           <div className="movie-page__tv-session">
             <SessionPlaybackControls />
@@ -424,42 +446,43 @@ const MoviePage = () => {
         </div>
       )}
 
-      <MovieBackground image={movieDetails?.image} />
-
-      <Header categories={categories} currentUser={currentUser} />
+      <Header
+        // showMenu={false}
+        categories={categories}
+        currentUser={currentUser}
+      />
 
       <main className="movie-page-main">
         <div className="movie-page-container">
-          <StickyCategoryHeader title="Назад" onBack={handleBack} />
-
           {loading && (
-            <section className="movie-page__header movie-page__header-skeleton">
-              <div className="movie-page__header-inner">
-                <div className="movie-page__poster-card movie-page__poster-skeleton skeleton-block" />
+            <div className="container">
+              <section className="movie-page__header movie-page__header-skeleton">
+                <div className="movie-page__header-inner">
+                  <div className="movie-page__poster-card movie-page__poster-skeleton skeleton-block" />
+                  <div className="movie-page__header-details">
+                    <div className="movie-page__skeleton-line skeleton-block skeleton-line-sm" />
+                    <div className="movie-page__skeleton-line skeleton-block skeleton-line-lg" />
+                    <div className="movie-page__skeleton-line skeleton-block skeleton-line-md" />
 
-                <div className="movie-page__header-details">
-                  <div className="movie-page__skeleton-line skeleton-block skeleton-line-sm" />
-                  <div className="movie-page__skeleton-line skeleton-block skeleton-line-lg" />
-                  <div className="movie-page__skeleton-line skeleton-block skeleton-line-md" />
+                    <div className="movie-page__skeleton-chips">
+                      <div className="skeleton-block skeleton-chip" />
+                      <div className="skeleton-block skeleton-chip" />
+                      <div className="skeleton-block skeleton-chip" />
+                    </div>
 
-                  <div className="movie-page__skeleton-chips">
-                    <div className="skeleton-block skeleton-chip" />
-                    <div className="skeleton-block skeleton-chip" />
-                    <div className="skeleton-block skeleton-chip" />
-                  </div>
+                    <div className="movie-page__skeleton-subinfo">
+                      <div className="skeleton-block skeleton-pill" />
+                      <div className="skeleton-block skeleton-pill" />
+                    </div>
 
-                  <div className="movie-page__skeleton-subinfo">
-                    <div className="skeleton-block skeleton-pill" />
-                    <div className="skeleton-block skeleton-pill" />
-                  </div>
-
-                  <div className="movie-page__skeleton-controls">
-                    <div className="skeleton-block skeleton-btn" />
-                    <div className="skeleton-block skeleton-circle" />
+                    <div className="movie-page__skeleton-controls">
+                      <div className="skeleton-block skeleton-btn" />
+                      <div className="skeleton-block skeleton-circle" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </div>
           )}
 
           {!loading && !movieDetails && (
@@ -486,86 +509,139 @@ const MoviePage = () => {
                 onCastClick={handleCastClick}
               />
 
-              <section className="movie-page__details">
-                <span className="row-header-title">Детально</span>
+              <div className="container">
+                {/* Tabs */}
+                <div className="movie-page__tabs">
+                  {hasEpisodes && (
+                    <button
+                      className={`movie-page__tab ${
+                        activeTab === "episodes" ? "is-active" : ""
+                      }`}
+                      onClick={() => setActiveTab("episodes")}
+                      type="button"
+                    >
+                      Епізоди
+                    </button>
+                  )}
 
-                <div className="movie-page__description-wrap">
-                  <p className="movie-page__description">
-                    {movieDetails.description}
-                  </p>
-
-                  <div className="movie-page__infotable">
-                    <div className="movie-page__infotable-row">
-                      <span className="movie-page__infotable-label">Жанр:</span>
-                      {Array.isArray(movieDetails.genre) ? (
-                        movieDetails.genre.map((g, idx) => (
-                          <span
-                            key={idx}
-                            className="movie-page__infotable-value"
-                          >
-                            {g}
-                            {idx < movieDetails.genre.length - 1 ? ", " : ""}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="movie-page__infotable-value">
-                          {movieDetails.genre}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="movie-page__infotable-row">
-                      <span className="movie-page__infotable-label">
-                        Країна:
-                      </span>
-                      {Array.isArray(movieDetails.country) ? (
-                        movieDetails.country.map((c, idx) => (
-                          <span
-                            key={idx}
-                            className="movie-page__infotable-value"
-                          >
-                            {c}
-                            {idx < movieDetails.country.length - 1 ? ", " : ""}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="movie-page__infotable-value">
-                          {movieDetails.country}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="movie-page__infotable-row">
-                      <span className="movie-page__infotable-label">
-                        Режисер:
-                      </span>
-                      {Array.isArray(movieDetails.director) ? (
-                        movieDetails.director.map((d, idx) => (
-                          <span
-                            key={idx}
-                            className="movie-page__infotable-value"
-                          >
-                            {d}
-                            {idx < movieDetails.director.length - 1 ? ", " : ""}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="movie-page__infotable-value">
-                          {movieDetails.director}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <button
+                    className={`movie-page__tab ${
+                      activeTab === "details" ? "is-active" : ""
+                    }`}
+                    onClick={() => setActiveTab("details")}
+                    type="button"
+                  >
+                    Детально
+                  </button>
                 </div>
-              </section>
 
-              <MovieEpisodes
-                movieDetails={movieDetails}
-                selectedSeason={selectedSeason}
-                onSelectSeason={handleSelectSeason}
-                selectedEpisode={selectedEpisode}
-                onSelectEpisode={handleSelectEpisode}
-              />
+                {/* Details */}
+                {activeTab === "details" && (
+                  <section className="movie-page__details">
+                    <span className="row-header-title">Детально</span>
+
+                    <div className="movie-page__description-wrap">
+                      <p className="movie-page__description">
+                        {movieDetails.description}
+                      </p>
+
+                      <div className="movie-page__infotable">
+                        <div className="movie-page__infotable-row">
+                          <span className="movie-page__infotable-label">
+                            Жанр:
+                          </span>
+                          {Array.isArray(movieDetails.genre) ? (
+                            movieDetails.genre.map((g, idx) => (
+                              <span
+                                key={idx}
+                                className="movie-page__infotable-value"
+                              >
+                                {g}
+                                {idx < movieDetails.genre.length - 1
+                                  ? ", "
+                                  : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="movie-page__infotable-value">
+                              {movieDetails.genre}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="movie-page__infotable-row">
+                          <span className="movie-page__infotable-label">
+                            Країна:
+                          </span>
+                          {Array.isArray(movieDetails.country) ? (
+                            movieDetails.country.map((c, idx) => (
+                              <span
+                                key={idx}
+                                className="movie-page__infotable-value"
+                              >
+                                {c}
+                                {idx < movieDetails.country.length - 1
+                                  ? ", "
+                                  : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="movie-page__infotable-value">
+                              {movieDetails.country}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="movie-page__infotable-row">
+                          <span className="movie-page__infotable-label">
+                            Режисер:
+                          </span>
+                          {Array.isArray(movieDetails.director) ? (
+                            movieDetails.director.map((d, idx) => (
+                              <span
+                                key={idx}
+                                className="movie-page__infotable-value"
+                              >
+                                {d}
+                                {idx < movieDetails.director.length - 1
+                                  ? ", "
+                                  : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="movie-page__infotable-value">
+                              {movieDetails.director}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <MovieCast actors={movieDetails.actors} />
+                  </section>
+                )}
+
+                {/* Episodes */}
+                {activeTab === "episodes" && hasEpisodes && (
+                  <MovieEpisodes
+                    movieDetails={movieDetails}
+                    selectedSeason={selectedSeason}
+                    onSelectSeason={handleSelectSeason}
+                    selectedEpisode={selectedEpisode}
+                    onSelectEpisode={handleSelectEpisode}
+                  />
+                )}
+
+                {/* If episodes tab selected but no episodes */}
+                {activeTab === "episodes" && !hasEpisodes && (
+                  <section className="movie-page__details">
+                    <span className="row-header-title">Детально</span>
+                    <p className="movie-page__description">
+                      Для цього тайтлу немає епізодів. Перейдіть у “Деталі”.
+                    </p>
+                  </section>
+                )}
+              </div>
             </div>
           )}
         </div>

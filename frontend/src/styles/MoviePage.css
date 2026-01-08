@@ -1,9 +1,47 @@
 .movie-page-main {
   padding-bottom: 40px;
-  margin-top: 40px;
+  /* margin-top: 40px; */
 }
 .movie-page {
-  margin-top: 16px;
+  /* margin-top: 16px; */
+}
+/* мобільний фон */
+.movie-mobile-poster {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* щоб було м’якше і без країв */
+  transform: scale(1.05);
+}
+
+.movie-mobile-poster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* 👈 можна 2, не треба 3 */
+  background: linear-gradient(
+      to right,
+      rgba(13, 13, 13, 0.45) 0%,
+      rgba(13, 13, 13, 0.32) 25%,
+      rgba(13, 13, 13, 0.18) 45%,
+      rgba(13, 13, 13, 0.08) 60%,
+      rgba(13, 13, 13, 0) 78%
+    ),
+    linear-gradient(
+      to top,
+      var(--bg) 0%,
+      rgba(13, 13, 13, 0.8) 30%,
+      rgba(13, 13, 13, 0.5) 55%,
+      rgba(13, 13, 13, 0.4) 70%,
+      rgba(13, 13, 13, 0) 85%
+    );
+  pointer-events: none;
 }
 
 .movie-page__back-btn {
@@ -101,15 +139,58 @@
   display: flex;
   align-items: center;
   overflow: hidden;
+  min-height: 80vh;
 }
 
 .movie-page__bg {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   z-index: 1;
+  width: 100%;
+
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+
+  /* легкий софт */
+  filter: blur(2px) saturate(0.9);
 }
 
+/* затемнення */
+.movie-page__bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  background:
+    /* ⬅️ слева — СМЯГЧИЛИ */ linear-gradient(
+      to right,
+      rgba(13, 13, 13, 0.45) 0%,
+      /* было var(--bg) */ rgba(13, 13, 13, 0.32) 25%,
+      /* было 0.85 */ rgba(13, 13, 13, 0.18) 45%,
+      /* было 0.55 */ rgba(13, 13, 13, 0.08) 60%,
+      /* было 0.25 */ rgba(13, 13, 13, 0) 78%
+    ),
+    /* ⬇️ снизу — ОСТАВЛЯЕМ КАК ЕСТЬ */
+      linear-gradient(
+        to top,
+        var(--bg) 0%,
+        rgba(13, 13, 13, 0.8) 30%,
+        rgba(13, 13, 13, 0.5) 55%,
+        rgba(13, 13, 13, 0.4) 70%,
+        rgba(13, 13, 13, 0) 85%
+      );
+
+  opacity: 1;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+
+  pointer-events: none;
+}
 .movie-page__poster-vignette {
   width: 100%;
   height: 100%;
@@ -165,6 +246,7 @@
   font-size: 60px;
   font-weight: 800;
   margin: 0;
+  line-height: 1;
 }
 
 /* chips row */
@@ -176,10 +258,12 @@
 }
 
 .movie-page__chip {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  border-radius: 16px;
+
+  border: 1px solid var(--white-opacity-20);
+  background-color: var(--white-opacity-5);
+  backdrop-filter: blur(4px);
   font-size: 18px;
   color: var(--white);
   display: inline-flex;
@@ -188,11 +272,9 @@
 }
 
 .movie-page__chip-rating {
-  background: rgba(0, 0, 0, 0.8);
 }
 
 .movie-page__chip-status {
-  background: rgba(255, 255, 255, 0.06);
 }
 
 .movie-page__chip-value {
@@ -239,15 +321,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
-  height: 42px;
-  border-radius: 999px;
+  width: 250px;
+  height: 50px;
+  border-radius: 16px;
   background: var(--white);
   color: var(--dark);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 24px;
   transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+  gap: 8px;
 }
+
 .movie-page__play-button:hover {
   background: var(--main_gradient);
   transform: translateY(-1px);
@@ -638,7 +722,7 @@
     filter 0.35s ease-out;
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -662,18 +746,8 @@
     justify-content: space-between;
     flex-direction: column;
   }
-
-  .movie-page__poster-overlay {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-        circle at left center,
-        rgba(0, 0, 0, 0.2),
-        rgba(0, 0, 0, 0.2)
-      ),
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
-    z-index: 2;
-    transition: opacity 0.2s ease-in-out;
+  .movie-page__title {
+    text-align: center;
   }
 
   .movie-page__title {
@@ -691,17 +765,53 @@
     height: 320px;
   }
 }
-@media (max-width: 690px) {
+@media (max-width: 900px) {
   .movie-page__header-inner {
     flex-direction: column;
   }
   .movie-page__poster-card {
-    max-width: 100%;
+    /* max-width: %; */
     flex: 0 0;
+    border: 5px solid transparent;
+
+    background: linear-gradient(rgba(15, 15, 30, 0.9), rgba(15, 15, 30, 0.9))
+        padding-box,
+      var(--main_gradient) border-box;
+
+    background-clip: padding-box, border-box;
+    backdrop-filter: blur(2px);
+    display: none;
+  }
+  .movie-page__bg {
+    display: none;
+  }
+  .movie-mobile-poster {
+    display: block;
+    position: absolute;
   }
   .movie-page__header-inner {
-    align-items: flex-start;
+    align-items: center;
   }
+  .movie-page__header-details {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+  .movie-page__progress {
+    width: 100%;
+    max-width: 100%;
+  }
+  .movie-page__controls {
+    width: 100%;
+  }
+  .movie-page__controls-left {
+    width: 100%;
+  }
+  .movie-page__play-button {
+    width: 90%;
+  }
+}
+@media (max-width: 690px) {
 }
 
 @media (max-width: 600px) {
@@ -712,23 +822,6 @@
   .movie-page__description-wrap {
     flex-direction: column;
   }
-}
-
-.movie-page__tv-session-container {
-  position: fixed;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1223232;
-
-  width: min(100vw - 32px, 700px);
-
-  background: var(--white-opacity-5);
-  border-radius: 32px;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  padding: 16px 16px 4px 16px;
-  overflow: auto;
 }
 
 .movie-page__tv-session {
@@ -948,6 +1041,13 @@
   .movie-page__play-dialog-helper {
     font-size: 11px;
   }
+  .movie-page__controls-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .movie-page__play-button {
+    width: 90%;
+  }
 }
 
 /* инфо про выбранную серію в попапе */
@@ -993,7 +1093,6 @@
 }
 .movie-page__progress {
   margin-top: 14px;
-  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1039,4 +1138,438 @@
 .movie-page__progress-percent {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
+}
+
+/* ===== MoviePlayDialog: prettier ===== */
+
+.movie-page__play-dialog--pretty {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.06) 100%
+    ),
+    rgba(10, 10, 10, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.movie-page__play-dialog-glow {
+  position: absolute;
+  inset: -120px -120px auto -120px;
+  height: 260px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.1),
+    transparent 60%
+  );
+  pointer-events: none;
+  filter: blur(2px);
+  z-index: 0;
+}
+
+/* top bar */
+.movie-page__play-dialog-topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.movie-page__play-dialog-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+/* close */
+.movie-page__play-dialog-x--pretty {
+  width: 34px;
+  height: 34px;
+  font-size: 0;
+}
+
+/* title tweaks */
+.movie-page__play-dialog-title-dot {
+  opacity: 0.45;
+  margin: 0 6px;
+}
+
+.movie-page__play-dialog-title-mini {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+}
+
+/* episode pill */
+.movie-page__play-dialog-episode-pill {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+}
+
+/* modes prettier */
+.movie-page__play-dialog-modes--pretty {
+  display: flex;
+  width: 100%;
+  margin-top: 10px;
+  padding: 4px;
+  gap: 6px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.movie-page__play-dialog-mode-btn--pretty {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+}
+
+.movie-page__play-dialog-mode-btn--pretty:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.movie-page__play-dialog-mode-btn--active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* online badge inside TV button */
+.movie-page__play-dialog-online {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.movie-page__play-dialog-online.is-online {
+  box-shadow: 0 0 0 3px rgba(20, 255, 114, 0.1);
+}
+
+.movie-page__play-dialog-online.is-offline {
+  opacity: 0.55;
+}
+
+/* list prettier */
+.movie-page__play-dialog-list--pretty {
+  margin-top: 12px;
+}
+
+/* selected voice button wrapper */
+.movie-page__play-dialog-voice-btn--selected {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:root {
+  --primary-red: #e50914;
+  --glass-white: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --text-main: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.7);
+}
+
+.movie-header {
+  position: relative;
+  width: 100%;
+  padding: 80px 0 40px;
+  background-color: #000; /* Фоновий колір на випадок відсутності зображення */
+}
+
+/* Оверлей для глибини фону */
+.movie-header__backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.movie-header__content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.movie-header__container {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  gap: 50px;
+  padding: 0 30px;
+  align-items: flex-end;
+}
+
+/* Постер */
+.movie-header__poster-side {
+  flex: 0 0 320px;
+  perspective: 1000px;
+}
+
+.movie-header__poster-card {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+  aspect-ratio: 2/3;
+  background: var(--glass-white);
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.movie-header__poster-card.is-loading {
+  filter: blur(10px);
+  transform: scale(0.95);
+}
+
+.movie-header__poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Текстова частина */
+.movie-header__details {
+  flex: 1;
+  padding-bottom: 10px;
+}
+
+.movie-header__meta-top {
+  display: flex;
+  gap: 12px;
+}
+
+.meta-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.meta-age {
+  border: 1.5px solid var(--text-dim);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.movie-header__title {
+  font-size: clamp(34px, 5vw, 64px);
+  font-weight: 900;
+  margin: 0 0 20px 0;
+  line-height: 1;
+  color: var(--text-main);
+}
+
+/* Статистика та чіпи */
+.movie-header__stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-chip {
+  background: var(--glass-white);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  padding: 8px 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.stat-chip.rating {
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.stat-value {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.stat-label {
+  font-size: 10px;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.movie-header__genres {
+  font-size: 18px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+}
+
+/* Прогрес перегляду */
+.movie-header__progress-container {
+  max-width: 440px;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.progress-title {
+  font-weight: 600;
+  color: #fff;
+}
+
+.progress-time {
+  color: var(--text-dim);
+}
+
+.progress-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-red), #ff4d4d);
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+  transition: width 0.6s ease;
+}
+
+.progress-fill.is-complete {
+  background: linear-gradient(90deg, #00c853, #b2ff59);
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.3);
+}
+
+.progress-completed-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #00c853;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* Кнопки */
+.movie-header__actions {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-play {
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 14px 36px;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn-play:hover {
+  background: #e6e6e6;
+  transform: scale(1.03);
+}
+
+.btn-cast {
+  background: var(--glass-white);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .movie-page__bg {
+    display: none;
+  }
+  .mh-progress {
+    min-width: 100%;
+  }
+  .movie-mobile-poster {
+    display: block;
+  }
+}
+
+.movie-page__tabs {
+  display: inline-flex;
+  gap: 16px;
+  padding: 6px;
+}
+
+.movie-page__tab {
+  font-size: 24px;
+  border: none;
+  background: transparent;
+  color: var(--white-opacity-60);
+  font-weight: 400;
+  cursor: pointer;
+  padding-bottom: 8px;
+}
+
+.movie-page__tab.is-active {
+  /* background: var(--white-opacity-10);
+  border-color: var(--white-opacity-20);
+  color: var(--white); */
+  color: var(--white);
+  border-bottom: 1px solid var(--white);
 }

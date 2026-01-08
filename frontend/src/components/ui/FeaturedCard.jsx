@@ -1,36 +1,57 @@
-import React, { useState, useEffect, useRef } from "react";
-import { ReactComponent as PlayIcon } from "../../assets/icons/play.svg";
-import { ReactComponent as VolumeMute } from "../../assets/icons/volume-mute.svg";
-import { ReactComponent as VolumeOne } from "../../assets/icons/volume-one.svg";
-import { ReactComponent as TheMovieDbLogo } from "../../assets/icons/themoviedb_logo.svg";
-import ReactPlayer from "react-player/youtube";
-import "../../styles/Player.css";
+// src/components/ui/FeaturedCard.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import ReactPlayer from "react-player";
+import { Play, Star, Volume2, VolumeOff } from "lucide-react";
 
-function FeaturedCard({ onMovieSelect, movie, isActive, resetTrigger }) {
+import "../../styles/FeaturedHeroCard.css";
+
+function formatTime(sec) {
+  const total = Math.floor(sec || 0);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
+}
+
+export default function FeaturedCard({
+  onMovieSelect,
+  movie,
+  isActive,
+  resetTrigger, // можно не передавать, но оставил совместимость
+}) {
   const [isMuted, setIsMuted] = useState(true);
   const [posterVisible, setPosterVisible] = useState(true);
   const [trailerVisible, setTrailerVisible] = useState(false);
   const [contentVisible, setContentVisible] = useState(true);
-  const [isVisible, setIsVisible] = useState(true); // 👈 нове
+  const [isVisible, setIsVisible] = useState(true);
+
+  const trailerUrl = movie?.trailer_tmdb || movie?.trailer || null;
+  const hasTrailer = Boolean(trailerUrl);
 
   const wrapperRef = useRef(null);
 
+  // 1) IntersectionObserver: играем только когда карточка реально на экране
   useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
+      ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.5 }
     );
 
-    if (wrapperRef.current) observer.observe(wrapperRef.current);
-    return () => {
-      if (wrapperRef.current) observer.unobserve(wrapperRef.current);
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
+  // 2) Сброс состояния при смене активного слайда (если resetTrigger передают)
   useEffect(() => {
     setIsMuted(true);
+    setPosterVisible(true);
+    setTrailerVisible(false);
+    setContentVisible(true);
   }, [resetTrigger]);
 
   const toggleMute = () => {
@@ -38,8 +59,9 @@ function FeaturedCard({ onMovieSelect, movie, isActive, resetTrigger }) {
     setContentVisible((prev) => !prev);
   };
 
+  // 3) Таймеры появления трейлера только на активной карточке
   useEffect(() => {
-    if (isActive && movie?.trailer) {
+    if (isActive && hasTrailer) {
       setPosterVisible(true);
       setTrailerVisible(false);
       setContentVisible(true);
@@ -51,161 +73,173 @@ function FeaturedCard({ onMovieSelect, movie, isActive, resetTrigger }) {
         clearTimeout(hidePosterTimer);
         clearTimeout(showTrailerTimer);
       };
-    } else {
-      setPosterVisible(true);
-      setTrailerVisible(false);
-      setContentVisible(true);
     }
-  }, [isActive, movie?.trailer]);
+
+    // если не активная — всегда показываем постер, трейлер не грузим
+    setPosterVisible(true);
+    setTrailerVisible(false);
+    setContentVisible(true);
+  }, [isActive, hasTrailer]);
+
+  const computed = useMemo(() => {
+    const year = movie?.release_date
+      ? String(movie.release_date).split(",")[0]
+      : "";
+    const ratingValue = Number(movie?.rate || 0);
+
+    const metaItems = [];
+    if (year) metaItems.push(year);
+    if (movie?.duration) metaItems.push(movie.duration);
+    if (movie?.genre?.[0]) metaItems.push(movie.genre[0]);
+
+    return { year, ratingValue, metaItems };
+  }, [movie]);
+
+  if (!movie) return null;
+
+  // ⚠️ у тебя в БД поля: backdrop, poster_tmdb, logo_url
+  const bgImage = movie?.backdrop || movie?.poster_tmdb || movie?.image;
+  const posterImage = movie?.backdrop || movie?.image || bgImage;
+
+  // 4) Ключ: монтируем ReactPlayer только когда реально надо (сильно снижает лаги)
+  const shouldPlayTrailer =
+    hasTrailer && isActive && isVisible && trailerVisible;
 
   return (
-    <div
-      className={`continue-container ${!isMuted ? "unmuted" : ""}`}
+    <section
       ref={wrapperRef}
+      className={`fh-hero ${isActive ? "is-active" : ""} ${
+        !isMuted ? "is-unmuted" : ""
+      }`}
     >
-      <div className="player-preview-wrapper">
+      <div className="fh-media">
         <div
-          style={{
-            opacity: contentVisible ? 1 : 0,
-            transition: "opacity 0.6s ease-in-out",
-          }}
-          className="continue-overlay"
+          className="fh-media__bg"
+          style={{ backgroundImage: `url(${bgImage})` }}
         />
 
-        {movie?.trailer && isActive ? (
-          <>
-            {trailerVisible && (
-              <div className="continue-volume-btn" onClick={toggleMute}>
-                {isMuted ? (
-                  <VolumeMute className="continue-volume-icon" />
-                ) : (
-                  <VolumeOne className="continue-volume-icon" />
-                )}
-              </div>
-            )}
+        <div className="fh-poster-wrap">
+          <img
+            className="fh-poster"
+            src={posterImage}
+            alt=""
+            style={{
+              opacity: posterVisible ? 0.92 : 0,
+              transition: "opacity 1s ease-in-out",
+              zIndex: 2,
+            }}
+          />
 
-            <div className="youtube-player-container">
-              <img
-                src={movie.image}
-                alt="Preview"
-                className="preview-image"
-                style={{
-                  opacity: posterVisible ? 1 : 0,
-                  transition: "opacity 1s ease-in-out",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-
-                  zIndex: 2,
+          {shouldPlayTrailer && (
+            <>
+              <ReactPlayer
+                url={trailerUrl}
+                playing={true}
+                muted={isMuted}
+                controls={false}
+                loop
+                playsinline
+                width="100%"
+                height="100%"
+                className="fh-youtube"
+                config={{
+                  youtube: {
+                    playerVars: {
+                      autoplay: 1,
+                      playsinline: 1,
+                      mute: 1,
+                      modestbranding: 1,
+                      rel: 0,
+                      controls: 0,
+                      fs: 0,
+                      disablekb: 1,
+                    },
+                  },
                 }}
               />
 
-              {trailerVisible && (
-                <ReactPlayer
-                  url={movie.trailer}
-                  playing={isVisible && isActive} // 👈 залежить від скролу
-                  muted={isMuted}
-                  controls={false}
-                  loop
-                  width="100%"
-                  height="100%"
-                  className="youtube-player"
-                  style={{
-                    transition: "opacity 1s ease-in-out",
-                    opacity: 1,
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    zIndex: 1,
-                  }}
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        autoplay: 1,
-                        modestbranding: 1,
-                        rel: 0,
-                        controls: 0,
-                        showinfo: 0,
-                        fs: 0,
-                        disablekb: 1,
-                      },
-                    },
-                  }}
-                />
-              )}
-            </div>
-          </>
-        ) : (
-          <img
-            src={movie.image}
-            alt="Preview"
-            className="preview-image"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-        )}
+              <button
+                type="button"
+                className="fh-volume"
+                onClick={toggleMute}
+                title={isMuted ? "Увімкнути звук" : "Вимкнути звук"}
+              >
+                {isMuted ? <VolumeOff size={22} /> : <Volume2 size={22} />}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div
+          className="fh-overlay"
+          style={{
+            opacity: contentVisible ? 1 : 0.15,
+            transition: "opacity 0.6s ease-in-out",
+          }}
+        />
       </div>
 
       <div
-        className="continue-content"
+        className="fh-content"
         style={{
           opacity: contentVisible ? 1 : 0,
           transition: "opacity 0.6s ease-in-out",
         }}
       >
-        <div className="continue-content-top">
-          {/* <span className="continue-status-text">Зараз у Тренді</span> */}
-          {/* <TheMovieDbLogo className="themoviedb-logo" /> */}
+        <div className="fh-bottom">
+          <div className="fh-titles">
+            {movie?.logo_url ? (
+              <img
+                className="fh-title-logo"
+                src={movie.logo_url}
+                alt={movie.title || "logo"}
+              />
+            ) : (
+              <div className="fh-title">{movie?.title}</div>
+            )}
 
-          <a className="themoviedb-logo" href="https://www.themoviedb.org/">
-            TMDB
-          </a>
-        </div>
-        <span></span>
-        <div className="continue-content-bottom">
-          <div className="continue-titles">
-            <span className="continue-title">{movie?.title}</span>
-            <span className="continue-origin_name">
-              {movie?.origin_name || movie.title}
-            </span>
-          </div>
-
-          <div className="continue-info">
-            <div className="continue-sub_title">
-              {movie?.age && (
-                <span className="continue-sub_age">{movie.age}</span>
-              )}
-              <span className="continue-sub_title-genre">
-                {movie?.genre?.[0]}
-              </span>
-              <div className="continue-sub_title">
-                <span className="continue-sub_title-release_date">
-                  {movie?.release_date}
-                </span>
-                <span className="continue-sub_title-duration">
-                  {movie?.duration}
-                </span>
+            {!movie?.logo_url && (movie?.origin_name || movie?.title) && (
+              <div className="fh-origin">
+                {movie?.origin_name || movie?.title}
               </div>
-            </div>
-            <span className="continue_description">{movie?.description}</span>
+            )}
           </div>
 
-          <div
-            className="continue__play-button"
-            onClick={() => onMovieSelect(movie)}
-          >
-            <PlayIcon /> Дивитися
+          <div className="fh-meta">
+            {movie?.age != null && (
+              <span className="fh-meta-age">{movie.age}</span>
+            )}
+
+            {computed.metaItems.map((t, i) => (
+              <span key={`${t}-${i}`} className="fh-meta-item">
+                {t}
+              </span>
+            ))}
+
+            {Number.isFinite(computed.ratingValue) &&
+              computed.ratingValue > 0 && (
+                <span className="fh-meta-rating">
+                  <Star size={14} />
+                  {computed.ratingValue.toFixed(1)}
+                </span>
+              )}
+          </div>
+
+          {movie?.description && (
+            <div className="fh-desc">{movie.description}</div>
+          )}
+
+          <div className="fh-actions">
+            <button
+              className="fh-play"
+              type="button"
+              onClick={() => onMovieSelect?.(movie)}
+            >
+              <Play fill="black" /> Дивитися
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
-
-export default FeaturedCard;

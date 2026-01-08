@@ -37,13 +37,16 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
     >
       <div
         className={
-          `video-card-preview-wrapper` +
+          "video-card-preview-wrapper" +
           (type === "explorer-card"
             ? " video-card-preview-wrapper-explorer"
             : "") +
           (loaded ? " is-loaded" : " is-loading")
         }
       >
+        {/* skeleton layer */}
+        <div className="video-card-skeleton" />
+
         {imgSrc && (
           <img
             src={imgSrc}
@@ -56,10 +59,6 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
             onLoad={() => setLoaded(true)}
           />
         )}
-
-        <div className="video-card-more-btn-container">
-          <MoreIcon className="video-card-more-btn" />
-        </div>
       </div>
 
       <div className="video-card-meta">

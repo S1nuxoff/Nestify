@@ -1,11 +1,4 @@
 header {
-  margin-top: 32px;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  z-index: 1232222;
 }
 
 .header-buttons {
@@ -13,40 +6,51 @@ header {
   gap: 16px;
 }
 .header-desktop {
-  position: sticky;
+  position: fixed;
   top: 16px;
   z-index: 10000000;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 
-  max-width: 1600px;
+  /* max-width: 1600px; */
   width: 100%;
-  margin: 0 auto 16px;
 
-  padding: 12px 32px;
-  border: 1px solid var(--white-opacity-20);
-  border-radius: 64px;
+  padding: 12px 0px 0px 0px;
+  /* border: 1px solid var(--white-opacity-20); */
+  /* border-radius: 64px; */
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
 
   /* важливо: новий stacking context, щоб blur-шар не “з’їдав” дітей */
   isolation: isolate;
   background: transparent; /* фон переносимо в ::before */
 }
-
+.desktop-header-container {
+  width: var(--container-w);
+  justify-content: center;
+  justify-content: space-between;
+  display: flex;
+  align-items: center;
+}
 .header-desktop::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 0; /* під контентом */
-  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
 
-  /* саме тут blur */
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  backdrop-filter: blur(10px) saturate(120%);
+  /* 👇 легкое затемнение даже без скролла */
+  background: linear-gradient(
+    to bottom,
+    rgba(13, 13, 13, 0.25) 0%,
+    rgba(13, 13, 13, 0.1) 70%,
+    rgba(13, 13, 13, 0) 100%
+  );
 
-  /* напівпрозорий фон як і було */
-  background: var(--dark-opacity-20);
-  border: 1px solid var(--white-opacity-20);
+  transition: background 240ms ease, backdrop-filter 240ms ease,
+    -webkit-backdrop-filter 240ms ease;
 }
 .header-logo-wrapper,
 .search-container,
@@ -120,10 +124,14 @@ header {
   width: 100%;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
 }
-.header-container {
-  width: 100%;
+.mobile-header-container {
+  width: var(--container-w);
+
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
 }
 
 .header-bottom-row {
@@ -200,7 +208,7 @@ header {
   font-weight: 500;
   align-items: center;
   gap: 8px;
-  padding: 0px 24px 0px 0px;
+  /* padding: 0px 24px 0px 0px; */
   height: 50px;
 
   cursor: pointer;
@@ -222,8 +230,8 @@ header {
 }
 .header-user__avatar {
   border-radius: 32px;
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
 }
 
 .dropdown-users-list {
@@ -668,4 +676,79 @@ header {
     opacity: 1;
     transform: none;
   }
+}
+
+.header-search-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: none;
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 120ms ease, background 140ms ease,
+    border-color 140ms ease;
+}
+
+.header-search-btn:hover {
+  transform: translateY(-1px);
+}
+
+.header-search-icon {
+  width: 24px;
+  height: 24px;
+  color: #fff; /* ✅ белый */
+  stroke: #fff; /* на всякий */
+  opacity: 1;
+}
+
+.header-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.header-desktop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  transition: background 240ms ease;
+}
+
+/* ⬇️ ПРИ СКРОЛЛЕ */
+body.header-scrolled .header-desktop::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(13, 13, 13, 0.92) 0%,
+    rgba(13, 13, 13, 0.7) 60%,
+    rgba(13, 13, 13, 0.35) 100%
+  );
+
+  /* опционально: блюр только когда скролл */
+}
+/* обгортка меню тільки для мобілки */
+.mobile-header-menu {
+  transform-origin: top;
+  transition: transform 260ms ease, opacity 220ms ease, filter 260ms ease;
+  will-change: transform, opacity, filter;
+}
+
+/* “круто” ховаємо: вгору зжимаєм, трохи блюр, прозорість */
+.mobile-header-menu.is-hidden {
+  opacity: 0;
+  transform: translateY(-10px) scaleY(0.92);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* якщо хочеш, щоб воно не залишало відступ — можна так */
+.mobile-header-menu.is-hidden {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }

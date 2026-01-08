@@ -1,0 +1,134 @@
+.movie-cast {
+  margin-top: 24px;
+}
+
+.movie-cast__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.movie-cast__count {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.movie-cast__rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 140px;
+  gap: 16px;
+
+  overflow-x: auto;
+  padding-bottom: 6px;
+
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.movie-cast__rail::-webkit-scrollbar {
+  height: 6px;
+}
+.movie-cast__rail::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+.movie-cast__rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ───────── CARD ───────── */
+
+.movie-cast__card {
+  scroll-snap-align: start;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  text-decoration: none;
+  color: inherit;
+
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.movie-cast__card:hover {
+  transform: translateY(-4px) scale(1.04);
+}
+
+.movie-cast__card:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+/* ───────── AVATAR ───────── */
+
+.movie-cast__avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.movie-cast__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* fallback — без рамки */
+.movie-cast__fallback {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(238, 238, 238, 0.85);
+
+  background: radial-gradient(
+    120% 120% at 20% 10%,
+    rgba(255, 216, 181, 0.28) 0%,
+    rgba(255, 178, 232, 0.18) 40%,
+    rgba(127, 161, 253, 0.16) 100%
+  );
+}
+
+/* ───────── TEXT ───────── */
+
+.movie-cast__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.movie-cast__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--white);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.movie-cast__job {
+  font-size: 12px;
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
