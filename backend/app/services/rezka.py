@@ -696,7 +696,7 @@ def get_source(
             try:
                 decoded_url = base64.urlsafe_b64decode(newdata).decode("utf-8")
             except Exception:
-                decoded_url = ""
+                decoded_url = newdata  # already plain text, use as-is
             pattern = r"(\[.*?\])(\bhttps?://\S+\.mp4\b)"
             matches = re.findall(pattern, decoded_url)
             source_links = []
