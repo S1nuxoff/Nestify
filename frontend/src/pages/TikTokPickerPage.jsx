@@ -28,19 +28,25 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
   const [speeding, setSpeeding] = useState(false);
   const [paused,   setPaused]   = useState(false);
 
-  const sendCmd = (func) => {
+  const sendCmd = useCallback((func) => {
     iframeRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func, args: [] }),
       "https://www.youtube.com"
     );
-  };
+  }, []);
 
-  const setRate = (rate) => {
+  const setRate = useCallback((rate) => {
     iframeRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "command", func: "setPlaybackRate", args: [rate] }),
       "https://www.youtube.com"
     );
-  };
+  }, []);
+
+  const syncPlayback = useCallback(() => {
+    if (!isActive || !trailerKey) return;
+    sendCmd(muted ? "mute" : "unMute");
+    sendCmd(paused ? "pauseVideo" : "playVideo");
+  }, [isActive, muted, paused, sendCmd, trailerKey]);
 
   const onPressStart = (e) => {
     if (e.target.closest("button")) return;
@@ -74,6 +80,16 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
     }
   }, [isActive]);
 
+  useEffect(() => {
+    if (!isActive || !trailerKey) return undefined;
+
+    const retryTimers = [150, 500, 1200].map((delay) =>
+      setTimeout(syncPlayback, delay)
+    );
+
+    return () => retryTimers.forEach(clearTimeout);
+  }, [isActive, trailerKey, muted, paused, syncPlayback]);
+
   // cleanup on unmount
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
@@ -84,6 +100,7 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
       onPointerUp={onPressEnd}
       onPointerLeave={onPressEnd}
       onPointerCancel={onPressEnd}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {isActive && trailerKey ? (
         <iframe
@@ -91,6 +108,7 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
           key={`${trailerKey}-${muted}`}
           className="tt-video"
           src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${trailerKey}&controls=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`}
+          onLoad={syncPlayback}
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
           title={movie.title}
@@ -149,7 +167,7 @@ export default function TikTokPickerPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [muted, setMuted]         = useState(false);
+  const [muted, setMuted]         = useState(true);
 
   const [categories, setCategories] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
