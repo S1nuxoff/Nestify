@@ -27,13 +27,24 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
     if (onMovieSelect) onMovieSelect(movie);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
   return (
     <div
       className={
-        "video-card-container" +
+        "video-card-container tv-focusable" +
         (type === "explorer-card" ? " video-card-container-explorer" : "")
       }
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={movie.filmName ?? movie.title ?? "Фільм"}
     >
       <div
         className={
@@ -59,10 +70,19 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
             onLoad={() => setLoaded(true)}
           />
         )}
+
+        {movie.position > 0 && movie.watch_duration > 0 && (
+          <div className="video-card-progress-bar">
+            <div
+              className="video-card-progress-fill"
+              style={{ width: `${Math.min((movie.position / movie.watch_duration) * 100, 100)}%` }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="video-card-meta">
-        {type === "history" ? null : (
+        {type === "history" || type === "continue" ? null : (
           <div className="movie-type">{getReadableType(movie.type)}</div>
         )}
 
@@ -82,10 +102,9 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
               }))}
         </span>
 
-        {movie.action === "get_stream" && type === "history" && (
+        {movie.action === "get_stream" && (type === "history" || type === "continue") && (
           <div className="video-card-history-meta">
-            <div className="movie-type">Season: {movie.season}</div>
-            <div className="movie-type">Episode: {movie.episode}</div>
+            <div className="movie-type">S{movie.season} · E{movie.episode}</div>
           </div>
         )}
       </div>

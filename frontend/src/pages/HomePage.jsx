@@ -22,7 +22,43 @@ import MediaCard from "../components/ui/MediaCard";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 import Alert from "../components/ui/Alert";
 
-import { Flame, FolderClock, Group, TrendingUp, Star, Zap } from "lucide-react";
+import { Flame, FolderClock, Group, TrendingUp, Star, Zap, Shuffle, X as XIcon } from "lucide-react";
+
+const PICKER_SEEN_KEY = "nestify_picker_seen";
+
+function PickerPromo({ onGo }) {
+  const [visible, setVisible] = React.useState(
+    () => !localStorage.getItem(PICKER_SEEN_KEY)
+  );
+
+  const dismiss = () => {
+    localStorage.setItem(PICKER_SEEN_KEY, "1");
+    setVisible(false);
+  };
+
+  const go = () => { dismiss(); onGo(); };
+
+  if (!visible) return null;
+
+  return (
+    <div className="picker-promo">
+      <div className="picker-promo__left">
+        <span className="picker-promo__label">Нова функція</span>
+        <h3 className="picker-promo__title">Підбір фільмів</h3>
+        <p className="picker-promo__sub">Листай карточки та обирай<br/>що дивитись сьогодні</p>
+        <button className="picker-promo__cta" onClick={go}>Спробувати →</button>
+      </div>
+      <div className="picker-promo__cards" aria-hidden="true">
+        <div className="picker-promo__card pp-card--c" />
+        <div className="picker-promo__card pp-card--b" />
+        <div className="picker-promo__card pp-card--a" />
+      </div>
+      <button className="picker-promo__close" onClick={dismiss} aria-label="Закрити">
+        <XIcon size={16} />
+      </button>
+    </div>
+  );
+}
 
 function HomePage() {
   const [showPlayerConnected, setShowPlayerConnected] = useState(false);
@@ -124,6 +160,15 @@ function HomePage() {
     return () => nestifyPlayerClient.off("connected", handler);
   }, []);
 
+  const continueWatching = Array.isArray(history)
+    ? history.filter(
+        (m) =>
+          m.position > 30 &&
+          m.watch_duration > 0 &&
+          m.position / m.watch_duration < 0.95
+      )
+    : [];
+
   const handleMovieSelect = (movie) => {
     const rawLink = movie.link || movie.filmLink || movie.navigate_to;
     if (!rawLink) return;
@@ -170,21 +215,22 @@ function HomePage() {
                 CardComponent={CollectionCard}
                 // leftIcon={<Group size={24} className="row-title-icon" />}
               />
-              {!isHistoryLoading &&
-                Array.isArray(history) &&
-                history.length > 0 && (
-                  <ContentRowSwiper
-                    data={history}
-                    title="Історія перегляду"
-                    navigate_to="/history"
-                    CardComponent={MediaCard}
-                    cardProps={{
-                      type: "history",
-                      onMovieSelect: handleMovieSelect,
-                    }}
-                    // leftIcon={<FolderClock size={24} className="row-title-icon" />}
-                  />
-                )}
+              {!isHistoryLoading && continueWatching.length > 0 && (
+                <ContentRowSwiper
+                  data={continueWatching}
+                  title="Продовжити перегляд"
+                  navigate_to="/history"
+                  CardComponent={MediaCard}
+                  cardProps={{
+                    type: "continue",
+                    onMovieSelect: handleMovieSelect,
+                  }}
+                />
+              )}
+
+
+
+              <PickerPromo onGo={() => navigate("/feed")} />
 
               <ContentRowSwiper
                 data={page.popular?.items || []}

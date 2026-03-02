@@ -1,0 +1,34 @@
+.history-page__content .explorer-container {
+  padding-top: 48px;
+  padding-bottom: 80px;
+}
+
+.watch-stats {
+  display: flex;
+  gap: 48px;
+  margin-top: 40px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.watch-stats__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.watch-stats__value {
+  font-size: 40px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.watch-stats__label {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

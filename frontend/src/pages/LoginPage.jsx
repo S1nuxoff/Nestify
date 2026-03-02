@@ -41,8 +41,17 @@ function LoginPage() {
           {users.map((user) => (
             <div
               key={user.id}
-              className="login-user-card-wrapper"
+              className="login-user-card-wrapper tv-focusable"
+              tabIndex={0}
+              role="button"
+              aria-label={user.name}
               onClick={() => handleUserSelect(user)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleUserSelect(user);
+                }
+              }}
             >
               <UserLoginCard
                 name={user.name}
@@ -54,7 +63,9 @@ function LoginPage() {
           <button
             type="button"
             onClick={handleAddUser}
-            className="login-create-user login-user-card-wrapper"
+            className="login-create-user login-user-card-wrapper tv-focusable"
+            tabIndex={0}
+            aria-label="Додати користувача"
           >
             <PlusIcon />
           </button>

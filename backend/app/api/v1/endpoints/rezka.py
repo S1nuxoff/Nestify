@@ -7,6 +7,8 @@ from urllib.parse import quote_plus
 from app.services.rezka import extract_id_from_url, get_search
 from app.services.media.get_movie import get_movie_db
 from app.services.media.get_watch_history import get_watch_history
+from app.services.media.get_picker_movies import get_picker_movies
+from app.services.media.get_trailer import get_tmdb_trailer
 
 from app.schemas.progress import ProgressIn, ProgressOut
 from app.services.media.watch_history import (
@@ -173,12 +175,32 @@ async def fetch_movie(
 
 
 @router.get("/get_watch_history")
-async def fetch_watch_history(user_id: int = Query(..., description="ID користувача")):
+async def fetch_watch_history(
+    user_id: int = Query(..., description="ID користувача"),
+    deduplicate: bool = Query(True, description="Дедуплікувати по movie_id"),
+):
     try:
-        result = await get_watch_history(user_id)
+        result = await get_watch_history(user_id, deduplicate=deduplicate)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/picker_movies")
+async def fetch_picker_movies(
+    count: int = Query(30, ge=1, le=100),
+    content_type: Optional[str] = Query(None),
+    genre_id: Optional[int] = Query(None),
+):
+    return await get_picker_movies(count, content_type=content_type, genre_id=genre_id)
+
+
+@router.get("/trailer")
+async def fetch_trailer(tmdb_id: str, tmdb_type: str = "movie"):
+    key = await get_tmdb_trailer(tmdb_id, tmdb_type)
+    if not key:
+        raise HTTPException(status_code=404, detail="No trailer found")
+    return {"key": key}
 
 
 @router.get("/search", response_model=List[FilmCard])

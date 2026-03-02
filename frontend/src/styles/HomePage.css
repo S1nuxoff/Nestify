@@ -4,3 +4,159 @@
   gap: 40px;
   margin-top: 32px;
 }
+
+/* ── Picker promo banner ── */
+.picker-promo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 36px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #180406 0%, #0f0f0f 55%, #0a0a0a 100%);
+  border: 1px solid rgba(229, 9, 20, 0.18);
+  overflow: hidden;
+  min-height: 160px;
+}
+
+/* Red glow top-left */
+.picker-promo::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  left: -60px;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(229, 9, 20, 0.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* ── Left: text block ── */
+.picker-promo__left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+}
+
+.picker-promo__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #e50914;
+}
+
+.picker-promo__title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.picker-promo__sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.picker-promo__cta {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 11px 24px;
+  border-radius: 999px;
+  border: none;
+  background: #e50914;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 6px 24px rgba(229, 9, 20, 0.35);
+}
+
+.picker-promo__cta:hover {
+  background: #ff1e1e;
+  transform: scale(1.04);
+  box-shadow: 0 8px 30px rgba(229, 9, 20, 0.5);
+}
+
+/* ── Right: stacked cards ── */
+.picker-promo__cards {
+  position: relative;
+  width: 110px;
+  height: 138px; /* 2/3 of 90px wide */
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.picker-promo__card {
+  position: absolute;
+  width: 82px;
+  height: 122px;
+  border-radius: 10px;
+  top: 50%;
+  left: 50%;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Back card */
+.pp-card--c {
+  transform: translate(-50%, -50%) rotate(10deg) translate(18px, 4px);
+  background: linear-gradient(160deg, #2c1654, #432371);
+  z-index: 1;
+  opacity: 0.65;
+}
+
+/* Middle card */
+.pp-card--b {
+  transform: translate(-50%, -50%) rotate(4deg) translate(8px, -2px);
+  background: linear-gradient(160deg, #1a3a5c, #1e5799);
+  z-index: 2;
+  opacity: 0.85;
+}
+
+/* Front card */
+.pp-card--a {
+  transform: translate(-50%, -50%) rotate(-3deg);
+  background: linear-gradient(160deg, #7b1f1f, #c0392b);
+  z-index: 3;
+}
+
+/* ── Close ── */
+.picker-promo__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  z-index: 2;
+}
+
+.picker-promo__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 560px) {
+  .picker-promo {
+    padding: 24px 20px;
+  }
+  .picker-promo__title {
+    font-size: 20px;
+  }
+  .picker-promo__cards {
+    display: none;
+  }
+}

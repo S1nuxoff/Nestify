@@ -59,8 +59,18 @@ function EpisodeSelector({
 
   return (
     <div
-      className={containerClass}
+      className={containerClass + " tv-focusable"}
       onClick={() => onSelect?.(episde_id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.(episde_id);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Серія ${episde_id}${episde_title ? ': ' + episde_title : ''}`}
+      aria-pressed={isSelected}
       style={{ "--i": index }}
     >
       <div className="eposide-item__number">

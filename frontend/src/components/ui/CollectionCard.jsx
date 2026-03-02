@@ -16,6 +16,13 @@ function CollectionCardInner(props) {
     if (navigate_to) navigate(`/category/${navigate_to}`);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (navigate_to) navigate(`/category/${navigate_to}`);
+    }
+  };
+
   let imgSrc = "";
   if (local_url) {
     imgSrc = local_url.startsWith("http")
@@ -24,7 +31,14 @@ function CollectionCardInner(props) {
   }
 
   return (
-    <div className="collection-card" onClick={handleClick}>
+    <div
+      className="collection-card tv-focusable"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={title || filename || "Колекція"}
+    >
       <div className="collection-card__preview">
         {imgSrc && (
           <img

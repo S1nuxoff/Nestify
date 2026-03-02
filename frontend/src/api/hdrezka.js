@@ -31,10 +31,22 @@ export const getMainPage = async () => {
   }
 };
 
-export const getWatchHistory = async (user_id) => {
+export const getPickerMovies = async (count = 30, filters = {}) => {
+  const response = await apiClient.get("picker_movies", {
+    params: { count, ...filters },
+  });
+  return response.data;
+};
+
+export const getTrailer = async (tmdb_id, tmdb_type = "movie") => {
+  const response = await apiClient.get("trailer", { params: { tmdb_id, tmdb_type } });
+  return response.data;
+};
+
+export const getWatchHistory = async (user_id, deduplicate = true) => {
   try {
     const response = await apiClient.get("get_watch_history", {
-      params: { user_id },
+      params: { user_id, deduplicate },
     });
     return response.data;
   } catch (error) {

@@ -219,33 +219,39 @@ export default function MovieHeader({
 
             <div className="mh-actions">
               <button
-                className="mh-play"
+                className="mh-play tv-focusable"
                 type="button"
+                tabIndex={0}
                 onClick={onMainPlayClick}
+                aria-label="Дивитися"
               >
                 <Play fill="black" /> Дивитися
               </button>
 
               {hasTrailer && (
                 <button
-                  className="mh-trailer"
+                  className="mh-trailer tv-focusable"
                   type="button"
+                  tabIndex={0}
                   onClick={() => setTrailerOpen(true)}
                   title="Трейлер"
+                  aria-label="Трейлер"
                 >
                   <Film size={18} />
                 </button>
               )}
 
               <button
-                className={`mh-cast ${!playerOnline ? "is-disabled" : ""}`}
+                className={`mh-cast tv-focusable ${!playerOnline ? "is-disabled" : ""}`}
                 type="button"
+                tabIndex={0}
                 onClick={playerOnline ? onCastClick : undefined}
                 title={
                   playerOnline
                     ? "Відправити на Nestify Player"
                     : "Nestify Player офлайн"
                 }
+                aria-label="Відправити на Nestify Player"
               >
                 <CastIcon className="mh-cast__icon" />
               </button>

@@ -44,6 +44,15 @@ function EmptyState({ query, onClear, onHome }) {
 }
 
 function SearchBar({ value, onChange, onSubmit, onClear }) {
+  // TV remote: pressing ArrowDown from the search input jumps to first result card
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const first = document.querySelector('.tv-focusable');
+      if (first) first.focus({ preventScroll: true });
+    }
+  };
+
   return (
     <div className="searchbar">
       <form className="searchbar__form" onSubmit={onSubmit}>
@@ -53,6 +62,7 @@ function SearchBar({ value, onChange, onSubmit, onClear }) {
           placeholder="Шукайте фільми, серіали..."
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleInputKeyDown}
           autoFocus
         />
 

@@ -1,3 +1,16 @@
+.header-menu-new-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: #e50914;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
 .header-menu {
   display: flex;
   gap: 32px;

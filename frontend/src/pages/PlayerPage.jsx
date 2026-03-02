@@ -423,7 +423,15 @@ export default function PlayerPage() {
     });
   };
 
-  /* --- hotkeys --- */
+  /* --- Signal to global TV nav that player is active --- */
+  useEffect(() => {
+    document.body.dataset.tvPlayerActive = 'true';
+    return () => {
+      delete document.body.dataset.tvPlayerActive;
+    };
+  }, []);
+
+  /* --- hotkeys (keyboard + TV remote) --- */
   useEffect(() => {
     const handler = (e) => {
       const video = videoRef.current;
@@ -439,34 +447,67 @@ export default function PlayerPage() {
       }
 
       switch (e.code) {
+        // Play / Pause
+        // Enter = OK button on TV remote
+        case "Enter":
         case "Space":
         case "Spacebar":
           e.preventDefault();
           togglePlay();
+          handleUserActivity();
           break;
+
+        // Seek — Left/Right on TV remote
         case "ArrowRight":
           e.preventDefault();
           seekBy(10);
+          handleUserActivity();
           break;
         case "ArrowLeft":
           e.preventDefault();
           seekBy(-10);
+          handleUserActivity();
           break;
+
+        // Up/Down — just show controls on TV (volume = hardware buttons)
         case "ArrowUp":
-          e.preventDefault();
-          handleVolumeChange({
-            target: { value: Math.min(1, volume + 0.1) },
-          });
-          break;
         case "ArrowDown":
           e.preventDefault();
-          handleVolumeChange({
-            target: { value: Math.max(0, volume - 0.1) },
-          });
+          handleUserActivity();
           break;
+
+        // Media keys (physical play/pause button on remote)
+        case "MediaPlayPause":
+          e.preventDefault();
+          togglePlay();
+          handleUserActivity();
+          break;
+        case "MediaFastForward":
+          e.preventDefault();
+          seekBy(30);
+          handleUserActivity();
+          break;
+        case "MediaRewind":
+          e.preventDefault();
+          seekBy(-30);
+          handleUserActivity();
+          break;
+
+        // Back button on TV remote (fires as Escape in WebView)
+        case "Escape":
+          e.preventDefault();
+          if (isQualityMenuOpen) {
+            setIsQualityMenuOpen(false);
+          } else {
+            navigate(-1);
+          }
+          break;
+
+        // Desktop: fullscreen toggle
         case "KeyF":
           toggleFullscreen();
           break;
+
         default:
           break;
       }
@@ -474,7 +515,8 @@ export default function PlayerPage() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [volume]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQualityMenuOpen]);
 
   if (!movieDetails || !normalizedSources.length) {
     return (

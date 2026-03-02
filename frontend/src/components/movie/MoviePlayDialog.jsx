@@ -1,5 +1,5 @@
 // src/components/movie/MoviePlayDialog.jsx
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import VoiceoverOption from "../ui/VoiceoverOption";
 import "../../styles/MoviePage.css";
 import {
@@ -24,8 +24,40 @@ const MoviePlayDialog = ({
   onClose,
   onTranslatorClick,
 }) => {
-  // 👇 хуки тут більше не потрібні, але важливо: НІЯКИХ ранніх return ДО хуків
-  // (ми їх просто не використовуємо)
+  const dialogRef = useRef(null);
+
+  // Signal TV keyboard hook that a dialog is open (Escape = close dialog, not history.back)
+  useEffect(() => {
+    if (open) {
+      document.body.dataset.tvDialogOpen = 'true';
+    } else {
+      delete document.body.dataset.tvDialogOpen;
+    }
+    return () => { delete document.body.dataset.tvDialogOpen; };
+  }, [open]);
+
+  // When dialog opens, auto-focus first translator button for TV remote
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      const first = dialogRef.current?.querySelector('.tv-focusable');
+      if (first) first.focus({ preventScroll: true });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  // Close on Escape (TV remote Back button)
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
 
   if (!open || !movieDetails) return null;
 
@@ -45,6 +77,7 @@ const MoviePlayDialog = ({
   return (
     <div className="movie-page__play-dialog-backdrop" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="movie-page__play-dialog movie-page__play-dialog--pretty"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -60,8 +93,9 @@ const MoviePlayDialog = ({
           </div>
 
           <button
-            className="movie-page__play-dialog-x movie-page__play-dialog-x--pretty"
+            className="movie-page__play-dialog-x movie-page__play-dialog-x--pretty tv-focusable"
             type="button"
+            tabIndex={0}
             onClick={onClose}
             aria-label="Закрити"
           >
@@ -92,13 +126,15 @@ const MoviePlayDialog = ({
           <div className="movie-page__play-dialog-modes movie-page__play-dialog-modes--pretty">
             <button
               type="button"
+              tabIndex={0}
               className={
-                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty" +
+                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty tv-focusable" +
                 (playMode === "browser"
                   ? " movie-page__play-dialog-mode-btn--active"
                   : "")
               }
               onClick={() => onChangePlayMode("browser")}
+              aria-pressed={playMode === "browser"}
             >
               <MonitorPlay size={16} />
               <span>В браузері</span>
@@ -106,8 +142,9 @@ const MoviePlayDialog = ({
 
             <button
               type="button"
+              tabIndex={0}
               className={
-                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty" +
+                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty tv-focusable" +
                 (playMode === "tv"
                   ? " movie-page__play-dialog-mode-btn--active"
                   : "") +
@@ -116,6 +153,7 @@ const MoviePlayDialog = ({
                   : "")
               }
               onClick={playerOnline ? () => onChangePlayMode("tv") : undefined}
+              aria-pressed={playMode === "tv"}
               title={
                 !playerOnline
                   ? "Nestify Player офлайн"
@@ -142,13 +180,16 @@ const MoviePlayDialog = ({
             <button
               key={translator.id}
               className={
-                "movie-page__play-dialog-voice-btn" +
+                "movie-page__play-dialog-voice-btn tv-focusable" +
                 (selectedTranslatorId === translator.id
                   ? " movie-page__play-dialog-voice-btn--selected"
                   : "")
               }
               type="button"
+              tabIndex={0}
               onClick={() => onTranslatorClick(translator.id)}
+              aria-label={translator.name || translator.id}
+              aria-pressed={selectedTranslatorId === translator.id}
             >
               <VoiceoverOption
                 translator={translator}

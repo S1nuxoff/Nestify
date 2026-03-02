@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, DateTime, ForeignKey
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Index
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
@@ -6,6 +6,9 @@ from app.models.base import Base
 
 class WatchHistory(Base):
     __tablename__ = "watch_history"
+    __table_args__ = (
+        Index("ix_wh_user_updated", "user_id", "updated_at"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

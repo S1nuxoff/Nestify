@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nestify</string>
+    <string name="title_activity_main">Nestify</string>
+    <string name="package_name">com.nestify.app</string>
+    <string name="custom_url_scheme">com.nestify.app</string>
+</resources>

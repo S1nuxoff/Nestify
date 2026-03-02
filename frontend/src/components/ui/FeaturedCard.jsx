@@ -231,9 +231,11 @@ export default function FeaturedCard({
 
           <div className="fh-actions">
             <button
-              className="fh-play"
+              className="fh-play tv-focusable"
               type="button"
+              tabIndex={0}
               onClick={() => onMovieSelect?.(movie)}
+              aria-label={`Дивитися ${movie?.title || ''}`}
             >
               <Play fill="black" /> Дивитися
             </button>

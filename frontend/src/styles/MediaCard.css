@@ -180,6 +180,24 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
+/* Progress bar overlay */
+.video-card-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  z-index: 2;
+}
+
+.video-card-progress-fill {
+  height: 100%;
+  background: #e50914;
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
 /* History meta row */
 .video-card-history-meta {
   display: flex;

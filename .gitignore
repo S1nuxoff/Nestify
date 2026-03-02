@@ -9,8 +9,10 @@
 /coverage
 
 # production
-
-
+./mapper
+mapper
+/mapper
+app/mapper
 # misc
 .DS_Store
 .env.local

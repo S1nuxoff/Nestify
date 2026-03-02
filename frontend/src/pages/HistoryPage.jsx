@@ -12,6 +12,41 @@ import { ReactComponent as BackIcon } from "../assets/icons/back.svg";
 import { toRezkaSlug } from "../core/rezkaLink";
 import "../styles/HistoryPage.css";
 
+function getFunFact(totalSeconds) {
+  const hours = totalSeconds / 3600;
+  if (hours >= 48) return { value: `${(hours / 24).toFixed(1)}`, label: "доби без сну" };
+  if (hours >= 10) return { value: `${Math.floor(hours / 10)}`, label: "перельоти Київ → NY" };
+  return { value: `${Math.floor(totalSeconds / (45 * 60))}`, label: "серії по 45 хв" };
+}
+
+function WatchStats({ history }) {
+  if (!history || history.length === 0) return null;
+  const totalSeconds = history.reduce((sum, m) => sum + (m.position || 0), 0);
+  if (totalSeconds < 60) return null;
+
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const timeValue = h > 0 ? `${h}г ${m}хв` : `${m}хв`;
+  const funFact = getFunFact(totalSeconds);
+
+  return (
+    <div className="watch-stats">
+      <div className="watch-stats__item">
+        <span className="watch-stats__value">{timeValue}</span>
+        <span className="watch-stats__label">переглянуто</span>
+      </div>
+      <div className="watch-stats__item">
+        <span className="watch-stats__value">{history.length}</span>
+        <span className="watch-stats__label">тайтлів</span>
+      </div>
+      <div className="watch-stats__item">
+        <span className="watch-stats__value">{funFact.value}</span>
+        <span className="watch-stats__label">{funFact.label}</span>
+      </div>
+    </div>
+  );
+}
+
 function HistoryPage() {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
@@ -31,7 +66,7 @@ function HistoryPage() {
   useEffect(() => {
     (async () => {
       try {
-        setHistory(await getWatchHistory(currentUser.id));
+        setHistory(await getWatchHistory(currentUser.id, false));
       } catch (e) {
         console.error("getWatchHistory error:", e);
       } finally {
@@ -66,6 +101,9 @@ function HistoryPage() {
                 title={"Історія перегляду"}
                 currentUser={currentUser}
                 onMovieSelect={handleMovieSelect}
+                headerExtra={<WatchStats history={history} />}
+                paginate
+                cardType="history"
               />
             </div>
           </div>

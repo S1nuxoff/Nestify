@@ -127,6 +127,7 @@
   --page-pad-y: 24px;
 
   --section-gap: 22px;
+  --sw-gap: 22px;
 
   --card-mobile-width: clamp(120px, 38vw, 148px);
   --avatar-mobile-size: clamp(72px, 24vw, 100px);

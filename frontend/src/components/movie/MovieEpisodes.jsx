@@ -1,5 +1,5 @@
 // src/components/movie/MovieEpisodes.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import EpisodeSelector from "../ui/EpisodeSelector";
 import "../../styles/MoviePage.css";
 
@@ -49,6 +49,8 @@ const MovieEpisodes = ({
     return () => clearTimeout(t);
   }, [hasEpisodes, selectedSeason, movieDetails?.episodes_schedule]);
 
+  const seasonListRef = useRef(null);
+
   const toggleSeasonDropdown = () => {
     setIsSeasonDropdownOpen((prev) => !prev);
   };
@@ -57,6 +59,16 @@ const MovieEpisodes = ({
     onSelectSeason(seasonNumber);
     setIsSeasonDropdownOpen(false);
   };
+
+  // When dropdown opens, auto-focus the first season item for TV remote
+  useEffect(() => {
+    if (!isSeasonDropdownOpen) return;
+    const timer = setTimeout(() => {
+      const first = seasonListRef.current?.querySelector('.tv-focusable');
+      if (first) first.focus({ preventScroll: true });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [isSeasonDropdownOpen]);
 
   if (!hasEpisodes) return null;
 
@@ -70,20 +82,47 @@ const MovieEpisodes = ({
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="movie-page__season-current"
+            className="movie-page__season-current tv-focusable"
             onClick={toggleSeasonDropdown}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleSeasonDropdown();
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsSeasonDropdownOpen(false);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-haspopup="listbox"
+            aria-expanded={isSeasonDropdownOpen}
           >
             {selectedSeason ? `Сезон ${selectedSeason}` : "Оберіть сезон"}
             <span className="movie-page__season-arrow">▾</span>
           </div>
 
           {isSeasonDropdownOpen && (
-            <div className="movie-page__season-list">
+            <div className="movie-page__season-list" ref={seasonListRef} role="listbox">
               {movieDetails.episodes_schedule.map((season) => (
                 <div
                   key={season.season_number}
-                  className="movie-page__season-item"
+                  className="movie-page__season-item tv-focusable"
                   onClick={() => handleSeasonClick(season.season_number)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSeasonClick(season.season_number);
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setIsSeasonDropdownOpen(false);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="option"
+                  aria-selected={selectedSeason === season.season_number}
                 >
                   <span className="movie-page__season-title">
                     Сезон {season.season_number}

@@ -3,59 +3,76 @@ from app.models.watch_history import WatchHistory
 from app.models.movies import Movie
 from app.db.session import async_session
 
+_HISTORY_LIMIT = 50
 
-async def get_watch_history(user_id: int):
+
+async def get_watch_history(user_id: int, deduplicate: bool = True):
     async with async_session() as session:
         async with session.begin():
-            # 1) берём все записи по юзеру, самые свежие идут первыми
-            result = await session.execute(
-                select(WatchHistory)
+            q = (
+                select(
+                    WatchHistory.movie_id,
+                    WatchHistory.updated_at,
+                    WatchHistory.position_seconds,
+                    WatchHistory.duration.label("watch_duration"),
+                    WatchHistory.episode,
+                    WatchHistory.season,
+                    WatchHistory.translator_id,
+                    Movie.title,
+                    Movie.link,
+                    Movie.origin_name,
+                    Movie.release_date,
+                    Movie.description,
+                    Movie.action,
+                    Movie.age,
+                    Movie.trailer,
+                    Movie.genre,
+                    Movie.image,
+                    Movie.country,
+                    Movie.duration.label("movie_duration"),
+                )
+                .outerjoin(Movie, Movie.id == WatchHistory.movie_id)
                 .where(WatchHistory.user_id == user_id)
                 .order_by(WatchHistory.updated_at.desc())
             )
-            rows = result.scalars().all()
+            if deduplicate:
+                q = q.limit(_HISTORY_LIMIT)
+            result = await session.execute(q)
+            rows = result.all()
             if not rows:
                 return None
 
             data = []
-            seen_movies = set()  # сюда складываем movie_id, которые уже добавили
+            seen_movies = set()
 
-            for item in rows:
-                # пропускаем, если такой фильм уже попал в выдачу
-                if item.movie_id in seen_movies:
-                    continue
+            for row in rows:
+                if deduplicate:
+                    if row.movie_id in seen_movies:
+                        continue
+                    seen_movies.add(row.movie_id)
 
-                # 2) берём сам фильм
-                movie_row = await session.execute(
-                    select(Movie).where(Movie.id == item.movie_id)
-                )
-                movie = movie_row.scalars().first()
-                if not movie:
-                    continue
-
-                # 3) кладём в результат и помечаем как «уже есть»
                 data.append(
                     {
-                        "id": item.movie_id,
-                        "title": movie.title,
-                        "link": movie.link,
-                        "origin_name": movie.origin_name,
-                        "release_date": movie.release_date,
-                        "description": movie.description,
-                        "action": movie.action,
-                        "updated_at": item.updated_at,
-                        "age": movie.age,
-                        "trailer": movie.trailer,
-                        "genre": movie.genre,
-                        "image": movie.image,
-                        "country": movie.country,
-                        "duration": movie.duration,
-                        "position": item.position_seconds,
-                        "episode": item.episode,
-                        "season": item.season,
-                        "translator_id": item.translator_id,
+                        "id": row.movie_id,
+                        "title": row.title,
+                        "link": row.link,
+                        "origin_name": row.origin_name,
+                        "release_date": row.release_date,
+                        "description": row.description,
+                        "action": row.action,
+                        "updated_at": row.updated_at,
+                        "age": row.age,
+                        "trailer": row.trailer,
+                        "genre": row.genre,
+                        "image": row.image,
+                        "country": row.country,
+                        "duration": row.movie_duration,
+                        "position": row.position_seconds,
+                        "watch_duration": row.watch_duration,
+                        "episode": row.episode,
+                        "season": row.season,
+                        "translator_id": row.translator_id,
                     }
                 )
-                seen_movies.add(item.movie_id)
 
             return data

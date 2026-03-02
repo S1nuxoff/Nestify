@@ -20,10 +20,14 @@ import SessionControls from "./components/SessionControls";
 import ConnectPlayerPage from "./pages/ConnectPlayerPage";
 import BrowseCategory from "./pages/BrowseCategory";
 import BrowsePage from "./pages/BrowsePage";
+import PickerPage from "./pages/PickerPage";
+import TikTokPickerPage from "./pages/TikTokPickerPage";
 import "./styles/App.css";
+import "./styles/tv.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import { getPage, getCategories, getWatchHistory } from "./api/hdrezka";
+import { useTVKeyboard } from "./hooks/useTVKeyboard";
 
 const PageTransition = ({ children }) => {
   return (
@@ -43,6 +47,37 @@ function App() {
   const [categories, setCategories] = useState([]);
   const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
+
+  // Activate D-pad / TV remote spatial navigation
+  useTVKeyboard();
+
+  // Detect TV remote usage: hide cursor and add tv-mode class
+  useEffect(() => {
+    let tvModeTimer = null;
+
+    const onKeyDown = (e) => {
+      const tvKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape'];
+      if (tvKeys.includes(e.key)) {
+        document.body.classList.add('tv-mode');
+      }
+    };
+    const onMouseMove = () => {
+      clearTimeout(tvModeTimer);
+      document.body.classList.remove('tv-mode');
+      // Restore tv-mode if no mouse movement for 3s
+      tvModeTimer = setTimeout(() => {
+        document.body.classList.add('tv-mode');
+      }, 3000);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousemove', onMouseMove);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      clearTimeout(tvModeTimer);
+    };
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -189,6 +224,26 @@ function App() {
                   <PageTransition>
                     <ConnectPlayerPage />
                   </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/pick"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <PickerPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/feed"
+              element={
+                <PrivateRoute>
+                  <TikTokPickerPage />
                 </PrivateRoute>
               }
             />
