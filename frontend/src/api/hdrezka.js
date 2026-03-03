@@ -34,6 +34,7 @@ export const getMainPage = async () => {
 export const getPickerMovies = async (count = 30, filters = {}) => {
   const response = await apiClient.get("picker_movies", {
     params: { count, ...filters },
+    timeout: 30000,
   });
   return response.data;
 };

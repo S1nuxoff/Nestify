@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { X, Heart, Star, RefreshCw, ChevronLeft, Play, Rows3 } from "lucide-react";
 import { getPickerMovies, getTrailer } from "../api/hdrezka";
+import { loadSavedPickerFilters, savePickerFilters } from "../core/pickerFilters";
 import { toRezkaSlug } from "../core/rezkaLink";
-import PickerSetup from "../components/ui/PickerSetup";
+import PickerSetupPanel from "../components/ui/PickerSetupPanel";
 import "../styles/PickerPage.css";
 
 function PickerCard({ movie, onSwipe, zIndex }) {
@@ -98,14 +99,20 @@ function TrailerModal({ trailerKey, onClose }) {
 
 export default function PickerPage() {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState("setup"); // "setup" | "picking"
-  const [filters, setFilters] = useState({});
+  const savedPickerFiltersRef = React.useRef(undefined);
+  if (savedPickerFiltersRef.current === undefined) {
+    savedPickerFiltersRef.current = loadSavedPickerFilters();
+  }
+  const hasInitialSavedFilters = savedPickerFiltersRef.current !== null;
+  const [phase, setPhase] = useState(hasInitialSavedFilters ? "picking" : "setup"); // "setup" | "picking"
+  const [filters, setFilters] = useState(savedPickerFiltersRef.current || {});
   const [movies, setMovies] = useState([]);
   const [index, setIndex] = useState(0);
   const [exitDir, setExitDir] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(hasInitialSavedFilters);
   const [trailerKey, setTrailerKey] = useState(null);
   const [trailerLoading, setTrailerLoading] = useState(false);
+  const autoLoadFiltersRef = React.useRef(hasInitialSavedFilters);
 
   const load = useCallback(async (activeFilters = {}) => {
     setLoading(true);
@@ -119,12 +126,17 @@ export default function PickerPage() {
   }, []);
 
   const handleSetupStart = useCallback((selectedFilters) => {
-    setFilters(selectedFilters);
+    const nextFilters = savePickerFilters(selectedFilters);
+    setFilters(nextFilters);
     setPhase("picking");
-    load(selectedFilters);
+    load(nextFilters);
   }, [load]);
 
-  // no auto-load on mount — wait for setup
+  useEffect(() => {
+    if (!autoLoadFiltersRef.current) return;
+    autoLoadFiltersRef.current = false;
+    load(savedPickerFiltersRef.current || {});
+  }, [load]);
 
   const swipe = useCallback((dir) => {
     setExitDir(dir);
@@ -171,7 +183,14 @@ export default function PickerPage() {
   const isEmpty = !loading && movies.length > 0 && index >= movies.length;
 
   if (phase === "setup") {
-    return <PickerSetup onStart={handleSetupStart} />;
+    return (
+      <PickerSetupPanel
+        onStart={handleSetupStart}
+        initialFilters={filters}
+        onClose={movies.length ? () => setPhase("picking") : null}
+        onBack={() => navigate(-1)}
+      />
+    );
   }
 
   return (
@@ -186,7 +205,7 @@ export default function PickerPage() {
           <button className="pc-refresh-btn" onClick={() => navigate("/feed")} title="TikTok-режим">
             <Rows3 size={16} />
           </button>
-          <button className="pc-refresh-btn" onClick={() => load(filters)} title="Оновити">
+          <button className="pc-refresh-btn" onClick={() => setPhase("setup")} title="Фільтри">
             <RefreshCw size={16} />
           </button>
         </div>
@@ -201,7 +220,7 @@ export default function PickerPage() {
 
         {isEmpty && (
           <div className="pc-empty">
-            <p>Переглянув всі 👀</p>
+            <p>Переглянув усе 👀</p>
             <button className="pc-action-refresh" onClick={load}>
               <RefreshCw size={16} /> Оновити
             </button>

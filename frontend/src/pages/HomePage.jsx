@@ -1,5 +1,5 @@
-// src/pages/HomePage.jsx
-import React, { useState, useEffect } from "react";
+﻿// src/pages/HomePage.jsx
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toRezkaSlug } from "../core/rezkaLink";
 import {
@@ -45,7 +45,7 @@ function PickerPromo({ onGo }) {
       <div className="picker-promo__left">
         <span className="picker-promo__label">Нова функція</span>
         <h3 className="picker-promo__title">Підбір фільмів</h3>
-        <p className="picker-promo__sub">Листай карточки та обирай<br/>що дивитись сьогодні</p>
+        <p className="picker-promo__sub">Гортай картки та обирай<br/>що дивитись сьогодні</p>
         <button className="picker-promo__cta" onClick={go}>Спробувати →</button>
       </div>
       <div className="picker-promo__cards" aria-hidden="true">
@@ -71,8 +71,9 @@ function HomePage() {
   const [currentUser, setCurrentUser] = useState(null);
 
   const navigate = useNavigate();
+  const playerConnectionRef = useRef(nestifyPlayerClient.isConnected);
 
-  // читаємо current_user ОДИН раз
+  // читаємо current_user один раз
   useEffect(() => {
     try {
       const raw = localStorage.getItem("current_user");
@@ -151,7 +152,10 @@ function HomePage() {
   // нотиф про підключення плеєра
   useEffect(() => {
     const handler = (isOnline) => {
-      if (isOnline) {
+      const wasConnected = playerConnectionRef.current;
+      playerConnectionRef.current = isOnline;
+
+      if (isOnline && !wasConnected) {
         setShowPlayerConnected(true);
         setTimeout(() => setShowPlayerConnected(false), 2500);
       }

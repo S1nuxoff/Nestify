@@ -1,10 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMediaQuery } from "react-responsive";
-import { Heart, Volume2, VolumeX, ChevronLeft, RefreshCw, LayoutGrid, Star } from "lucide-react";
-import { getPickerMovies, getTrailer, getCategories } from "../api/hdrezka";
-import { toRezkaSlug } from "../core/rezkaLink";
-import PickerSetup from "../components/ui/PickerSetup";
+import { Heart, Play, Volume2, VolumeX, ChevronLeft, RefreshCw, LayoutGrid, Star } from "lucide-react";
+import { getMovie, getPickerMovies, getTrailer, getCategories } from "../api/hdrezka";
+import { addLikedMovie, getLikedMovies, removeLikedMovie } from "../api/user";
+import config from "../core/config";
+import { loadSavedPickerFilters, savePickerFilters } from "../core/pickerFilters";
+import { fromRezkaSlug, toRezkaSlug } from "../core/rezkaLink";
+import PickerSetupPanel from "../components/ui/PickerSetupPanel";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
 import "../styles/TikTokPicker.css";
@@ -12,9 +15,44 @@ import "../styles/TikTokPicker.css";
 const PRELOAD_AHEAD  = 2; // fetch trailers N slides ahead
 const MORE_THRESHOLD = 4; // load more when this many slides from end
 
-/* ── Single slide ──────────────────────────────────────────── */
-function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
-  const backdrop = movie.backdrop || movie.poster || movie.image;
+function extractYouTubeKey(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  if (/^[A-Za-z0-9_-]{6,}$/.test(raw)) return raw;
+
+  const embedMatch = raw.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/i);
+  if (embedMatch?.[1]) return embedMatch[1];
+
+  try {
+    const url = new URL(raw);
+    if (url.hostname.includes("youtu.be")) {
+      return url.pathname.replace(/^\/+/, "") || null;
+    }
+
+    const videoId = url.searchParams.get("v");
+    if (videoId) return videoId;
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+/* â”€â”€ Single slide â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function TikTokSlide({
+  movie,
+  trailerKey,
+  isActive,
+  muted,
+  onToggleMuted,
+  onOpenPicker,
+  onWatch,
+  isLiked,
+  onToggleLike,
+  likePending,
+  isFirst,
+}) {
   const desc = movie.short_desc?.trim() || movie.overview;
   const typeLabel =
     movie.type === "film"    ? "Фільм"
@@ -25,8 +63,23 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
 
   const iframeRef   = useRef(null);
   const timerRef    = useRef(null);
+  const syncTimersRef = useRef([]);
+  const revealTimerRef = useRef(null);
   const [speeding, setSpeeding] = useState(false);
   const [paused,   setPaused]   = useState(false);
+  const [videoVisible, setVideoVisible] = useState(false);
+
+  const clearSyncTimers = useCallback(() => {
+    syncTimersRef.current.forEach(clearTimeout);
+    syncTimersRef.current = [];
+  }, []);
+
+  const clearRevealTimer = useCallback(() => {
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+  }, []);
 
   const sendCmd = useCallback((func) => {
     iframeRef.current?.contentWindow?.postMessage(
@@ -44,9 +97,41 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
 
   const syncPlayback = useCallback(() => {
     if (!isActive || !trailerKey) return;
-    sendCmd(muted ? "mute" : "unMute");
-    sendCmd(paused ? "pauseVideo" : "playVideo");
-  }, [isActive, muted, paused, sendCmd, trailerKey]);
+    clearSyncTimers();
+
+    if (paused) {
+      sendCmd("pauseVideo");
+      return;
+    }
+
+    // Mobile browsers block autoplay with sound, so always start muted first.
+    sendCmd("mute");
+    sendCmd("playVideo");
+
+    const followUpCommands = muted
+      ? [{ delay: 160, func: "mute" }]
+      : [
+          { delay: 180, func: "unMute" },
+          { delay: 650, func: "unMute" },
+        ];
+
+    syncTimersRef.current = followUpCommands.map(({ delay, func }) =>
+      setTimeout(() => sendCmd(func), delay)
+    );
+  }, [clearSyncTimers, isActive, muted, paused, sendCmd, trailerKey]);
+
+  const revealVideo = useCallback(() => {
+    clearRevealTimer();
+    revealTimerRef.current = setTimeout(() => {
+      setVideoVisible(true);
+      revealTimerRef.current = null;
+    }, 900);
+  }, [clearRevealTimer]);
+
+  const handleIframeLoad = useCallback(() => {
+    syncPlayback();
+    revealVideo();
+  }, [revealVideo, syncPlayback]);
 
   const onPressStart = (e) => {
     if (e.target.closest("button")) return;
@@ -59,12 +144,12 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
 
   const onPressEnd = () => {
     if (timerRef.current !== null) {
-      // short tap — toggle pause
+      // short tap â€” toggle pause
       clearTimeout(timerRef.current);
       timerRef.current = null;
       setPaused((p) => { sendCmd(p ? "playVideo" : "pauseVideo"); return !p; });
     } else if (speeding) {
-      // long press released — restore speed
+      // long press released â€” restore speed
       setSpeeding(false);
       setRate(1);
     }
@@ -75,10 +160,18 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
     if (!isActive) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+      clearSyncTimers();
+      clearRevealTimer();
       setSpeeding(false);
       setPaused(false);
+      setVideoVisible(false);
     }
-  }, [isActive]);
+  }, [clearRevealTimer, clearSyncTimers, isActive]);
+
+  useEffect(() => {
+    setVideoVisible(false);
+    clearRevealTimer();
+  }, [clearRevealTimer, trailerKey]);
 
   useEffect(() => {
     if (!isActive || !trailerKey) return undefined;
@@ -91,7 +184,11 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
   }, [isActive, trailerKey, muted, paused, syncPlayback]);
 
   // cleanup on unmount
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  useEffect(() => () => {
+    clearTimeout(timerRef.current);
+    clearSyncTimers();
+    clearRevealTimer();
+  }, [clearRevealTimer, clearSyncTimers]);
 
   return (
     <div
@@ -102,23 +199,31 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
       onPointerCancel={onPressEnd}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {isActive && trailerKey ? (
-        <iframe
-          ref={iframeRef}
-          key={`${trailerKey}-${muted}`}
-          className="tt-video"
-          src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${trailerKey}&controls=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`}
-          onLoad={syncPlayback}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          title={movie.title}
-        />
-      ) : (
-        <div className="tt-backdrop" style={{ backgroundImage: `url(${backdrop})` }} />
+      <div className="tt-backdrop" />
+
+      {isActive && trailerKey && (
+        <>
+          <iframe
+            ref={iframeRef}
+            key={trailerKey}
+            className={`tt-video${videoVisible ? " tt-video--visible" : ""}`}
+            src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&loop=1&playlist=${trailerKey}&controls=0&fs=0&disablekb=1&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&cc_load_policy=0&enablejsapi=1`}
+            onLoad={handleIframeLoad}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            title={movie.title}
+          />
+
+          {!videoVisible && (
+            <div className="tt-video-loader" aria-hidden="true">
+              <div className="spinner" />
+            </div>
+          )}
+        </>
       )}
       <div className="tt-gradient" />
 
-      {speeding && <div className="tt-speed-badge">2×</div>}
+      {speeding && <div className="tt-speed-badge">2Ă—</div>}
       {paused && trailerKey && <div className="tt-pause-overlay"><div className="tt-pause-icon" /></div>}
 
       <div className="tt-info">
@@ -139,35 +244,77 @@ function TikTokSlide({ movie, trailerKey, isActive, muted, onWatch, isFirst }) {
       </div>
 
       <div className="tt-actions">
+        <button
+          className={`tt-btn tt-btn--like${isLiked ? " is-active" : ""}`}
+          onClick={onToggleLike}
+          disabled={likePending}
+        >
+          <Heart size={28} fill={isLiked ? "currentColor" : "none"} />
+        </button>
+        <button className="tt-btn" onClick={onToggleMuted}>
+          {muted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+        </button>
         <button className="tt-btn tt-btn--watch" onClick={onWatch}>
-          <Heart size={28} fill="currentColor" />
-          <span>Дивитись</span>
+          <Play size={28} fill="currentColor" />
+           <span>Відкрити</span>
+        </button>
+        <button className="tt-btn" onClick={onOpenPicker}>
+          <LayoutGrid size={24} />
         </button>
       </div>
 
       {isFirst && (
         <div className="tt-scroll-hint">
           <div className="tt-scroll-hint__arrow" />
-          <span>гортай</span>
+          <span>Гортай</span>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Page ──────────────────────────────────────────────────── */
+/* â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function TikTokPickerPage() {
+  const location   = useLocation();
   const navigate   = useNavigate();
   const isDesktop  = useMediaQuery({ query: "(min-width: 600px)" });
+  const savedPickerFiltersRef = useRef(undefined);
 
-  const [phase, setPhase]         = useState("setup");
-  const [filters, setFilters]     = useState({});
-  const [movies, setMovies]       = useState([]);
+  const likedFeedState =
+    location.state?.source === "liked" && Array.isArray(location.state?.movies)
+      ? location.state
+      : null;
+  if (savedPickerFiltersRef.current === undefined && !likedFeedState) {
+    savedPickerFiltersRef.current = loadSavedPickerFilters();
+  }
+  const initialSavedFilters = likedFeedState ? null : (savedPickerFiltersRef.current ?? null);
+  const hasInitialSavedFilters = !likedFeedState && initialSavedFilters !== null;
+  const initialLikedMovies = likedFeedState?.movies ?? [];
+  const initialLikedIndex = likedFeedState?.startLink
+    ? Math.max(
+        0,
+        initialLikedMovies.findIndex(
+          (movie) => toRezkaSlug(movie.link) === toRezkaSlug(likedFeedState.startLink)
+        )
+      )
+    : 0;
+  const likedFeedToken = likedFeedState
+    ? `${toRezkaSlug(likedFeedState.startLink || "")}:${initialLikedMovies
+        .map((movie) => movie.link)
+        .join("|")}`
+    : null;
+
+  const [phase, setPhase]         = useState(likedFeedState || hasInitialSavedFilters ? "running" : "setup");
+  const [filters, setFilters]     = useState(initialSavedFilters || {});
+  const [movies, setMovies]       = useState(initialLikedMovies);
   const [trailers, setTrailers]   = useState({}); // { [link]: string | null }
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [loading, setLoading]     = useState(false);
+  const [activeIndex, setActiveIndex] = useState(initialLikedIndex);
+  const [loading, setLoading]     = useState(!likedFeedState && hasInitialSavedFilters);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [muted, setMuted]         = useState(true);
+  const [muted, setMuted]         = useState(false);
+  const [likedLinks, setLikedLinks] = useState(() => new Set());
+  const [likePendingLink, setLikePendingLink] = useState(null);
+  const [feedSource, setFeedSource] = useState(likedFeedState ? "liked" : "picker");
 
   const [categories, setCategories] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -180,26 +327,115 @@ export default function TikTokPickerPage() {
     getCategories().then((r) => setCategories(r?.categories || [])).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setLikedLinks(new Set());
+      return;
+    }
+
+    let cancelled = false;
+
+    getLikedMovies(currentUser.id)
+      .then((items) => {
+        if (cancelled) return;
+        setLikedLinks(
+          new Set((items || []).map((item) => toRezkaSlug(item.link)).filter(Boolean))
+        );
+      })
+      .catch((e) => {
+        if (!cancelled) console.error("getLikedMovies error:", e);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
   const containerRef   = useRef(null);
   const slideRefs      = useRef([]);
   const fetchedRef     = useRef(new Set()); // links already fetched/fetching
   const seenLinksRef   = useRef(new Set()); // dedup across batches
   const loadingMoreRef = useRef(false);     // stable flag (avoids stale closure)
   const filtersRef     = useRef({});        // stable ref to current filters
+  const initialScrollDoneRef = useRef(false);
+  const appliedLikedFeedTokenRef = useRef(likedFeedToken);
+  const autoLoadFiltersRef = useRef(hasInitialSavedFilters);
 
-  // ── Fetch one trailer (idempotent, no state deps) ──────────
-  const fetchTrailerFor = useCallback((movie) => {
-    if (!movie?.tmdb_id) return;
-    const link = movie.link;
+  const hydrateMovieForTrailer = useCallback(async (movie) => {
+    if (!movie?.link || movie?.tmdb_id) return movie;
+
+    try {
+      const details = await getMovie(movie.link, currentUser?.id);
+      const hydratedMovie = {
+        ...movie,
+        tmdb_id: details?.tmdb?.id ? String(details.tmdb.id) : movie.tmdb_id,
+        tmdb_type: details?.tmdb?.type || movie.tmdb_type || null,
+        tmdb_title:
+          details?.tmdb?.title ||
+          details?.tmdb?.original_title ||
+          movie.tmdb_title ||
+          null,
+        overview: details?.tmdb?.overview || movie.overview || details?.description || null,
+        short_desc: movie.short_desc || details?.description || null,
+        backdrop: movie.backdrop || details?.backdrop || details?.backdrop_url_original || null,
+        poster: movie.poster || details?.poster_tmdb || details?.image || null,
+        image: movie.image || details?.image || details?.poster_tmdb || null,
+        trailer_tmdb:
+          movie.trailer_tmdb ||
+          details?.trailer_tmdb ||
+          details?.tmdb?.trailer_youtube ||
+          null,
+        rating: movie.rating || details?.rate || null,
+        year:
+          movie.year ||
+          (details?.release_date
+            ? Number(String(details.release_date).split(",")[0]) || null
+            : null),
+      };
+
+      setMovies((prev) =>
+        prev.map((item) =>
+          item.link === movie.link ? { ...item, ...hydratedMovie } : item
+        )
+      );
+
+      return hydratedMovie;
+    } catch (e) {
+      console.error("hydrateMovieForTrailer error:", e);
+      return movie;
+    }
+  }, [currentUser?.id]);
+
+  // â”€â”€ Fetch one trailer (idempotent, no state deps) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const fetchTrailerFor = useCallback(async (movie) => {
+    const link = movie?.link;
+    if (!link) return;
     if (fetchedRef.current.has(link)) return;
     fetchedRef.current.add(link);
 
-    getTrailer(movie.tmdb_id, movie.tmdb_type || "movie")
-      .then((d) => setTrailers((prev) => ({ ...prev, [link]: d.key })))
-      .catch(()  => setTrailers((prev) => ({ ...prev, [link]: null })));
-  }, []); // stable — no deps
+    const hydratedMovie = await hydrateMovieForTrailer(movie);
+    const directTrailerKey = extractYouTubeKey(
+      hydratedMovie?.trailer_tmdb || hydratedMovie?.trailer
+    );
+    if (directTrailerKey) {
+      setTrailers((prev) => ({ ...prev, [link]: directTrailerKey }));
+      return;
+    }
 
-  // ── Load more (appends to list) ────────────────────────────
+    if (!hydratedMovie?.tmdb_id) return;
+
+    getTrailer(hydratedMovie.tmdb_id, hydratedMovie.tmdb_type || "movie")
+      .then((d) => {
+        if (!d?.key) throw new Error("Trailer not found");
+        setTrailers((prev) => ({ ...prev, [link]: d.key }));
+      })
+      .catch(() => {
+        setTrailers((prev) => ({ ...prev, [link]: null }));
+        setMovies((prev) => prev.filter((item) => item.link !== link));
+      });
+  }, [hydrateMovieForTrailer]);
+
+  // â”€â”€ Load more (appends to list) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current) return;
     loadingMoreRef.current = true;
@@ -215,9 +451,10 @@ export default function TikTokPickerPage() {
     }
   }, []); // stable
 
-  // ── Initial load ───────────────────────────────────────────
+  // â”€â”€ Initial load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const load = useCallback(async (activeFilters = {}) => {
     filtersRef.current = activeFilters;
+    setFeedSource("picker");
     setLoading(true);
     setMovies([]);
     setTrailers({});
@@ -235,23 +472,30 @@ export default function TikTokPickerPage() {
   }, []);
 
   const handleSetupStart = useCallback((selectedFilters) => {
-    setFilters(selectedFilters);
+    const nextFilters = savePickerFilters(selectedFilters);
+    setFilters(nextFilters);
+    setFeedSource("picker");
     setPhase("running");
-    load(selectedFilters);
+    load(nextFilters);
   }, [load]);
 
-  // ── Auto-skip slide when its trailer is not found ──────────
-  const currentTrailerStatus = movies[activeIndex]
-    ? trailers[movies[activeIndex].link]
-    : undefined;
-
   useEffect(() => {
-    if (currentTrailerStatus !== null) return; // undefined = still loading, string = has key
-    const nextEl = slideRefs.current[activeIndex + 1];
-    if (nextEl) nextEl.scrollIntoView({ behavior: "instant" });
-  }, [currentTrailerStatus, activeIndex]);
+    if (!autoLoadFiltersRef.current || likedFeedState) return;
+    autoLoadFiltersRef.current = false;
+    load(initialSavedFilters || {});
+  }, [initialSavedFilters, likedFeedState, load]);
 
-  // ── React to active slide change ───────────────────────────
+  // â”€â”€ Auto-skip slide when its trailer is not found â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    if (!movies.length) {
+      setActiveIndex(0);
+      return;
+    }
+
+    setActiveIndex((prev) => Math.min(prev, movies.length - 1));
+  }, [movies.length]);
+
+  // â”€â”€ React to active slide change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (!movies.length) return;
 
@@ -261,10 +505,10 @@ export default function TikTokPickerPage() {
     for (let i = from; i <= to; i++) fetchTrailerFor(movies[i]);
 
     // Infinite load: trigger when near end
-    if (activeIndex >= movies.length - MORE_THRESHOLD) loadMore();
-  }, [activeIndex, movies, fetchTrailerFor, loadMore]);
+    if (feedSource === "picker" && activeIndex >= movies.length - MORE_THRESHOLD) loadMore();
+  }, [activeIndex, movies, fetchTrailerFor, loadMore, feedSource]);
 
-  // ── IntersectionObserver ───────────────────────────────────
+  // â”€â”€ IntersectionObserver â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !movies.length) return;
@@ -285,16 +529,104 @@ export default function TikTokPickerPage() {
 
   // Scroll to top on fresh load
   useEffect(() => {
-    if (!loading && containerRef.current)
+    if (feedSource === "picker" && !loading && containerRef.current)
       containerRef.current.scrollTo({ top: 0, behavior: "instant" });
-  }, [loading]);
+  }, [loading, feedSource]);
+
+  useEffect(() => {
+    if (!likedFeedState) return;
+    if (appliedLikedFeedTokenRef.current === likedFeedToken) return;
+
+    setFeedSource("liked");
+    setPhase("running");
+    setMovies(likedFeedState.movies || []);
+    setTrailers({});
+    setActiveIndex(initialLikedIndex);
+    seenLinksRef.current = new Set((likedFeedState.movies || []).map((movie) => movie.link));
+    fetchedRef.current = new Set();
+    loadingMoreRef.current = false;
+    initialScrollDoneRef.current = false;
+    appliedLikedFeedTokenRef.current = likedFeedToken;
+  }, [likedFeedState, likedFeedToken, initialLikedIndex]);
+
+  useEffect(() => {
+    if (feedSource !== "liked" || initialScrollDoneRef.current) return;
+    const target = slideRefs.current[activeIndex];
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "instant", block: "start" });
+    initialScrollDoneRef.current = true;
+  }, [activeIndex, feedSource, movies]);
 
   const handleWatch = useCallback(
     (movie) => navigate(`/movie/${toRezkaSlug(movie.link)}`),
     [navigate]
   );
 
-  if (phase === "setup") return <PickerSetup onStart={handleSetupStart} />;
+  const handleToggleLike = useCallback(async (movie) => {
+    if (!currentUser?.id || !movie?.link || likePendingLink === movie.link) return;
+
+    const movieSlug = toRezkaSlug(movie.link);
+    const canonicalLink = fromRezkaSlug(movieSlug, config.rezka_base_url);
+    const alreadyLiked = likedLinks.has(movieSlug);
+    const nextLiked = !alreadyLiked;
+    setLikePendingLink(movie.link);
+    setLikedLinks((prev) => {
+      const next = new Set(prev);
+      if (nextLiked) next.add(movieSlug);
+      else next.delete(movieSlug);
+      return next;
+    });
+
+    try {
+      if (nextLiked) {
+        await addLikedMovie({
+          user_id: currentUser.id,
+          movie_id: movie.id || movie.tmdb_id || null,
+          tmdb_id: movie.tmdb_id ? String(movie.tmdb_id) : null,
+          tmdb_type: movie.tmdb_type || null,
+          link: canonicalLink,
+          title: movie.title,
+          origin_name: movie.tmdb_title || null,
+          tmdb_title: movie.tmdb_title || null,
+          image: movie.poster || movie.image || movie.backdrop || null,
+          poster: movie.poster || movie.image || null,
+          backdrop: movie.backdrop || null,
+          description: movie.short_desc || movie.overview || null,
+          overview: movie.overview || null,
+          short_desc: movie.short_desc || null,
+          release_date: movie.release_date || String(movie.year || ""),
+          action: movie.action || null,
+          type: movie.type || null,
+          year: movie.year || null,
+          rating: movie.rating ? String(movie.rating) : null,
+        });
+      } else {
+        await removeLikedMovie({ user_id: currentUser.id, link: canonicalLink });
+      }
+    } catch (e) {
+      setLikedLinks((prev) => {
+        const next = new Set(prev);
+        if (nextLiked) next.delete(movieSlug);
+        else next.add(movieSlug);
+        return next;
+      });
+      console.error("handleToggleLike error:", e);
+    } finally {
+      setLikePendingLink((prev) => (prev === movie.link ? null : prev));
+    }
+  }, [currentUser?.id, likePendingLink, likedLinks]);
+
+  if (phase === "setup") {
+    return (
+      <PickerSetupPanel
+        onStart={handleSetupStart}
+        initialFilters={filters}
+        onClose={movies.length ? () => setPhase("running") : null}
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
 
   const card = (
     <div className="tt-page">
@@ -304,15 +636,14 @@ export default function TikTokPickerPage() {
         </button>
         <span className="tt-header-title">Підбір</span>
         <div className="tt-header-right">
-          <button className="tt-header-btn" onClick={() => setMuted((m) => !m)}>
-            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          <button className="tt-header-btn" onClick={() => navigate("/liked")}>
+            <Heart size={18} />
           </button>
-          <button className="tt-header-btn" onClick={() => navigate("/pick")}>
-            <LayoutGrid size={18} />
-          </button>
-          <button className="tt-header-btn" onClick={() => load(filters)}>
-            <RefreshCw size={16} />
-          </button>
+          {feedSource === "picker" && (
+            <button className="tt-header-btn" onClick={() => setPhase("setup")}>
+              <RefreshCw size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -335,7 +666,12 @@ export default function TikTokPickerPage() {
                   trailerKey={trailers[movie.link] ?? null}
                   isActive={i === activeIndex}
                   muted={muted}
+                  onToggleMuted={() => setMuted((m) => !m)}
+                  onOpenPicker={() => navigate(feedSource === "liked" ? "/liked" : "/pick")}
                   onWatch={() => handleWatch(movie)}
+                  isLiked={likedLinks.has(toRezkaSlug(movie.link))}
+                  onToggleLike={() => handleToggleLike(movie)}
+                  likePending={likePendingLink === movie.link}
                   isFirst={i === 0}
                 />
               </div>
@@ -368,3 +704,4 @@ export default function TikTokPickerPage() {
 
   return card;
 }
+

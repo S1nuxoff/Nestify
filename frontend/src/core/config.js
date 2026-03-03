@@ -1,4 +1,4 @@
-// const config = {
+﻿// const config = {
 //   kodi_url: "ws://192.168.1.44:9090/jsonrpc",
 //   backend_url: "http://212.162.155.61:8000",
 //   backend_ws: "ws://212.162.155.61:8000",
@@ -13,8 +13,8 @@
 
 const config = {
   // kodi_url: "ws://192.168.1.44:9090/jsonrpc",
-  backend_url: "https://api.opencine.cloud",
-  // backend_url: "http://localhost:8000",
+  // backend_url: "https://api.opencine.cloud",
+  backend_url: "http://localhost:8000",
   // backend_ws: "ws://212.162.155.61:8000",
   hdrezk_url: "https://hdrezka.ag",
   // player_url: "192.168.0.44:8889",

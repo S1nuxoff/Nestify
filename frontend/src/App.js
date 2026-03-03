@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import CategoryPage from "./pages/CategoryPage";
 import HistoryPage from "./pages/HistoryPage";
+import LikedPage from "./pages/LikedPage";
 import LoginPage from "./pages/LoginPage";
 import PlayerPage from "./pages/PlayerPage";
 import CreateUserPage from "./pages/CreateUserPage";
@@ -211,6 +212,17 @@ function App() {
                 <PrivateRoute>
                   <PageTransition>
                     <HistoryPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/liked"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <LikedPage />
                   </PageTransition>
                 </PrivateRoute>
               }

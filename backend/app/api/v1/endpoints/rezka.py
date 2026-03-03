@@ -191,8 +191,18 @@ async def fetch_picker_movies(
     count: int = Query(30, ge=1, le=100),
     content_type: Optional[str] = Query(None),
     genre_id: Optional[int] = Query(None),
+    min_rating: Optional[float] = Query(None, ge=0, le=10),
+    year_from: Optional[int] = Query(None, ge=1900, le=2100),
+    year_to: Optional[int] = Query(None, ge=1900, le=2100),
 ):
-    return await get_picker_movies(count, content_type=content_type, genre_id=genre_id)
+    return await get_picker_movies(
+        count,
+        content_type=content_type,
+        genre_id=genre_id,
+        min_rating=min_rating,
+        year_from=year_from,
+        year_to=year_to,
+    )
 
 
 @router.get("/trailer")

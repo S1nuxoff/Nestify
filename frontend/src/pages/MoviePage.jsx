@@ -8,7 +8,12 @@ import usePlayerStatus from "../hooks/usePlayerStatus";
 import SessionPlaybackControls from "../components/ui/SessionPlaybackControls";
 
 import { getCategories } from "../api/hdrezka";
-import { addMovieToHistory } from "../api/user";
+import {
+  addLikedMovie,
+  addMovieToHistory,
+  getLikedMovieStatus,
+  removeLikedMovie,
+} from "../api/user";
 import { getMovieSources } from "../api/hdrezka/getMovieStreamUrl";
 import useMovieDetails from "../hooks/useMovieDetails";
 import useMovieSource from "../hooks/useMovieSource";
@@ -59,6 +64,8 @@ const MoviePage = () => {
 
   const [playDialogOpen, setPlayDialogOpen] = useState(false);
   const [playMode, setPlayMode] = useState("browser"); // "browser" | "tv"
+  const [isLiked, setIsLiked] = useState(false);
+  const [likePending, setLikePending] = useState(false);
 
   // Tabs: default episodes
   const [activeTab, setActiveTab] = useState("episodes"); // "episodes" | "details"
@@ -149,6 +156,31 @@ const MoviePage = () => {
     }
   }, [movieDetails, hasEpisodes]);
 
+  useEffect(() => {
+    if (!currentUser?.id || !fullMovieLink) {
+      setIsLiked(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const result = await getLikedMovieStatus({
+          user_id: currentUser.id,
+          link: fullMovieLink,
+        });
+        if (!cancelled) setIsLiked(Boolean(result?.liked));
+      } catch (e) {
+        if (!cancelled) console.error("getLikedMovieStatus error:", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id, fullMovieLink]);
+
   // ---------- helper: дефолтний S1E1 ----------
   const resolveSeasonEpisode = () => {
     if (!movieDetails) {
@@ -194,6 +226,49 @@ const MoviePage = () => {
 
   const closePlayDialog = () => {
     setPlayDialogOpen(false);
+  };
+
+  const toggleLike = async () => {
+    if (!currentUser?.id || !movieDetails || !fullMovieLink || likePending) return;
+
+    const nextLiked = !isLiked;
+    setLikePending(true);
+    setIsLiked(nextLiked);
+
+    try {
+      if (nextLiked) {
+        await addLikedMovie({
+          user_id: currentUser.id,
+          movie_id: movieDetails.id,
+          tmdb_id: movieDetails.tmdb?.id ? String(movieDetails.tmdb.id) : null,
+          tmdb_type: movieDetails.tmdb?.type || null,
+          link: fullMovieLink,
+          title: movieDetails.title,
+          origin_name: movieDetails.origin_name,
+          tmdb_title: movieDetails.tmdb?.title || movieDetails.tmdb?.original_title || null,
+          image: movieDetails.poster_tmdb || movieDetails.image,
+          poster: movieDetails.poster_tmdb || movieDetails.image,
+          backdrop: movieDetails.backdrop || movieDetails.backdrop_url_original || null,
+          description: movieDetails.description,
+          overview: movieDetails.tmdb?.overview || movieDetails.description || null,
+          short_desc: movieDetails.description,
+          release_date: movieDetails.release_date,
+          action: movieDetails.action,
+          type: movieDetails.tmdb?.type || null,
+          year: movieDetails.release_date
+            ? Number(String(movieDetails.release_date).split(",")[0]) || null
+            : null,
+          rating: movieDetails.rate || null,
+        });
+      } else {
+        await removeLikedMovie({ user_id: currentUser.id, link: fullMovieLink });
+      }
+    } catch (e) {
+      setIsLiked(!nextLiked);
+      console.error("toggleLike error:", e);
+    } finally {
+      setLikePending(false);
+    }
   };
 
   const playOnTv = async (translatorId) => {
@@ -505,6 +580,9 @@ const MoviePage = () => {
               <MovieHeader
                 movieDetails={movieDetails}
                 playerOnline={playerOnline}
+                isLiked={isLiked}
+                likePending={likePending}
+                onToggleLike={toggleLike}
                 onMainPlayClick={handleMainPlayClick}
                 onCastClick={handleCastClick}
               />

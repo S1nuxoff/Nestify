@@ -7,6 +7,12 @@ from app.db.session import async_session
 from app.models.users import User
 from app.services.user.create_user import create_user
 from app.services.media.add_movie_to_history import add_movie_to_history
+from app.services.media.liked_movies import (
+    add_liked_movie,
+    get_liked_movies,
+    is_movie_liked,
+    remove_liked_movie,
+)
 from app.schemas.rezka import MovieHistoryCreate
 
 router = APIRouter()
@@ -19,6 +25,27 @@ class CreateUserRequest(BaseModel):
 
 class UpdateKodiAddressRequest(BaseModel):
     kodi_address: str | None = Field(None, max_length=100)
+
+
+class LikedMoviePayload(BaseModel):
+    movie_id: str | None = None
+    tmdb_id: str | None = None
+    tmdb_type: str | None = Field(None, max_length=50)
+    link: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1, max_length=255)
+    origin_name: str | None = Field(None, max_length=255)
+    tmdb_title: str | None = Field(None, max_length=255)
+    image: str | None = None
+    poster: str | None = None
+    backdrop: str | None = None
+    description: str | None = None
+    overview: str | None = None
+    short_desc: str | None = None
+    release_date: str | None = Field(None, max_length=50)
+    action: str | None = Field(None, max_length=50)
+    type: str | None = Field(None, max_length=50)
+    year: int | None = None
+    rating: str | None = Field(None, max_length=50)
 
 
 @router.post("/create")
@@ -75,3 +102,53 @@ async def add_movie_to_history_ee(
         episode=data.episode,
     )
     return result
+
+
+@router.get("/likes", summary="Get liked movies")
+async def get_liked_movies_endpoint(
+    user_id: int = Query(..., description="User ID"),
+):
+    try:
+        return await get_liked_movies(user_id)
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.get("/likes/status", summary="Check if movie is liked")
+async def get_liked_movie_status(
+    user_id: int = Query(..., description="User ID"),
+    link: str = Query(..., description="Movie link"),
+):
+    try:
+        liked = await is_movie_liked(user_id, link)
+        return {"liked": liked}
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.post("/likes", summary="Like a movie")
+async def add_liked_movie_endpoint(
+    payload: LikedMoviePayload,
+    user_id: int = Query(..., description="User ID"),
+):
+    try:
+        item = await add_liked_movie(user_id, payload.model_dump())
+        return {"liked": True, "item": item}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+@router.delete("/likes", summary="Remove liked movie")
+async def remove_liked_movie_endpoint(
+    user_id: int = Query(..., description="User ID"),
+    link: str = Query(..., description="Movie link"),
+):
+    try:
+        deleted = await remove_liked_movie(user_id, link)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Like not found")
+        return {"liked": False}
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database error")

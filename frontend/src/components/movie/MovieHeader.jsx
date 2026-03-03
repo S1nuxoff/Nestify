@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactPlayer from "react-player/youtube";
 import { ReactComponent as CastIcon } from "../../assets/icons/cast.svg";
-import { Play, Star, X, Film, Volume2, VolumeOff } from "lucide-react";
+import { Play, Star, X, Film, Volume2, VolumeOff, Heart } from "lucide-react";
 
 import "../../styles/MovieHeaderHero.css";
 
@@ -19,6 +19,9 @@ function formatTime(sec) {
 export default function MovieHeader({
   movieDetails,
   playerOnline,
+  isLiked,
+  likePending,
+  onToggleLike,
   onMainPlayClick,
   onCastClick,
 }) {
@@ -240,6 +243,18 @@ export default function MovieHeader({
                   <Film size={18} />
                 </button>
               )}
+
+              <button
+                className={`mh-like tv-focusable${isLiked ? " is-active" : ""}`}
+                type="button"
+                tabIndex={0}
+                onClick={onToggleLike}
+                disabled={likePending}
+                title={isLiked ? "Remove like" : "Like"}
+                aria-label={isLiked ? "Remove like" : "Like"}
+              >
+                <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+              </button>
 
               <button
                 className={`mh-cast tv-focusable ${!playerOnline ? "is-disabled" : ""}`}

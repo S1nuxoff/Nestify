@@ -103,15 +103,35 @@
   height: calc(100vw * 9 / 16);
   border: none;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+  z-index: 1;
+}
+
+.tt-video--visible {
+  opacity: 1;
 }
 
 /* ── Poster fallback ────────────────────────────────────────── */
 .tt-backdrop {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  transform: scale(1.05); /* slight zoom to hide edges */
+  background: #000;
+  z-index: 0;
+}
+
+.tt-video-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tt-video-loader .spinner {
+  opacity: 0.7;
 }
 
 /* ── Gradient overlay ───────────────────────────────────────── */
@@ -125,6 +145,7 @@
     rgba(0,0,0,0.1)  60%,
     rgba(0,0,0,0.3)  100%
   );
+  z-index: 3;
 }
 
 /* ── Bottom info block ──────────────────────────────────────── */
@@ -200,11 +221,12 @@
 .tt-actions {
   position: absolute;
   right: 14px;
-  bottom: 36px;
+  bottom: 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 38px;
+  transform: none;
   z-index: 10;
 }
 
@@ -237,6 +259,19 @@
 
 .tt-btn--watch span {
   color: rgba(255,255,255,0.9);
+}
+
+.tt-btn--like {
+  color: rgba(255,255,255,0.92);
+}
+
+.tt-btn--like.is-active {
+  color: #ff2d2d;
+  filter: drop-shadow(0 6px 18px rgba(255, 45, 45, 0.5));
+}
+
+.tt-btn--like:disabled {
+  opacity: 0.6;
 }
 
 /* ── Scroll hint ────────────────────────────────────────────── */

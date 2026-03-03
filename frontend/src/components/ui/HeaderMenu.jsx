@@ -1,5 +1,4 @@
-// src/components/ui/HeaderMenu.jsx
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/HeaderMenu.css";
 
@@ -35,8 +34,9 @@ function HeaderMenu({ categories = [] }) {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === "Enter")
+              if (e.key === "Enter") {
                 navigate(`/browse/${encodeURIComponent(cat.title)}`);
+              }
             }}
           >
             <span>{cat.title}</span>

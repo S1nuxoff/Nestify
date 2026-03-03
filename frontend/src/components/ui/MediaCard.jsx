@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import "../../styles/MediaCard.css";
 import { ReactComponent as MoreIcon } from "../../assets/icons/more.svg";
 
 function getReadableType(type) {
   switch (type) {
     case "series":
-      return "Сериал";
+      return "Серіал";
     case "film":
-      return "Фильм";
+      return "Фільм";
     case "cartoon":
-      return "Мультфильм";
+      return "Мультфільм";
     case "anime":
-      return "Аниме";
+      return "Аніме";
     default:
-      return "Неизвестно";
+      return "Невідомо";
   }
 }
 
@@ -28,7 +28,7 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
     }
@@ -55,7 +55,6 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
           (loaded ? " is-loaded" : " is-loading")
         }
       >
-        {/* skeleton layer */}
         <div className="video-card-skeleton" />
 
         {imgSrc && (

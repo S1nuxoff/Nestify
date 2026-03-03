@@ -338,6 +338,17 @@ export default function UserAvatarMenu({
                         className="uam__action-link"
                         type="button"
                         onClick={() => {
+                          navigate("/liked");
+                          closeWithHeroToTrigger();
+                        }}
+                      >
+                        <span>Вподобані</span>
+                      </button>
+
+                      <button
+                        className="uam__action-link"
+                        type="button"
+                        onClick={() => {
                           navigate("/connect");
                           closeWithHeroToTrigger();
                         }}
