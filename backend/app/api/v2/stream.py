@@ -1,14 +1,27 @@
 import asyncio
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
-from HdRezkaApi import HdRezkaSession
+from HdRezkaApi import HdRezkaApi
 from app.core.config import settings
 
 router = APIRouter()
 
 
-def _mirror() -> str:
-    return f"https://{settings.REZKA_MIRROR}/"
+def _proxy() -> Optional[dict]:
+    p = settings.REZKA_PROXY.strip()
+    if not p:
+        return None
+    return {"http": p, "https": p}
+
+
+def _url(url: str) -> str:
+    mirror = settings.REZKA_MIRROR
+    for m in settings.REZKA_REPLACE_FROM.split(","):
+        m = m.strip()
+        if m:
+            url = url.replace(f"https://{m}", f"https://{mirror}")
+            url = url.replace(f"http://{m}", f"https://{mirror}")
+    return url
 
 
 def _get_stream_sync(
@@ -17,36 +30,36 @@ def _get_stream_sync(
     season: Optional[int],
     episode: Optional[int],
 ) -> dict:
-    with HdRezkaSession(_mirror()) as session:
-        rezka = session.get(url)
-        if not rezka.ok:
-            raise Exception(str(rezka.exception))
+    rezka = HdRezkaApi(_url(url), proxy=_proxy())
 
-        translation = translator_id or None
+    if not rezka.ok:
+        raise Exception(str(rezka.exception))
 
-        if season is not None and episode is not None:
-            stream = rezka.getStream(str(season), str(episode), translation=translation)
-        else:
-            stream = rezka.getStream(translation=translation)
+    translation = translator_id or None
 
-        if not stream:
-            raise Exception("No stream found")
+    if season is not None and episode is not None:
+        stream = rezka.getStream(str(season), str(episode), translation=translation)
+    else:
+        stream = rezka.getStream(translation=translation)
 
-        source_links = [
-            {"quality": q, "urls": urls} for q, urls in stream.videos.items()
-        ]
+    if not stream:
+        raise Exception("No stream found")
 
-        subtitles = {}
-        if stream.subtitles and stream.subtitles.subtitles:
-            subtitles = stream.subtitles.subtitles
+    source_links = [
+        {"quality": q, "urls": urls} for q, urls in stream.videos.items()
+    ]
 
-        return {
-            "translator_id": str(stream.translator_id),
-            "season": stream.season,
-            "episode": stream.episode,
-            "source_links": source_links,
-            "subtitles": subtitles,
-        }
+    subtitles = {}
+    if stream.subtitles and stream.subtitles.subtitles:
+        subtitles = stream.subtitles.subtitles
+
+    return {
+        "translator_id": str(stream.translator_id),
+        "season": stream.season,
+        "episode": stream.episode,
+        "source_links": source_links,
+        "subtitles": subtitles,
+    }
 
 
 @router.get("/stream")
@@ -56,10 +69,6 @@ async def get_stream(
     season: Optional[int] = Query(None),
     episode: Optional[int] = Query(None),
 ):
-    """
-    Get video stream URLs via HdRezkaApi.
-    Returns source_links: [{quality, urls: [url1, url2]}]
-    """
     loop = asyncio.get_running_loop()
     try:
         result = await loop.run_in_executor(
@@ -74,19 +83,13 @@ async def get_stream(
 async def get_translators(
     url: str = Query(..., description="Rezka movie/series URL"),
 ):
-    """
-    Get available translators for a movie/series.
-    """
     loop = asyncio.get_running_loop()
 
     def _sync():
-        with HdRezkaSession(_mirror()) as session:
-            rezka = session.get(url)
-            if not rezka.ok:
-                raise Exception(str(rezka.exception))
-            return {
-                "translators": rezka.translators,
-            }
+        rezka = HdRezkaApi(_url(url), proxy=_proxy())
+        if not rezka.ok:
+            raise Exception(str(rezka.exception))
+        return {"translators": rezka.translators}
 
     try:
         result = await loop.run_in_executor(None, _sync)

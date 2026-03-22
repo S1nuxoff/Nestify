@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # REZKA_REPLACE_FROM — домени які будуть замінятись на REZKA_MIRROR
     # (через кому, без пробілів)
     REZKA_REPLACE_FROM: str = "rezka.ag,hdrezka.ag,rezka.fi,rezka.me,rezka.uno"
+    #
+    # REZKA_PROXY — проксі для v2 (HdRezkaApi). Пусто = без проксі
+    # Приклад: "http://196.1.93.16:80"
+    REZKA_PROXY: str = "http://196.1.93.16:80"
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @property
