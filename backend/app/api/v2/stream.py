@@ -2,17 +2,22 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from HdRezkaApi import HdRezkaSession
-from app.services.rezka import COOKIES, HEADERS
 from app.core.config import settings
 
 router = APIRouter()
+
 
 def _mirror() -> str:
     return f"https://{settings.REZKA_MIRROR}/"
 
 
-def _get_stream_sync(url: str, translator_id: Optional[str], season: Optional[int], episode: Optional[int]) -> dict:
-    with HdRezkaSession(_mirror(), cookies=COOKIES, headers=HEADERS) as session:
+def _get_stream_sync(
+    url: str,
+    translator_id: Optional[str],
+    season: Optional[int],
+    episode: Optional[int],
+) -> dict:
+    with HdRezkaSession(_mirror()) as session:
         rezka = session.get(url)
         if not rezka.ok:
             raise Exception(str(rezka.exception))
@@ -28,8 +33,7 @@ def _get_stream_sync(url: str, translator_id: Optional[str], season: Optional[in
             raise Exception("No stream found")
 
         source_links = [
-            {"quality": q, "urls": urls}
-            for q, urls in stream.videos.items()
+            {"quality": q, "urls": urls} for q, urls in stream.videos.items()
         ]
 
         subtitles = {}
@@ -76,7 +80,7 @@ async def get_translators(
     loop = asyncio.get_running_loop()
 
     def _sync():
-        with HdRezkaSession(_mirror(), cookies=COOKIES, headers=HEADERS) as session:
+        with HdRezkaSession(_mirror()) as session:
             rezka = session.get(url)
             if not rezka.ok:
                 raise Exception(str(rezka.exception))
