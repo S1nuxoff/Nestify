@@ -39,10 +39,12 @@ export const getMovieSources = async ({
       return [];
     }
 
-    // тут уже масив { quality, url }
-    return selectedTranslate.source_links || [];
+    return {
+      sources: selectedTranslate.source_links || [],
+      subtitles: selectedTranslate.subtitles || [],
+    };
   } catch (error) {
     console.error("Ошибка при получении источников:", error);
-    return [];
+    return { sources: [], subtitles: [] };
   }
 };

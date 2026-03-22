@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState, useCallback } from "react";
+import config from "../core/config";
 import {
   PlayIcon,
   PauseIcon,
@@ -9,12 +10,51 @@ import {
   MinimizeIcon,
   RotateCcwIcon,
   RotateCwIcon,
+  CaptionsIcon,
 } from "lucide-react";
 import { ReactComponent as BackIcon } from "../assets/icons/player_back_icon.svg";
 import { ReactComponent as SettingsIcon } from "../assets/icons/settings.svg";
 
 import "../styles/VideoPlayer.css";
 import { getProgress, saveProgress } from "../api/hdrezka/progressApi";
+
+function parseSubtitleTime(str) {
+  const parts = str.replace(",", ".").split(":");
+  if (parts.length === 3) {
+    return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
+  }
+  return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+function parseSubtitles(text) {
+  // Normalize line endings and strip BOM/special prefixes
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const blocks = normalized.trim().split(/\n{2,}/);
+  const cues = [];
+  for (const block of blocks) {
+    const lines = block.trim().split("\n").map((l) => l.trim());
+    if (lines.length < 2) continue;
+    // Skip header block (!WEBVTT, WEBVTT, NOTE, STYLE, REGION)
+    if (/^!?WEBVTT|^NOTE|^STYLE|^REGION/.test(lines[0])) continue;
+    let i = 0;
+    // Skip numeric/string cue id if present
+    if (!lines[0].includes("-->") && lines[1]?.includes("-->")) i = 1;
+    if (i >= lines.length) continue;
+    const timeMatch = lines[i].match(
+      /(\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{3})/
+    );
+    if (!timeMatch) continue;
+    const start = parseSubtitleTime(timeMatch[1]);
+    const end = parseSubtitleTime(timeMatch[2]);
+    const cueText = lines
+      .slice(i + 1)
+      .join("\n")
+      .replace(/<[^>]+>/g, "")
+      .trim();
+    if (cueText) cues.push({ start, end, text: cueText });
+  }
+  return cues;
+}
 
 function formatTime(sec) {
   const total = Math.floor(sec || 0);
@@ -28,7 +68,7 @@ function formatTime(sec) {
 
 export default function PlayerPage() {
   const { state } = useLocation();
-  const { selectedEpisode, selectedSeason, movieDetails, movie_url, sources } =
+  const { selectedEpisode, selectedSeason, movieDetails, movie_url, sources, subtitles = [] } =
     state ?? {};
 
   const normalizedSources =
@@ -47,6 +87,10 @@ export default function PlayerPage() {
   const saveIntervalRef = useRef(null);
   const qualitySwitchRef = useRef(null);
   const qualityMenuRef = useRef(null);
+  const subtitleMenuRef = useRef(null);
+  const hoverVideoRef = useRef(null);
+  const previewCanvasRef = useRef(null);
+  const progressWrapRef = useRef(null);
 
   const [startPos, setStartPos] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -60,6 +104,15 @@ export default function PlayerPage() {
   const [isBuffering, setIsBuffering] = useState(true);
   const [currentQuality, setCurrentQuality] = useState(null);
   const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+
+  const [currentSubtitle, setCurrentSubtitle] = useState(null); // { lang, url } or null
+  const [isSubtitleMenuOpen, setIsSubtitleMenuOpen] = useState(false);
+  const [subtitleCues, setSubtitleCues] = useState([]);
+  const [currentCueText, setCurrentCueText] = useState("");
+  const subtitleCuesRef = useRef([]); // ref to avoid stale closure in handleTimeUpdate
+
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverX, setHoverX] = useState(0);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -169,13 +222,6 @@ export default function PlayerPage() {
 
   const handlePlaying = () => {
     setIsBuffering(false);
-  };
-
-  const handleTimeUpdate = () => {
-    if (isScrubbing) return;
-    const video = videoRef.current;
-    if (!video) return;
-    setCurrentTime(video.currentTime);
   };
 
   const togglePlay = () => {
@@ -408,6 +454,97 @@ export default function PlayerPage() {
     duration,
   ]);
 
+  /* --- keep ref in sync with cues state --- */
+  useEffect(() => {
+    subtitleCuesRef.current = subtitleCues;
+  }, [subtitleCues]);
+
+  /* --- load & parse subtitle when changed --- */
+  useEffect(() => {
+    if (!currentSubtitle) {
+      subtitleCuesRef.current = [];
+      setSubtitleCues([]);
+      setCurrentCueText("");
+      return;
+    }
+    const proxyUrl = `${config.backend_url}/api/v1/rezka/subtitle_proxy?url=${encodeURIComponent(currentSubtitle.url)}`;
+    fetch(proxyUrl)
+      .then((r) => r.text())
+      .then((text) => {
+        const cues = parseSubtitles(text);
+        subtitleCuesRef.current = cues;
+        setSubtitleCues(cues);
+      })
+      .catch((err) => console.error("Subtitle load error:", err));
+  }, [currentSubtitle]);
+
+  /* --- preview: sync hidden video src with quality --- */
+  useEffect(() => {
+    const hv = hoverVideoRef.current;
+    if (!hv || !currentSource?.url) return;
+    hv.src = currentSource.url;
+    hv.preload = "auto";
+  }, [currentSource]);
+
+  /* --- preview: draw frame to canvas on seeked --- */
+  useEffect(() => {
+    const hv = hoverVideoRef.current;
+    const canvas = previewCanvasRef.current;
+    if (!hv || !canvas) return;
+    const draw = () => {
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(hv, 0, 0, canvas.width, canvas.height);
+    };
+    hv.addEventListener("seeked", draw);
+    return () => hv.removeEventListener("seeked", draw);
+  }, []);
+
+  const handleProgressMouseMove = (e) => {
+    const wrap = progressWrapRef.current;
+    if (!wrap || !duration) return;
+    const rect = wrap.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const time = ratio * duration;
+    setHoverTime(time);
+    setHoverX(e.clientX - rect.left);
+    const hv = hoverVideoRef.current;
+    if (hv && hv.readyState >= 1) hv.currentTime = time;
+  };
+
+  const handleProgressMouseLeave = () => setHoverTime(null);
+
+  /* --- find current cue (uses ref to avoid stale closure) --- */
+  const handleTimeUpdate = () => {
+    if (isScrubbing) return;
+    const video = videoRef.current;
+    if (!video) return;
+    const t = video.currentTime;
+    setCurrentTime(t);
+    const cues = subtitleCuesRef.current;
+    if (cues.length) {
+      const cue = cues.find((c) => t >= c.start && t <= c.end);
+      setCurrentCueText(cue ? cue.text : "");
+    } else {
+      setCurrentCueText("");
+    }
+  };
+
+  /* --- close subtitle menu on outside click --- */
+  useEffect(() => {
+    if (!isSubtitleMenuOpen) return;
+    const handler = (e) => {
+      if (subtitleMenuRef.current && !subtitleMenuRef.current.contains(e.target)) {
+        setIsSubtitleMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [isSubtitleMenuOpen]);
+
   const handlePause = () => {
     setIsPlaying(false);
     const video = videoRef.current;
@@ -569,6 +706,18 @@ export default function PlayerPage() {
         </div>
       )}
 
+      {/* Hidden video for timeline preview */}
+      <video ref={hoverVideoRef} style={{ display: "none" }} muted playsInline />
+
+      {/* Subtitle overlay */}
+      {currentCueText && (
+        <div className={`cinema-player-subtitle-overlay${showControls ? " cinema-player-subtitle-overlay--up" : ""}`}>
+          {currentCueText.split("\n").map((line, i) => (
+            <span key={i}>{line}<br /></span>
+          ))}
+        </div>
+      )}
+
       {/* Controls */}
       {showControls && (
         <>
@@ -648,7 +797,23 @@ export default function PlayerPage() {
                 {formatTime(currentTime)}
               </span>
 
-              <div className="cinema-player-progress-wrap">
+              <div
+                className="cinema-player-progress-wrap"
+                ref={progressWrapRef}
+                onMouseMove={handleProgressMouseMove}
+                onMouseLeave={handleProgressMouseLeave}
+              >
+                {/* Thumbnail preview */}
+                <div
+                  className={`cinema-player-preview${hoverTime !== null ? " cinema-player-preview--visible" : ""}`}
+                  style={{
+                    left: Math.max(80, Math.min(hoverX, (progressWrapRef.current?.offsetWidth || 320) - 80)),
+                  }}
+                >
+                  <canvas ref={previewCanvasRef} width={160} height={90} className="cinema-player-preview-canvas" />
+                  <div className="cinema-player-preview-time">{hoverTime !== null ? formatTime(hoverTime) : ""}</div>
+                </div>
+
                 <input
                   type="range"
                   min={0}
@@ -724,10 +889,47 @@ export default function PlayerPage() {
                 </span>
               </div>
 
-              <div
-                className="cinema-player-controls-right"
-                ref={qualityMenuRef}
-              >
+              <div className="cinema-player-controls-right">
+                {/* Subtitle menu */}
+                {subtitles.length > 0 && (
+                  <div ref={subtitleMenuRef} style={{ position: "relative" }}>
+                    <button
+                      className={`cinema-player-pill${currentSubtitle ? " cinema-player-pill--active" : ""}`}
+                      onClick={() => setIsSubtitleMenuOpen((p) => !p)}
+                      aria-label="Subtitles"
+                      title="Subtitles"
+                    >
+                      <CaptionsIcon size={16} />
+                    </button>
+                    {isSubtitleMenuOpen && (
+                      <div className="cinema-player-quality-menu">
+                        <div className="cinema-player-quality-menu-title">Субтитри</div>
+                        <div className="cinema-player-quality-list">
+                          <button
+                            className={`cinema-player-quality-option${!currentSubtitle ? " cinema-player-quality-option--active" : ""}`}
+                            onClick={() => { setCurrentSubtitle(null); setIsSubtitleMenuOpen(false); }}
+                          >
+                            <span className="cinema-player-quality-dot" />
+                            Вимкнено
+                          </button>
+                          {subtitles.map((sub) => (
+                            <button
+                              key={sub.lang}
+                              className={`cinema-player-quality-option${currentSubtitle?.lang === sub.lang ? " cinema-player-quality-option--active" : ""}`}
+                              onClick={() => { setCurrentSubtitle(sub); setIsSubtitleMenuOpen(false); }}
+                            >
+                              <span className="cinema-player-quality-dot" />
+                              {sub.lang}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Quality menu */}
+                <div ref={qualityMenuRef} style={{ position: "relative" }}>
                 {normalizedSources.length > 1 && (
                   <>
                     <button
@@ -771,6 +973,7 @@ export default function PlayerPage() {
                     )}
                   </>
                 )}
+                </div>
 
                 <button
                   className="cinema-player-pill"

@@ -18,10 +18,16 @@ class SourceLink(BaseModel):
     url: Optional[str] = None
 
 
+class SubtitleTrack(BaseModel):
+    lang: Optional[str] = None
+    url: Optional[str] = None
+
+
 class Source(BaseModel):
     translate_id: Optional[str] = None
     translate_name: Optional[str] = None
     source_links: List[SourceLink] = Field(default_factory=list)
+    subtitles: List[SubtitleTrack] = Field(default_factory=list)
 
 
 class EpisodeSchedule(BaseModel):
@@ -230,8 +236,8 @@ class TopNavCategoriesResponse(BaseModel):
 
 
 class MovieHistoryCreate(BaseModel):
-    movie_id: int
-    translator_id: int
+    movie_id: str
+    translator_id: str
     action: str
     season: Optional[int] = None
     episode: Optional[int] = None

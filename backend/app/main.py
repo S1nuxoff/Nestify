@@ -6,6 +6,7 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.v1.api import api_router
+from app.api.v2.api import api_router_v2
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.base import create_all_tables
 from app.websockets import live_session
@@ -22,6 +23,7 @@ app = FastAPI(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router_v2, prefix="/api/v2")
 app.include_router(live_session.router)
 app.include_router(player_hub.router)
 app.add_middleware(

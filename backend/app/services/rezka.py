@@ -1,3 +1,4 @@
+import asyncio
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -212,7 +213,10 @@ async def search(url):
     Парсит страницу поиска фильмов.
     Возвращает список фильмов с типом 'search-card'.
     """
-    response = scraper.get(url, headers=HEADERS, cookies=COOKIES)
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(
+        None, lambda: scraper.get(url, headers=HEADERS, cookies=COOKIES, timeout=15)
+    )
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -266,8 +270,12 @@ async def search(url):
 
 
 async def get_search(title):
-    response = scraper.post(
-        "https://hdrezka.ag/engine/ajax/search.php", headers=HEADERS, data={"q": title}
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: scraper.post(
+            "https://rezka.fi/engine/ajax/search.php", headers=HEADERS, data={"q": title}, timeout=15
+        ),
     )
 
     response.raise_for_status()
@@ -306,7 +314,10 @@ async def film_poster_parser(url):
     Парсит страницу постера фильма и возвращает URL постера.
     """
     try:
-        response = scraper.get(url, headers=HEADERS)
+        loop = asyncio.get_running_loop()
+        response = await loop.run_in_executor(
+            None, lambda: scraper.get(url, headers=HEADERS, timeout=15)
+        )
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -391,7 +402,10 @@ async def get_movie_ifo(url):
     Парсит детальную информацию о фильме.
     Возвращает список (обычно с одним элементом) с информацией о фильме.
     """
-    response = scraper.get(url, headers=HEADERS)
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(
+        None, lambda: scraper.get(url, headers=HEADERS, timeout=15)
+    )
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -612,10 +626,11 @@ def get_trailer(film_id: str) -> str:
     if film_id:
         trailer_data = {"id": film_id}
         trailer_response = scraper.post(
-            "https://rezka.ag/engine/ajax/gettrailervideo.php",
+            "https://rezka.fi/engine/ajax/gettrailervideo.php",
             cookies=COOKIES,
             headers=HEADERS,
             data=trailer_data,
+            timeout=15,
         )
 
         if trailer_response.status_code == 200:
@@ -670,6 +685,7 @@ def get_source(
             cookies=COOKIES,
             headers=HEADERS,
             data=film_data,
+            timeout=15,
         )
 
         if film_source_resp.status_code == 200:
@@ -680,6 +696,16 @@ def get_source(
             url_value = json_link_data["url"]
             if not isinstance(url_value, str):
                 continue
+
+            # Extract subtitle tracks
+            subtitle_raw = json_link_data.get("subtitle", "") or ""
+            subtitles = []
+            if subtitle_raw and isinstance(subtitle_raw, str):
+                sub_matches = re.findall(r'\[([^\]]+)\]((?:https?:)?//[^\s,]+)', subtitle_raw)
+                for lang, url in sub_matches:
+                    if url.startswith("//"):
+                        url = "https:" + url
+                    subtitles.append({"lang": lang, "url": url})
             trash_list = [
                 "//_//QEBAQEAhIyMhXl5e",
                 "//_//Xl5eIUAjIyEhIyM=",
@@ -714,9 +740,20 @@ def get_source(
                 "translate_id": current_translate_id,
                 "translate_name": current_translate_name,
                 "source_links": source_links,
+                "subtitles": subtitles,
             }
             filtered_urls.append(translate_entry)
     return filtered_urls
+
+
+def fetch_subtitle_content(url: str) -> str:
+    """Fetch subtitle file content via scraper (bypasses CORS/bot-protection)."""
+    try:
+        resp = scraper.get(url, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch subtitle: {e}")
 
 
 def parse_info_table(soup: BeautifulSoup) -> dict:
@@ -816,7 +853,15 @@ def parse_info_table(soup: BeautifulSoup) -> dict:
     return result
 
 
+REZKA_MIRRORS = ["rezka.ag", "hdrezka.ag", "rezka.me", "rezka.uno"]
+REZKA_WORKING = "rezka.fi"
+
+
 async def get_movie(url: str) -> dict:
+    for mirror in REZKA_MIRRORS:
+        url = url.replace(f"https://{mirror}", f"https://{REZKA_WORKING}")
+        url = url.replace(f"http://{mirror}", f"https://{REZKA_WORKING}")
+
     parsed_url = urllib.parse.urlparse(url)
     fragment = parsed_url.fragment
     season_from_url = None
@@ -829,10 +874,10 @@ async def get_movie(url: str) -> dict:
 
     current_time = datetime.datetime.now()
     params = {"t": current_time}
-    response = scraper.get(
-        url,
-        cookies=COOKIES,
-        headers=HEADERS,
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: scraper.get(url, cookies=COOKIES, headers=HEADERS, timeout=15),
     )
 
     if response.status_code != 200:
@@ -887,7 +932,7 @@ async def get_movie(url: str) -> dict:
 
 
 def get_categories(url: str) -> dict:
-    response = scraper.get(url, cookies=COOKIES, headers=HEADERS)
+    response = scraper.get(url, cookies=COOKIES, headers=HEADERS, timeout=15)
 
     response.raise_for_status()  # выбросит исключение, если запрос не успешен
     html = response.text

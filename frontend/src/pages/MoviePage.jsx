@@ -395,7 +395,7 @@ const MoviePage = () => {
       return;
     }
 
-    const sources = await getMovieSources({
+    const result = await getMovieSources({
       seasonId: season,
       episodeId: episode,
       movieId: movieDetails.id,
@@ -403,7 +403,10 @@ const MoviePage = () => {
       action: movieDetails.action,
     });
 
-    if (!sources || !sources.length) {
+    const sources = result?.sources || [];
+    const subtitles = result?.subtitles || [];
+
+    if (!sources.length) {
       setValidationMessage("Не вдалося отримати джерела відео.");
       return;
     }
@@ -425,6 +428,7 @@ const MoviePage = () => {
       state: {
         movieDetails,
         sources,
+        subtitles,
         selectedEpisode: episode,
         selectedSeason: season,
       },

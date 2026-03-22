@@ -10,10 +10,30 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "HomeRezka-API"
     VERSION: str = "1.4.5"
     DESCRIPTION: str = "HomeRezka-API"
-    MAIN_PAGE_URL: str = "https://rezka.ag"
-    SEARCH_URL_BASE: str = "https://rezka.fi/search/?do=search&subaction=search&q="
-    REZKA_BASE_URL: str = "https://hdrezka.ag"
     FRONTEND_BASE_URL: str = "https://opencine.cloud"
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🌐 REZKA — налаштування дзеркал
+    #
+    # REZKA_MIRROR — домен на який перенаправляти всі запити
+    REZKA_MIRROR: str = "hdrezka-home.tv"
+    #
+    # REZKA_REPLACE_FROM — домени які будуть замінятись на REZKA_MIRROR
+    # (через кому, без пробілів)
+    REZKA_REPLACE_FROM: str = "rezka.ag,hdrezka.ag,rezka.fi,rezka.me,rezka.uno"
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    @property
+    def REZKA_BASE_URL(self) -> str:
+        return f"https://{self.REZKA_MIRROR}"
+
+    @property
+    def MAIN_PAGE_URL(self) -> str:
+        return f"https://{self.REZKA_MIRROR}"
+
+    @property
+    def SEARCH_URL_BASE(self) -> str:
+        return f"https://{self.REZKA_MIRROR}/search/?do=search&subaction=search&q="
 
     class Config:
         case_sensitive = True

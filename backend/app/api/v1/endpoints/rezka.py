@@ -1,8 +1,21 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from typing import List, Optional
 from fastapi_cache.decorator import cache
 import datetime
+import asyncio
 from urllib.parse import quote_plus
+
+from app.core.config import settings
+
+def _fix_url(url: str) -> str:
+    mirror = settings.REZKA_MIRROR
+    for m in settings.REZKA_REPLACE_FROM.split(","):
+        m = m.strip()
+        if m:
+            url = url.replace(f"https://{m}", f"https://{mirror}")
+            url = url.replace(f"http://{m}", f"https://{mirror}")
+    return url
 
 from app.services.rezka import extract_id_from_url, get_search
 from app.services.media.get_movie import get_movie_db
@@ -40,7 +53,7 @@ from app.services.rezka import (
 )
 
 from app.core.config import settings
-from app.services.rezka import get_source
+from app.services.rezka import get_source, fetch_subtitle_content
 
 # ✅ НОВОЕ: upsert CRUD
 from app.db.crud.movies import add_or_update_movie
@@ -120,6 +133,7 @@ async def fetch_movie(
     link: str,
     user_id: Optional[int] = Query(None, description="ID користувача (необов'язково)"),
 ):
+    link = _fix_url(link)
     movie_id = extract_id_from_url(link)
 
     async def build_history_payload() -> tuple[list[dict], Optional[dict]]:
@@ -243,7 +257,7 @@ async def get_searh_suggestions(title: str):
 
 @router.get("/get_page", response_model=PageResponse)
 async def fetch_page(link: str):
-    page = await get_page(link)
+    page = await get_page(_fix_url(link))
     if not page or not page["items"]:
         raise HTTPException(status_code=404, detail="movie not found")
     return page
@@ -304,10 +318,21 @@ def fetch_source_api(
     return GetSourceResponse(sources=source_result)
 
 
+@router.get("/subtitle_proxy", response_class=PlainTextResponse)
+def subtitle_proxy(url: str):
+    """Proxy subtitle file to avoid CORS issues on the client."""
+    try:
+        content = fetch_subtitle_content(url)
+        return PlainTextResponse(content=content, media_type="text/plain; charset=utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
 @router.get("/get_categories")
 @cache(expire=60 * 60 * 24)
 async def fetch_categories(url):
-    response = get_categories(url)
+    loop = asyncio.get_running_loop()
+    response = await loop.run_in_executor(None, lambda: get_categories(_fix_url(url)))
     if not response:
         raise HTTPException(status_code=404, detail="movie not found")
     return response
@@ -315,7 +340,7 @@ async def fetch_categories(url):
 
 @router.get("/get_url_by_id")
 async def fetch_url_by_id(mirror, id):
-    response = await get_url_by_id(mirror, id)
+    response = await get_url_by_id(_fix_url(mirror), id)
     if not response:
         raise HTTPException(status_code=404, detail="movie not found")
     return response
