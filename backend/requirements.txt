@@ -53,3 +53,4 @@ uvicorn==0.34.0
 websockets==15.0.1
 wsproto==1.2.0
 yarl==1.22.0
+HdRezkaApi==11.2.1
