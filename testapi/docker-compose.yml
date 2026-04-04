@@ -1,0 +1,8 @@
+services:
+  streamer:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Europe/Warsaw
