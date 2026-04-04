@@ -9,6 +9,8 @@ const MovieEpisodes = ({
   onSelectSeason,
   selectedEpisode,
   onSelectEpisode,
+  seasonEpisodes = [],
+  seasonLoading = false,
 }) => {
   const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false);
   const [episodesLoaded, setEpisodesLoaded] = useState(false);
@@ -138,47 +140,67 @@ const MovieEpisodes = ({
       </div>
 
       <div className="movie-page__episodes-list">
-        {movieDetails.episodes_schedule
-          .filter((s) => s.season_number === selectedSeason)
-          .flatMap((s) =>
-            s.episodes.map((ep, idx) => {
-              const epKey = `${s.season_number}-${ep.episode_number}`;
-              const hist = episodeHistoryMap.get(epKey);
+        {seasonLoading && (
+          <div className="movie-page__episodes-loading">
+            <div className="spinner" />
+          </div>
+        )}
 
-              let epProgressPercent = null;
-              let epIsWatched = false;
+        {!seasonLoading && seasonEpisodes.length > 0 &&
+          seasonEpisodes.map((ep, idx) => {
+            const epKey = `${selectedSeason}-${ep.episode_number}`;
+            const hist = episodeHistoryMap.get(epKey);
 
-              if (
-                hist &&
-                typeof hist.position_seconds === "number" &&
-                typeof hist.duration === "number" &&
-                hist.duration > 0
-              ) {
-                const ratio = Math.min(
-                  hist.position_seconds / hist.duration,
-                  1
-                );
-                epProgressPercent = ratio * 100;
-                epIsWatched = ratio >= 0.98;
-              }
+            let epProgressPercent = null;
+            let epIsWatched = false;
 
-              return (
+            if (
+              hist &&
+              typeof hist.position_seconds === "number" &&
+              typeof hist.duration === "number" &&
+              hist.duration > 0
+            ) {
+              const ratio = Math.min(hist.position_seconds / hist.duration, 1);
+              epProgressPercent = ratio * 100;
+              epIsWatched = ratio >= 0.98;
+            }
+
+            return (
+              <EpisodeSelector
+                key={ep.id || idx}
+                index={idx}
+                isLoaded={episodesLoaded}
+                episde_id={ep.episode_number}
+                episde_title={ep.name}
+                episde_overview={ep.overview}
+                episde_date={ep.air_date}
+                episde_still={ep.still_path}
+                isSelected={selectedEpisode === ep.episode_number}
+                isWatched={epIsWatched}
+                progressPercent={epProgressPercent}
+                onSelect={onSelectEpisode}
+              />
+            );
+          })
+        }
+
+        {!seasonLoading && seasonEpisodes.length === 0 &&
+          movieDetails.episodes_schedule
+            .filter((s) => s.season_number === selectedSeason)
+            .flatMap((s) =>
+              s.episodes.map((ep, idx) => (
                 <EpisodeSelector
-                  key={ep.episode_id}
+                  key={idx}
                   index={idx}
                   isLoaded={episodesLoaded}
-                  episde_date={ep.air_date}
                   episde_id={ep.episode_number}
-                  episde_title={ep.title}
-                  episde_origin={ep.original_title}
+                  episde_title={ep.name}
                   isSelected={selectedEpisode === ep.episode_number}
-                  isWatched={epIsWatched}
-                  progressPercent={epProgressPercent}
                   onSelect={onSelectEpisode}
                 />
-              );
-            })
-          )}
+              ))
+            )
+        }
       </div>
     </section>
   );

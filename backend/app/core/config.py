@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     FRONTEND_BASE_URL: str = "https://opencine.cloud"
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # v3 — Jackett + TorrServe
+    JACKETT_URL: str = "http://188.137.181.63:9117"
+    JACKETT_KEY: str = "p6dcy57yah3cwddyh9lds0bodfiwx0az"
+    TORRSERVE_URL: str = "http://188.137.181.63:8090"
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🌐 REZKA — налаштування дзеркал
     #
     # REZKA_MIRROR — домен на який перенаправляти всі запити

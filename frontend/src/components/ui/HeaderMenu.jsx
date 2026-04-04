@@ -1,17 +1,20 @@
-﻿import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/HeaderMenu.css";
 
 const PICKER_SEEN_KEY = "nestify_picker_seen";
 
-function HeaderMenu({ categories = [] }) {
-  const navigate = useNavigate();
-  const [pickerSeen] = useState(() => !!localStorage.getItem(PICKER_SEEN_KEY));
+const TMDB_CATEGORIES = [
+  { title: "Фільми",      path: "/catalog/movies" },
+  { title: "Серіали",     path: "/catalog/series" },
+  { title: "Мультфільми", path: "/catalog/animation" },
+  { title: "Аніме",       path: "/catalog/anime" },
+];
 
-  const items = useMemo(
-    () => categories.map((cat) => ({ ...cat })),
-    [categories]
-  );
+function HeaderMenu() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [pickerSeen] = useState(() => !!localStorage.getItem(PICKER_SEEN_KEY));
 
   return (
     <div className="header-menu-wrapper">
@@ -21,23 +24,20 @@ function HeaderMenu({ categories = [] }) {
           onClick={() => navigate("/feed")}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter") navigate("/pick"); }}
+          onKeyDown={(e) => { if (e.key === "Enter") navigate("/feed"); }}
         >
           <span>Підбір</span>
           {!pickerSeen && <span className="header-menu-new-badge">NEW</span>}
         </li>
-        {items.map((cat) => (
+
+        {TMDB_CATEGORIES.map((cat) => (
           <li
-            key={cat.title}
-            className="header-menu-item"
-            onClick={() => navigate(`/browse/${encodeURIComponent(cat.title)}`)}
+            key={cat.path}
+            className={`header-menu-item${location.pathname === cat.path ? " is-active" : ""}`}
+            onClick={() => navigate(cat.path)}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                navigate(`/browse/${encodeURIComponent(cat.title)}`);
-              }
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter") navigate(cat.path); }}
           >
             <span>{cat.title}</span>
           </li>

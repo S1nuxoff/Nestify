@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useId, useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { FreeMode, Navigation } from "swiper/modules";
+import { FreeMode, Navigation, Mousewheel } from "swiper/modules";
 import { useNavigate } from "react-router-dom";
 import { ReactComponent as ArrowRightIcon } from "../../assets/icons/arrow-right.svg";
 import { ReactComponent as MoreIcon } from "../../assets/icons/more.svg";
@@ -91,14 +91,15 @@ function RowSwiper({
 
       <Swiper
         className="movie_card_swiper"
-        modules={[FreeMode, Navigation]}
-        freeMode
+        modules={[FreeMode, Navigation, Mousewheel]}
+        freeMode={{ momentumBounce: false }}
         grabCursor
         slidesPerView="auto"
         navigation={{
           prevEl: `.${prevCls}`,
           nextEl: `.${nextCls}`,
         }}
+        mousewheel={{ forceToAxis: true, sensitivity: 1 }}
         onSlideChange={handleSlideChange}
         watchSlidesProgress={false}
         observer={false}

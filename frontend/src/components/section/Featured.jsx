@@ -1,7 +1,7 @@
 // src/components/section/Featured.jsx
 import React, { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
+import { Pagination, Mousewheel } from "swiper/modules";
 
 import FeaturedCard from "../ui/FeaturedCard";
 
@@ -14,7 +14,8 @@ function Featured({ onMovieSelect, featured, onActiveIndexChange }) {
 
   return (
     <Swiper
-      modules={[Pagination]}
+      modules={[Pagination, Mousewheel]}
+      mousewheel={{ forceToAxis: true }}
       pagination={{
         clickable: true,
         dynamicBullets: true,

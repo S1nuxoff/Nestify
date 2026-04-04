@@ -39,6 +39,11 @@ frontend/.cache/
 .next/
 coverage/
 
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
 backend/venv
 venv
 

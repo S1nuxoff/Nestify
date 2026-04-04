@@ -1,0 +1,241 @@
+.torrent-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+@media (min-width: 640px) {
+  .torrent-modal-overlay {
+    align-items: center;
+  }
+}
+
+.torrent-modal {
+  background: #1d1d1d;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .torrent-modal {
+    border-radius: 20px;
+    max-height: 80vh;
+  }
+}
+
+.torrent-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.torrent-modal__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.torrent-modal__close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+}
+
+.torrent-modal__search {
+  display: flex;
+  gap: 8px;
+}
+
+.torrent-modal__input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.torrent-modal__input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.torrent-modal__search-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.torrent-modal__search-btn:disabled {
+  opacity: 0.5;
+}
+
+.torrent-modal__loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.torrent-modal__error {
+  color: #ff5f5f;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.torrent-modal__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.torrent-modal__item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.torrent-modal__item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.torrent-modal__item--file {
+  cursor: default;
+}
+
+.torrent-modal__item-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.torrent-modal__item-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.torrent-modal__badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.torrent-modal__badge--green {
+  background: rgba(0, 199, 23, 0.15);
+  color: #00c717;
+}
+
+.torrent-modal__badge--quality {
+  background: rgba(255, 200, 0, 0.15);
+  color: #ffc800;
+  font-weight: 600;
+}
+
+.torrent-modal__badge--source {
+  background: rgba(100, 160, 255, 0.15);
+  color: #64a0ff;
+}
+
+.torrent-modal__badge--hdr {
+  background: rgba(255, 100, 50, 0.15);
+  color: #ff6432;
+  font-weight: 600;
+}
+
+.torrent-modal__badge--lang {
+  background: rgba(180, 100, 255, 0.15);
+  color: #b464ff;
+}
+
+.torrent-modal__badge--sub {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+}
+
+.torrent-modal__file-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.torrent-modal__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.torrent-modal__action-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.torrent-modal__action-btn--tv {
+  background: rgba(255, 34, 63, 0.2);
+  color: #ff223f;
+}
+
+.torrent-modal__action-btn--tv:hover {
+  background: rgba(255, 34, 63, 0.35);
+}
+
+.torrent-modal__back {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.torrent-modal__back:hover {
+  color: #fff;
+}

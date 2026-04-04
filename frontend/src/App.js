@@ -14,6 +14,8 @@ import CreateUserPage from "./pages/CreateUserPage";
 import CollectionsPage from "./pages/CollectionsPage";
 import UserSettingsPage from "./pages/UserSettingsPage";
 import MoviePage from "./pages/MoviePage";
+import TmdbMoviePage from "./pages/TmdbMoviePage";
+import TmdbCategoryPage from "./pages/TmdbCategoryPage";
 import MiniPlayer from "./components/ui/MiniPlayer";
 import nestifyPlayerClient from "./api/ws/nestifyPlayerClient";
 import PrivateRoute from "./components/PrivateRoute";
@@ -27,7 +29,6 @@ import "./styles/App.css";
 import "./styles/tv.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import { getPage, getCategories, getWatchHistory } from "./api/hdrezka";
 import { useTVKeyboard } from "./hooks/useTVKeyboard";
 
 const PageTransition = ({ children }) => {
@@ -45,7 +46,6 @@ const PageTransition = ({ children }) => {
 };
 
 function App() {
-  const [categories, setCategories] = useState([]);
   const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem("current_user"));
 
@@ -78,17 +78,6 @@ function App() {
       window.removeEventListener('mousemove', onMouseMove);
       clearTimeout(tvModeTimer);
     };
-  }, []);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { categories: list = [] } = await getCategories();
-        setCategories(list);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    fetchData();
   }, []);
 
   useEffect(() => {
@@ -126,6 +115,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="*" element={null} />
       </Routes>
 
       {/* Основное приложение с анимированными переходами */}
@@ -149,6 +139,28 @@ function App() {
                 <PrivateRoute>
                   <PageTransition>
                     <MoviePage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/catalog/:category"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <TmdbCategoryPage />
+                  </PageTransition>
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/title/:mediaType/:tmdbId"
+              element={
+                <PrivateRoute>
+                  <PageTransition>
+                    <TmdbMoviePage />
                   </PageTransition>
                 </PrivateRoute>
               }
@@ -200,7 +212,7 @@ function App() {
               element={
                 <PrivateRoute>
                   <PageTransition>
-                    <BrowsePage categories={categories} />
+                    <BrowsePage categories={[]} />
                   </PageTransition>
                 </PrivateRoute>
               }
