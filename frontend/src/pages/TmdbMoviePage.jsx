@@ -74,7 +74,7 @@ function buildMovieDetails(details, mediaType) {
     age: details.adult ? "18+" : null,
     image: tmdbImg(details.poster_path, "w342"),
     poster_tmdb: tmdbImg(details.poster_path, "w342"),
-    backdrop: tmdbImg(details.backdrop_path, "w780"),
+    backdrop: tmdbImgOriginal(details.backdrop_path),
     backdrop_url_original: tmdbImgOriginal(details.backdrop_path),
     logo_url: null,
     trailer_tmdb: trailerUrl,
