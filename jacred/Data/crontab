@@ -42,6 +42,8 @@
 */5  *   *   *   *    curl -s "http://127.0.0.1:9118/cron/selezen/ParseAllTask"
 
 */40 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/toloka/parse"
+*    */4 *   *   *    curl -s "http://127.0.0.1:9118/cron/toloka/UpdateTasksParse"
+*/5  *   *   *   *    curl -s "http://127.0.0.1:9118/cron/toloka/ParseAllTask"
 *    */4 *   *   *    curl -s "http://127.0.0.1:9118/cron/toloka/parseMagnet"
 
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/animelayer/parse"
