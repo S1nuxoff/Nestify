@@ -1,0 +1,25 @@
+.collection-card {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
+.collection-card__preview {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+
+  /* мягкая “карточка” в твоём стиле (можешь убрать/подкрутить) */
+  border: 1px solid var(--white-opacity-10);
+  background: var(--white-opacity-5);
+}
+
+.collection-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* если хочешь одинаковую высоту карточек в гриде — скажи, сделаю фикс/ratio */
+}

@@ -445,6 +445,8 @@ export default function TmdbMoviePage() {
           title={title}
           titleOriginal={titleOriginal}
           year={year}
+          imdbId={rawDetails?.imdb_id || rawDetails?.external_ids?.imdb_id}
+          tmdbId={tmdbId}
           mediaType={mediaType}
           onClose={() => setTorrentOpen(false)}
           onPlayInBrowser={handlePlayInBrowser}

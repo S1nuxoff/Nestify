@@ -1,0 +1,30 @@
+.route-page-wrapper {
+  min-height: 100vh;
+  will-change: opacity;
+}
+
+/* Mobile bottom nav — push content up so it's not hidden behind the bar */
+@media (max-width: 860px) {
+  .route-page-wrapper {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.has-mini-player .route-page-wrapper {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px) + 80px);
+  }
+
+}
+
+/* Sheet — slides up from bottom, sits on top of everything */
+.route-sheet-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 10000002;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: 0 !important;
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+}
+

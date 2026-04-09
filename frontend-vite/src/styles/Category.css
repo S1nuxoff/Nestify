@@ -1,0 +1,28 @@
+
+.category-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  padding: 24px 0 16px;
+}
+
+.category-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.category-load-more__btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 40px;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.category-load-more__btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}

@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Системні пакети (серти, компілятор для можливих коліс), tzdata
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential tzdata ca-certificates curl \
+    build-essential tzdata ca-certificates curl ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

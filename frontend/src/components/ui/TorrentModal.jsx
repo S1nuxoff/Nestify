@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { searchTorrents, addTorrent } from "../../api/v3";
-import { X, Search, Download, Play, Tv } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { searchTorrents, addTorrent, getTorrentStatus } from "../../api/v3";
+import { X, Search, Play, Tv, Wifi } from "lucide-react";
+
+function formatSpeed(bytesPerSec) {
+  if (!bytesPerSec) return "0 KB/s";
+  const mb = bytesPerSec / 1024 / 1024;
+  if (mb >= 1) return mb.toFixed(1) + " MB/s";
+  return (bytesPerSec / 1024).toFixed(0) + " KB/s";
+}
 
 function formatSize(bytes) {
   if (!bytes) return "?";
@@ -56,7 +63,7 @@ function parseTorrentMeta(title) {
   return { quality, source, hdr, langs: [...new Set(langs)], subs };
 }
 
-export default function TorrentModal({ title, titleOriginal, year, onClose, onSendToTv, onPlayInBrowser }) {
+export default function TorrentModal({ title, titleOriginal, year, imdbId, tmdbId, mediaType, onClose, onSendToTv, onPlayInBrowser }) {
   const [query, setQuery] = useState(`${titleOriginal || title}${year ? " " + year : ""}`);
   const [results, setResults] = useState([]);
   const [files, setFiles] = useState([]);
@@ -64,7 +71,10 @@ export default function TorrentModal({ title, titleOriginal, year, onClose, onSe
   const [loading, setLoading] = useState(false);
   const [addingHash, setAddingHash] = useState(null);
   const [error, setError] = useState(null);
-  const [step, setStep] = useState("search"); // "search" | "files"
+  const [step, setStep] = useState("search"); // "search" | "files" | "preload"
+  const [preloadInfo, setPreloadInfo] = useState(null); // { speed, peers, stat_string }
+  const [pendingAction, setPendingAction] = useState(null); // { type: "browser"|"tv", file }
+  const pollRef = useRef(null);
 
   const doSearch = async (q) => {
     if (!q.trim()) return;
@@ -77,6 +87,9 @@ export default function TorrentModal({ title, titleOriginal, year, onClose, onSe
         title: title,
         title_original: titleOriginal || title,
         year: year ? parseInt(year) : undefined,
+        imdb_id: imdbId,
+        tmdb_id: tmdbId,
+        media_type: mediaType || "movie",
       });
       setResults(data);
       if (data.length === 0) setError("Нічого не знайдено");
@@ -114,21 +127,57 @@ export default function TorrentModal({ title, titleOriginal, year, onClose, onSe
     }
   };
 
-  const handlePlayInBrowser = (file) => {
-    if (onPlayInBrowser) {
-      onPlayInBrowser(file);
+  const startPreload = (type, file) => {
+    setPendingAction({ type, file });
+    setPreloadInfo({ speed: 0, peers: 0, stat_string: "Підключення...", elapsed: 0 });
+    setStep("preload");
+
+    // Тригеримо буферизацію — робимо HEAD запит до stream_url щоб TorrServe почав качати
+    fetch(file.stream_url, { method: "GET", signal: AbortSignal.timeout(3000) }).catch(() => {});
+
+    let elapsed = 0;
+    // Перший poll через 2 секунди — TorrServe потребує часу на підключення до пірів
+    setTimeout(() => {
+      pollRef.current = setInterval(async () => {
+        elapsed += 1;
+        try {
+          const status = await getTorrentStatus(currentHash);
+          const speed = status.download_speed || 0;
+          const peers = status.peers_connected || 0;
+          const stat_string = status.stat_string || "";
+          setPreloadInfo({ speed, peers, stat_string, elapsed });
+
+          // Готово: є швидкість і пройшло мінімум 3 секунди, або 12 секунд загалом
+          const ready = (speed > 50_000 && elapsed >= 3) || elapsed >= 12;
+          if (ready) {
+            clearInterval(pollRef.current);
+            executeAction(type, file);
+          }
+        } catch {
+          if (elapsed >= 8) {
+            clearInterval(pollRef.current);
+            executeAction(type, file);
+          }
+        }
+      }, 1000);
+    }, 2000);
+  };
+
+  const executeAction = (type, file) => {
+    if (type === "browser") {
+      if (onPlayInBrowser) onPlayInBrowser(file);
+      else window.open(file.stream_url, "_blank");
     } else {
-      window.open(file.stream_url, "_blank");
+      if (onSendToTv) onSendToTv({ ...file, hash: currentHash });
     }
     onClose();
   };
 
-  const handleSendToTv = (file) => {
-    if (onSendToTv) {
-      onSendToTv({ ...file, hash: currentHash });
-    }
-    onClose();
-  };
+  // Чистимо poll при закритті
+  useEffect(() => () => clearInterval(pollRef.current), []);
+
+  const handlePlayInBrowser = (file) => startPreload("browser", file);
+  const handleSendToTv = (file) => startPreload("tv", file);
 
   return (
     <div className="torrent-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -172,7 +221,7 @@ export default function TorrentModal({ title, titleOriginal, year, onClose, onSe
                 {results.map((t, i) => {
                   const meta = parseTorrentMeta(t.title);
                   return (
-                    <li key={i} className="torrent-modal__item" onClick={() => handleSelectTorrent(t)}>
+                    <li key={i} className={`torrent-modal__item${t.seeders === 0 ? " torrent-modal__item--dead" : ""}`} onClick={() => handleSelectTorrent(t)}>
                       <div className="torrent-modal__item-title">{t.title}</div>
                       <div className="torrent-modal__item-meta">
                         {meta.quality && (
@@ -213,6 +262,43 @@ export default function TorrentModal({ title, titleOriginal, year, onClose, onSe
               </ul>
             )}
           </>
+        )}
+
+        {/* Preload step */}
+        {step === "preload" && preloadInfo && (
+          <div className="torrent-modal__preload">
+            <div className="torrent-modal__preload-spinner">
+              <div className="spinner" />
+            </div>
+            <div className="torrent-modal__preload-title">Підготовка до перегляду...</div>
+            <div className="torrent-modal__preload-stats">
+              <div className="torrent-modal__preload-stat">
+                <Wifi size={16} />
+                <span>{formatSpeed(preloadInfo.speed)}</span>
+              </div>
+              <div className="torrent-modal__preload-stat">
+                <span>👥 {preloadInfo.peers} пірів</span>
+              </div>
+            </div>
+            {(preloadInfo.elapsed || 0) >= 5 && preloadInfo.speed === 0 && (
+              <div className="torrent-modal__error">⚠️ Немає сідів — спробуй інший торент</div>
+            )}
+            {preloadInfo.stat_string && preloadInfo.speed > 0 && (
+              <div className="torrent-modal__preload-status">{preloadInfo.stat_string}</div>
+            )}
+            <div className="torrent-modal__preload-bar">
+              <div
+                className="torrent-modal__preload-bar-fill"
+                style={{ width: `${Math.min((preloadInfo.elapsed || 0) * 10, 100)}%` }}
+              />
+            </div>
+            <button
+              className="torrent-modal__preload-skip"
+              onClick={() => { clearInterval(pollRef.current); executeAction(pendingAction.type, pendingAction.file); }}
+            >
+              Пропустити →
+            </button>
+          </div>
         )}
 
         {/* Files step */}

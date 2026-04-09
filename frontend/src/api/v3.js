@@ -8,30 +8,33 @@ const v3 = axios.create({
 });
 
 // Пошук торентів
-export const searchTorrents = async ({ q, title, title_original, year }) => {
+export const searchTorrents = async ({ q, title, title_original, year, imdb_id, tmdb_id, media_type }) => {
   const params = { q };
   if (title) params.title = title;
   if (title_original) params.title_original = title_original;
   if (year) params.year = year;
-  const res = await v3.get("/torrents/search", { params });
+  if (imdb_id) params.imdb_id = imdb_id;
+  if (tmdb_id) params.tmdb_id = tmdb_id;
+  if (media_type) params.media_type = media_type;
+  const res = await v3.get("/stream/search", { params });
   return res.data.results || [];
 };
 
-// Додати торент → отримати файли зі стрім-посиланнями
+// Додати джерело → отримати файли зі стрім-посиланнями
 export const addTorrent = async (magnet, title = "") => {
-  const res = await v3.post("/torrents/add", { magnet, title });
+  const res = await v3.post("/stream/add", { magnet, title });
   return res.data;
 };
 
-// Статус торенту
+// Статус завантаження
 export const getTorrentStatus = async (hash) => {
-  const res = await v3.get(`/torrents/status/${hash}`);
+  const res = await v3.get(`/stream/status/${hash}`);
   return res.data;
 };
 
-// Видалити торент
+// Видалити джерело
 export const removeTorrent = async (hash) => {
-  await v3.delete(`/torrents/remove/${hash}`);
+  await v3.delete(`/stream/remove/${hash}`);
 };
 
 // Зберегти прогрес перегляду

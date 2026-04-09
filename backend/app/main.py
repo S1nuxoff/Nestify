@@ -103,6 +103,29 @@ async def on_startup():
     await create_all_tables()
     print("Database initialized.")
     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+    from app.services.hls_manager import start_cleanup_task
+    start_cleanup_task()
+    print("HLS cleanup task started.")
+    # Load DB settings overrides into memory
+    try:
+        from sqlalchemy import select as sa_select
+        from app.db.session import async_session as _session
+        from app.models.app_settings import AppSettings
+        async with _session() as session:
+            rows = (await session.execute(sa_select(AppSettings))).scalars().all()
+        for row in rows:
+            if not hasattr(settings, row.key):
+                continue
+            current = getattr(settings, row.key)
+            if isinstance(current, bool):
+                setattr(settings, row.key, row.value.lower() in ("true", "1", "yes"))
+            elif isinstance(current, int):
+                setattr(settings, row.key, int(row.value))
+            else:
+                setattr(settings, row.key, row.value)
+        print(f"Loaded {len(rows)} setting override(s) from DB.")
+    except Exception as e:
+        print(f"Could not load settings from DB: {e}")
 
 
 @app.get("/")

@@ -1,0 +1,221 @@
+.player-controls-container {
+  border-radius: 40px;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  align-items: center;
+}
+
+.player-controls-items {
+  display: flex;
+  width: 100%;
+  height: 80px;
+  align-items: center;
+  gap: 32px;
+  justify-content: center;
+}
+
+.player-controls-center {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.player-icon {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.time-label {
+  font-size: 12px;
+  color: var(--white);
+  font-weight: 500;
+}
+
+.seek-bar {
+  flex: 1;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background: none;
+  outline: none;
+  width: 100%;
+  border-radius: 16px;
+  height: 3px;
+}
+
+.seek-bar-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.seek-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+/* WebKit track */
+.seek-bar::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent;
+}
+
+/* WebKit thumb */
+.seek-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+/* Firefox track */
+.seek-bar::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent;
+}
+
+/* Firefox thumb */
+.seek-bar::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+}
+
+/* Firefox filled range */
+.seek-bar::-moz-range-progress {
+  background: var(--white);
+  border-radius: 3px;
+  height: 6px;
+}
+
+/* Volume slider background */
+.volume-track-bg {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--white-opacity-20);
+  backdrop-filter: blur(100px);
+}
+
+/* Volume slider bar */
+.volume-track-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: calc(var(--value) * 100%);
+  background: var(--white);
+  border-radius: 32px;
+  transition: height 0.1s;
+}
+
+/* Tooltip for volume */
+.volume-tooltip {
+  position: relative;
+  color: white;
+  font-size: 16px;
+  margin-bottom: 12px;
+  pointer-events: none;
+}
+
+/* Tooltip for scrub preview */
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Volume overlay */
+.volume-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10030;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Горизонтальный слайдер */
+.volume-slider {
+  position: relative;
+  width: 95%; /* на всю ширину компонента */
+  max-width: 600px; /* можешь убрать, если прям 100% нужно */
+  height: 50px; /* высота слайдера */
+  border-radius: 600px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Фон */
+.volume-track-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--white-opacity-20);
+}
+
+/* Заполненная часть — слева направо */
+.volume-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--value) * 100%);
+  height: 100%;
+  background: var(--white);
+  border-radius: 600px;
+  transition: width 0.1s;
+}
+
+.volume-tooltip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #000; /* можно var(--black) / #fff по вкусу */
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none; /* чтобы не мешала кликам по слайдеру */
+  margin-bottom: 0; /* если было ранее */
+}
+
+.movie-page__tv-session-container {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1223232;
+
+  width: min(100vw - 32px, 700px);
+
+  background: var(--dark);
+  border-radius: 32px;
+  backdrop-filter: blur(10px);
+
+  padding: 16px 16px 4px 16px;
+  overflow: auto;
+}

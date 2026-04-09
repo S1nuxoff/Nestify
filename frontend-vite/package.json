@@ -1,0 +1,89 @@
+{
+  "name": "nestify",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "homepage": "./",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "NODE_ENV=development electron .",
+    "electron:start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && NODE_ENV=development electron .\"",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:win": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "@videojs/http-streaming": "^3.17.0",
+    "@vidstack/react": "^1.12.13",
+    "axios": "^1.8.3",
+    "dayjs": "^1.11.13",
+    "flubber": "^0.4.2",
+    "framer-motion": "^12.23.24",
+    "hls.js": "^1.6.15",
+    "js-base64": "^3.7.7",
+    "keen-slider": "^6.8.6",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.553.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-player": "^2.16.0",
+    "react-responsive": "^10.0.1",
+    "react-router-dom": "^7.3.0",
+    "react-slick": "^0.30.3",
+    "react-transition-group": "^4.4.5",
+    "slick-carousel": "^1.8.1",
+    "socket.io-client": "^4.8.1",
+    "swiper": "^11.2.6",
+    "video.js": "^8.22.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.4.0",
+    "vite-plugin-svgr": "^4.3.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.nestify.app",
+    "productName": "Nestify",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/icon.png"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "public/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "icon": "public/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

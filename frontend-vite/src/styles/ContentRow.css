@@ -1,0 +1,63 @@
+/* ContentRow.css — native horizontal scroll row */
+
+.cr-container {
+  margin-bottom: 28px;
+}
+
+.cr-title {
+  font-size: 17px;
+  font-weight: 300;
+  color: #fff;
+  margin: 0 0 14px 0;
+}
+
+.cr-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  /* bleed to screen edges */
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 4px;
+  /* mobile-size cards */
+  --card-w: clamp(120px, 38vw, 148px);
+}
+
+.cr-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.cr-item {
+  flex-shrink: 0;
+  width: var(--card-w, 140px);
+}
+
+/* for cards that control their own width (e.g. BackdropCard) */
+.cr-item-auto {
+  flex-shrink: 0;
+}
+
+/* Desktop — restore full card width & spacing */
+@media (min-width: 768px) {
+  .cr-scroll {
+    --card-w: 200px;
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cr-scroll {
+    --card-w: 260px;
+    gap: 20px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

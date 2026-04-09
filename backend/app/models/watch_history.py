@@ -17,13 +17,19 @@ class WatchHistory(Base):
     )
 
     movie_id: Mapped[str] = mapped_column(
-        ForeignKey("movies.id"),
+        String,
         nullable=False,
     )
 
     translator_id: Mapped[str | None] = mapped_column(String, nullable=True)
     season: Mapped[int | None] = mapped_column(nullable=True)
     episode: Mapped[int | None] = mapped_column(nullable=True)
+
+    # Торент-специфічні поля (для відновлення перегляду)
+    torrent_hash:   Mapped[str | None] = mapped_column(String, nullable=True)
+    torrent_file_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    torrent_fname:  Mapped[str | None] = mapped_column(String, nullable=True)
+    torrent_magnet: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # 🔥 НОВЕ ПОЛЕ — загальна тривалість фільму/епізоду в секундах
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)

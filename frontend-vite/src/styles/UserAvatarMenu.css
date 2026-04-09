@@ -1,0 +1,377 @@
+/* src/styles/UserAvatarMenu.css */
+
+.uam {
+  --uam-main-bg: var(--dark);
+  --uam-glass: blur(30px) saturate(150%);
+  --uam-accent: #3478f6;
+  --uam-border: rgba(255, 255, 255, 0.1);
+  --uam-text-secondary: rgba(255, 255, 255, 0.55);
+}
+
+/* Portal root: всегда выше любых fixed внутри приложения */
+.uam-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+/* Внутри портала кликабельны overlay + panel + container */
+.uam-portal .uam__menu-container,
+.uam-portal .uam__overlay,
+.uam-portal .uam__panel {
+  pointer-events: auto;
+}
+
+/* Hero поверх всего */
+.uam-portal .uam__hero-avatar {
+  z-index: 2147483647;
+}
+
+/* Trigger */
+.uam__trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+.uam__trigger:hover {
+  transform: scale(1.08);
+}
+.uam__trigger-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+/* =========================================================
+   DESKTOP: контейнер меню ВСЕГДА fullscreen в portal,
+   а panel позиционируем справа сверху
+   ========================================================= */
+
+/* ВАЖНО: это дефолт на десктопе — fullscreen контейнер для overlay/panel */
+.uam-portal .uam__menu-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+
+  z-index: 2147483000;
+  isolation: isolate;
+}
+
+/* overlay */
+.uam-portal .uam__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  pointer-events: auto;
+}
+
+/* Panel */
+.uam__panel {
+  position: absolute;
+  z-index: 2;
+
+  width: 300px;
+  background: var(--dark);
+  backdrop-filter: var(--uam-glass);
+  -webkit-backdrop-filter: var(--uam-glass);
+  border: 1px solid var(--uam-border);
+  border-radius: 24px;
+
+  overflow: hidden;
+  animation: apple-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* позиция панели на десктопе */
+@media (min-width: 861px) {
+  .uam-portal .uam__panel {
+    top: 80px; /* подгони если надо */
+    right: 54px; /* как было */
+  }
+}
+
+@keyframes apple-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.uam__content {
+  width: 100%;
+}
+
+.uam__section {
+  padding: 16px;
+}
+
+.uam__section--current {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-bottom: 1px solid var(--uam-border);
+}
+
+.uam__main-avatar {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.uam__user-name {
+  font-size: 18px;
+  font-weight: 400;
+  color: #fff;
+  margin: 0;
+}
+
+.uam__label {
+  font-size: 12px;
+  color: var(--uam-text-secondary);
+  margin: 0 0 16px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Other users grid */
+.uam__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.uam__user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #fff;
+  text-align: left;
+}
+
+.uam__item-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.uam__item-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Actions */
+.uam__section--actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--dark);
+  border-top: 1px solid var(--white-opacity-10);
+}
+
+.uam__action-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.uam__action-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.uam__action-link--danger {
+  color: #ff453a;
+}
+
+/* Avatar frame */
+.uam__avatar-frame {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #2c2c2e;
+  flex-shrink: 0;
+}
+
+.uam__avatar-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== HERO TRANSITION ===== */
+.uam__hero-avatar {
+  position: fixed;
+  z-index: 2147483100;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #2c2c2e;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  will-change: transform, opacity;
+  pointer-events: none;
+  transform-origin: top left;
+}
+
+.uam__hero-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Прячем trigger сверху когда меню открыто/анимируется */
+.uam.is-animating .uam__trigger,
+.uam.is-open .uam__trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Большой аватар в панели скрываем пока летит hero */
+.uam__main-avatar.is-hero-target {
+  opacity: 0;
+}
+
+/* ===== MOBILE FULLSCREEN (SCROLL + STICKY ACTIONS) ===== */
+@media (max-width: 860px) {
+  /* тут оставляем твой режим full */
+  .uam__menu-container--full {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483000;
+    isolation: isolate;
+  }
+
+  .uam__panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .uam__content {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+
+    padding: calc(18px + env(safe-area-inset-top)) 16px
+      calc(18px + env(safe-area-inset-bottom)) 16px;
+
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .uam__section--current {
+    padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  .uam__mobile-close {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top));
+    right: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 232;
+    cursor: pointer;
+  }
+
+  .uam__main-avatar {
+    width: 92px;
+    height: 92px;
+  }
+
+  .uam__user-name {
+    font-size: 22px;
+  }
+
+  .uam__grid {
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 2px;
+    margin-top: 14px;
+  }
+
+  .uam__user-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .uam__item-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .uam__item-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .uam__section--actions {
+    margin-top: auto;
+
+    padding: 12px 0 0 0;
+    background: none;
+    border-top: none;
+
+    position: sticky;
+    bottom: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+
+    background: var(--dark);
+  }
+
+  .uam__action-link {
+    font-size: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  .uam__action-link + .uam__action-link {
+    margin-top: 10px;
+  }
+
+  .uam__action-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

@@ -122,6 +122,7 @@ function App() {
       <div style={{ position: "relative", zIndex: 1 }} className="App">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
+            <Route path="/player/:movieId" element={null} />
             <Route
               path="/"
               element={

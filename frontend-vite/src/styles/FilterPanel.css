@@ -1,0 +1,376 @@
+/* ============================================================
+   FilterPanel — full-screen filter modal
+   ============================================================ */
+
+/* Overlay — covers the entire viewport */
+.fp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000000;
+  background: #0d0d0d;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Root panel */
+.fp-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* When a sub-panel is active the root panel switches to sub-panel layout */
+.fp-panel--sub {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.fp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+/* Back / close button */
+.fp-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.fp-back:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.fp-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+/* ── Scrollable body ─────────────────────────────────────────── */
+
+.fp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 16px;
+  scrollbar-width: none;
+}
+
+.fp-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Section labels ──────────────────────────────────────────── */
+
+.fp-section-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 28px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Filter card rows ────────────────────────────────────────── */
+
+.fp-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fp-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+
+.fp-row:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fp-row__label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.fp-row__value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+  max-width: 60%;
+  text-align: right;
+}
+
+.fp-row__value-plain {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Rating row ──────────────────────────────────────────────── */
+
+.fp-row--rating {
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  cursor: default;
+}
+
+.fp-row--rating:active {
+  background: none;
+}
+
+.fp-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Dual range slider container */
+.fp-range-wrap {
+  position: relative;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+/* Passive track */
+.fp-range-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* Active fill between thumbs */
+.fp-range-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #fff;
+  border-radius: 1px;
+}
+
+/* Range input base */
+.fp-range {
+  position: absolute;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  height: 30px;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Webkit thumb */
+.fp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: all;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
+}
+
+.fp-range::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+}
+
+/* Firefox thumb */
+.fp-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: all;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Stacking — min thumb on top when near max */
+.fp-range--min {
+  z-index: 3;
+}
+
+.fp-range--max {
+  z-index: 4;
+}
+
+/* ── Sort radio rows ─────────────────────────────────────────── */
+
+.fp-row--radio {
+  /* inherits .fp-row */
+}
+
+.fp-row--radio-active .fp-row__label {
+  color: #fff;
+}
+
+/* Radio circle */
+.fp-radio {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, border-width 0.15s ease;
+}
+
+.fp-radio--active {
+  border-color: #fff;
+  border-width: 6px;
+}
+
+/* ── Sub-panel ───────────────────────────────────────────────── */
+
+.fp-subpanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fp-sublist {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.fp-sublist::-webkit-scrollbar {
+  display: none;
+}
+
+/* Year ranges list — same scrollable container, different class */
+.fp-year-ranges {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.fp-year-ranges::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sub-panel option row */
+.fp-subrow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 15px;
+  text-align: left;
+  transition: color 0.12s ease;
+}
+
+.fp-subrow:last-child {
+  border-bottom: none;
+}
+
+.fp-subrow:active {
+  color: #fff;
+}
+
+.fp-subrow--active {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* Check icon inside sub-rows */
+.fp-check {
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* ── Bottom action bar ───────────────────────────────────────── */
+
+.fp-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  background: #0d0d0d;
+}
+
+.fp-btn {
+  flex: 1;
+  height: 52px;
+  border-radius: 50px;
+  border: none;
+  font-size: 16px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.fp-btn:active {
+  opacity: 0.8;
+  transform: scale(0.97);
+}
+
+.fp-btn--reset {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.fp-btn--apply {
+  background: #fff;
+  color: #000;
+}

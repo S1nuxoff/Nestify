@@ -1,0 +1,190 @@
+:root {
+  --hbo-primary: var(--blue); /* Фірмовий синій Max */
+  --hbo-accent: var(--blue); /* Фіолетовий акцент */
+  --hbo-text: #ffffff;
+  --hbo-text-dim: rgba(255, 255, 255, 0.6);
+}
+
+.hbo-container {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  font-family: "Inter", -apple-system, sans-serif;
+  color: var(--hbo-text);
+}
+
+.hbo-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 580px;
+  padding: 40px;
+  text-align: center;
+  animation: hboFadeUp 1s ease-out;
+}
+
+@keyframes hboFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hbo-logo-text {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  margin-bottom: 30px;
+  opacity: 0.9;
+}
+
+.hbo-logo-text span {
+  color: var(--white);
+}
+
+.hbo-title {
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+}
+
+.hbo-description {
+  font-size: 18px;
+  color: var(--hbo-text-dim);
+  line-height: 1.6;
+  margin-bottom: 50px;
+  font-weight: 300;
+}
+
+/* OTP Група */
+.hbo-otp-group {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 50px;
+}
+
+.hbo-otp-box {
+  position: relative;
+}
+
+.hbo-otp-input {
+  width: 50px;
+  height: 70px;
+  background: transparent;
+  border: none;
+  font-size: 36px;
+  font-weight: 200;
+  color: #fff;
+  text-align: center;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.hbo-otp-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.hbo-otp-input:focus ~ .hbo-otp-underline {
+  height: 2px;
+  background: var(--hbo-primary);
+}
+
+.hbo-otp-input.has-value ~ .hbo-otp-underline {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Статус */
+.hbo-status {
+  margin-bottom: 30px;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+.hbo-status--error {
+  color: #ff3b30;
+}
+.hbo-status--success {
+  color: #00ff85;
+}
+
+/* Кнопки */
+.hbo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.hbo-btn {
+  width: 100%;
+  max-width: 380px;
+  padding: 16px 32px;
+  border-radius: 16px; /* Квадратні кнопки HBO */
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.hbo-btn-primary {
+  background: var(--hbo-text);
+  color: #000;
+}
+
+.hbo-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.hbo-btn-link {
+  background: transparent;
+  color: var(--hbo-text-dim);
+  text-decoration: none;
+}
+
+.hbo-btn-link:hover {
+  letter-spacing: 3px;
+}
+
+.hbo-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Мобільна адаптація */
+@media (max-width: 600px) {
+  .hbo-content {
+    padding: 20px;
+  }
+  .hbo-title {
+    font-size: 32px;
+  }
+  .hbo-description {
+    font-size: 16px;
+  }
+  .hbo-otp-group {
+    gap: 6px;
+  }
+  .hbo-otp-input {
+    width: 35px;
+    height: 50px;
+    font-size: 24px;
+  }
+}

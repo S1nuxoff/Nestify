@@ -7,20 +7,30 @@ class TorrentResult(BaseModel):
     size: int
     seeders: int
     peers: int
+    tracker: str = ""
+    voices: list[str] = []
+    quality: str | None = None
+    videotype: str = ""
+    pub_date: str = ""
 
 
 class SearchResponse(BaseModel):
-    results: list[TorrentResult]
+    uk: list[TorrentResult] = []
+    ru: list[TorrentResult] = []
+    en: list[TorrentResult] = []
+    pl: list[TorrentResult] = []
 
 
 class AddTorrentRequest(BaseModel):
     magnet: str
     title: str = ""
+    poster: str = ""
 
 
 class StreamFile(BaseModel):
     name: str
     size: int
+    file_id: int
     stream_url: str
 
 
@@ -35,8 +45,8 @@ class TorrentStatus(BaseModel):
     stat: int
     stat_string: str
     torrent_size: int
-    download_speed: int
-    upload_speed: int
+    download_speed: float
+    upload_speed: float
     peers_total: int
     peers_connected: int
     files: list[StreamFile]
@@ -49,10 +59,18 @@ class ProgressSaveRequest(BaseModel):
     duration: int | None = None
     season: int | None = None
     episode: int | None = None
+    torrent_hash:    str | None = None
+    torrent_file_id: int | None = None
+    torrent_fname:   str | None = None
+    torrent_magnet:  str | None = None
 
 
 class ProgressResponse(BaseModel):
     position_seconds: int
+    torrent_hash:    str | None = None
+    torrent_file_id: int | None = None
+    torrent_fname:   str | None = None
+    torrent_magnet:  str | None = None
 
 
 class WatchHistoryItem(BaseModel):
@@ -63,3 +81,6 @@ class WatchHistoryItem(BaseModel):
     duration: int | None
     watched_at: str
     updated_at: str
+    torrent_hash:    str | None = None
+    torrent_file_id: int | None = None
+    torrent_fname:   str | None = None

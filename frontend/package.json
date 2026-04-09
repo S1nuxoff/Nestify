@@ -1,7 +1,9 @@
 {
-  "name": "app",
-  "version": "0.1.0",
+  "name": "nestify",
+  "version": "1.0.0",
   "private": true,
+  "main": "public/electron.js",
+  "homepage": "./",
   "dependencies": {
     "@capacitor/android": "^7.2.0",
     "@capacitor/cli": "^7.2.0",
@@ -43,7 +45,50 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron": "NODE_ENV=development electron .",
+    "electron:start": "concurrently \"npm start\" \"wait-on http://localhost:3000 && NODE_ENV=development electron .\"",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:all": "npm run build && electron-builder --mac --win"
+  },
+  "build": {
+    "appId": "com.nestify.app",
+    "productName": "Nestify",
+    "files": [
+      "build/**/*"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "public/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "icon": "public/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "eslintConfig": {
     "extends": [
@@ -65,7 +110,11 @@
   },
   "devDependencies": {
     "autoprefixer": "^9.8.8",
+    "concurrently": "^9.2.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "postcss": "^7.0.39",
-    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17"
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17",
+    "wait-on": "^8.0.5"
   }
 }

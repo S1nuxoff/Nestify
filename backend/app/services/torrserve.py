@@ -5,21 +5,27 @@ from fastapi import HTTPException
 
 from app.core.config import settings
 
+# Stream URLs go through the backend proxy so the browser avoids
+# mixed-content (HTTP from HTTPS page) and cross-origin CORS issues.
+def _proxy_stream_url(fname: str, hash_: str, file_id: int, transcode: bool = True) -> str:
+    base = f"{settings.API_BASE_URL}/api/v3/stream/play/{fname}?link={hash_}&index={file_id}"
+    return base + ("&transcode=true" if transcode else "")
+
 VIDEO_EXT = {".mkv", ".mp4", ".avi", ".mov", ".ts", ".m2ts", ".wmv", ".flv", ".webm"}
 
 
-async def add_torrent(magnet: str, title: str = "") -> dict:
+async def add_torrent(magnet: str, title: str = "", poster: str = "") -> dict:
     """Add magnet to TorrServe, wait for files, return hash + stream urls."""
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=90) as client:
         res = await client.post(
             f"{settings.TORRSERVE_URL}/torrents",
             json={
-                "action": "add",
-                "link": magnet,
-                "title": title,
-                "poster": "",
-                "data": "",
-                "save_to_db": False,
+                "action":      "add",
+                "link":        magnet,
+                "title":       title,
+                "poster":      poster,
+                "data":        "",
+                "save_to_db":  False,  # не зберігати в БД — автоматично прибирається
             },
         )
         if res.status_code != 200:
@@ -94,13 +100,15 @@ def _build_stream_files(hash_: str, files: list) -> list[dict]:
             continue
 
         file_id = f.get("id", files.index(f) + 1)
-        stream_url = f"{settings.TORRSERVE_URL}/stream/{fname}?link={hash_}&index={file_id}&play"
+        stream_url = _proxy_stream_url(fname, hash_, file_id)
 
         result.append(
             {
-                "name": fname,
-                "size": f.get("length") or f.get("size") or 0,
-                "stream_url": stream_url,
+                "name":         fname,
+                "size":         f.get("length") or f.get("size") or 0,
+                "file_id":      file_id,
+                "stream_url":   _proxy_stream_url(fname, hash_, file_id, transcode=True),
+                "stream_url_direct": _proxy_stream_url(fname, hash_, file_id, transcode=False),
             }
         )
     return result

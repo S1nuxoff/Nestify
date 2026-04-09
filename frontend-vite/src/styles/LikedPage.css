@@ -1,0 +1,219 @@
+/* LikedPage.css — Library */
+
+.lib-root {
+  padding: 24px 16px;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* ── Title ── */
+
+.lib-title {
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: #fff;
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+/* ── Tabs ── */
+
+.lib-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 28px;
+  gap: 2px;
+}
+
+.lib-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lib-tab--active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 500;
+}
+
+/* ── Section ── */
+
+.lib-section {
+  margin-bottom: 32px;
+}
+
+.lib-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.lib-section__title {
+  font-size: var(--section-title-size);
+  font-weight: var(--section-title-weight);
+  color: #fff;
+  margin: 0 0 14px;
+}
+
+/* ── Continue Watching horizontal scroll ── */
+
+.lib-cw-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
+}
+
+.lib-cw-scroll::-webkit-scrollbar { display: none; }
+
+.lib-cw-card {
+  flex: 0 0 calc(50% - 6px);
+  scroll-snap-align: start;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lib-cw-card__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lib-cw-card__backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.lib-cw-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lib-cw-card__play-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lib-cw-card__time {
+  position: absolute;
+  bottom: 26px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.55);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lib-cw-card__bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lib-cw-card__bar-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+}
+
+.lib-cw-card__meta {
+  padding: 8px 2px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lib-cw-card__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-cw-card__sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Watched scroll ── */
+
+.lib-poster-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -16px;
+  padding: 0 16px 4px;
+}
+
+.lib-poster-scroll::-webkit-scrollbar { display: none; }
+
+.lib-poster-scroll__item {
+  flex: 0 0 140px;
+  scroll-snap-align: start;
+}
+
+.lib-poster-scroll__item .video-card-preview-wrapper {
+  width: 100%;
+}
+
+/* ── Genres grid (reuses sp-genre-tile from SearchPage) ── */
+
+.lib-genre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── Empty ── */
+
+.lib-empty {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 15px;
+  text-align: center;
+  padding: 60px 0;
+}

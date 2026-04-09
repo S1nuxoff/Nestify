@@ -18,8 +18,18 @@ async def save_progress(body: ProgressSaveRequest):
         season=body.season,
         episode=body.episode,
         duration=body.duration,
+        torrent_hash=body.torrent_hash,
+        torrent_file_id=body.torrent_file_id,
+        torrent_fname=body.torrent_fname,
+        torrent_magnet=body.torrent_magnet,
     )
-    return {"position_seconds": body.position_seconds}
+    return {
+        "position_seconds": body.position_seconds,
+        "torrent_hash":     body.torrent_hash,
+        "torrent_file_id":  body.torrent_file_id,
+        "torrent_fname":    body.torrent_fname,
+        "torrent_magnet":   body.torrent_magnet,
+    }
 
 
 @router.get("/progress", response_model=ProgressResponse, summary="Get watch progress")
@@ -29,13 +39,12 @@ async def get_progress(
     season: int | None = Query(None),
     episode: int | None = Query(None),
 ):
-    position = await get_watch_position(
+    return await get_watch_position(
         user_id=user_id,
         movie_id=movie_id,
         season=season,
         episode=episode,
     )
-    return {"position_seconds": position}
 
 
 @router.get("/history", response_model=list[WatchHistoryItem], summary="Get watch history")
@@ -61,6 +70,9 @@ async def get_history(
             duration=r.duration,
             watched_at=r.watched_at.isoformat() if r.watched_at else "",
             updated_at=r.updated_at.isoformat() if r.updated_at else "",
+            torrent_hash=r.torrent_hash,
+            torrent_file_id=r.torrent_file_id,
+            torrent_fname=r.torrent_fname,
         )
         for r in rows
     ]

@@ -1,0 +1,20 @@
+.upload-button-container {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--red-gradient-linear);
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.upload-button-text {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--white);
+}
+
+.upload-button-container:hover {
+  transition: ease-in-out, 0.2s;
+  opacity: 0.9;
+  transform: scale(1.05);
+}

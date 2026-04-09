@@ -12,7 +12,8 @@
 // 192.168.0.44
 
 const config = {
-  backend_url: "https://api.opencine.cloud",
+  // backend_url: "https://api.opencine.cloud",
+  backend_url: "http://localhost:8000",
   hdrezk_url: "https://rezka.fi",
   tmdb_key: "4ef0d7355d9ffb5151e987764708ce96",
   tmdb_base: "https://api.themoviedb.org/3",

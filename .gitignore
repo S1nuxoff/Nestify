@@ -15,7 +15,10 @@ mapper
 app/mapper
 # misc
 .DS_Store
+.env
 .env.local
+backend/.env
+frontend-vite/.env
 .env.development.local
 .env.test.local
 .env.production.local
@@ -53,3 +56,12 @@ venv/
 **/.venv/
 
 
+backend/hls_cache/*
+!backend/hls_cache/.gitkeep
+
+# JacRed — credentials (use env vars in Dokploy)
+jacred/Data/tr.conf
+jacred/tackers.md
+jacred/Data/torrents.json
+hls_cache
+testapi
