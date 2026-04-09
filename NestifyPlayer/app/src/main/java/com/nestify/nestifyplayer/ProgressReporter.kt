@@ -22,8 +22,7 @@ object ProgressReporter {
     @Volatile
     private var running: Boolean = false
 
-    // ⚠️ бекенд
-    private const val BASE_URL = "https://api.opencine.cloud"
+    private val BASE_URL get() = BuildConfig.BACKEND_BASE_URL
 
     fun start(statusProvider: () -> PlayerStatus) {
         if (running) {
@@ -63,6 +62,14 @@ object ProgressReporter {
         thread?.interrupt()
         thread = null
         lastSentPosMs = -1L
+    }
+
+    /**
+     * Синхронізуємо lastSentPosMs з поточною позицією ExoPlayer одразу після STATE_READY.
+     * Без цього перший tick може звітувати позицію 0 якщо seekTo ще не відпрацював.
+     */
+    fun syncPosition(positionMs: Long) {
+        lastSentPosMs = positionMs
     }
 
     // одразу відправити прогрес (ігноруючи isPlaying / дельту)

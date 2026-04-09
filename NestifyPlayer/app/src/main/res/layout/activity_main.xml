@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#151018">
+    android:background="#0d0d0d">
 
     <!-- ВІДЕОПЛЕЄР ПОЗАДУ -->
     <androidx.media3.ui.PlayerView
@@ -11,35 +11,35 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:use_controller="true"
-        app:show_buffering="when_playing" />
+        app:show_buffering="when_playing"
+        app:controller_layout_id="@layout/player_controller"
+        app:show_timeout="4000" />
 
-    <!-- ГОЛОВНИЙ ЕКРАН (як на макеті) -->
+    <!-- ===== СТАН 1: ВІДКЛЮЧЕНИЙ (QR + код) ===== -->
     <LinearLayout
-        android:id="@+id/status_container"
+        android:id="@+id/screen_disconnected"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="48dp"
-        android:background="#18121F">
+        android:padding="56dp"
+        android:background="#0d0d0d"
+        android:visibility="gone">
 
-        <!-- ЛІВО: текст -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/logo_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="nestify"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:textColor="#FFCFFA"
-                android:letterSpacing="0.05"
-                android:paddingBottom="24dp" />
+            <ImageView
+                android:id="@+id/logo_image_main"
+                android:layout_width="160dp"
+                android:layout_height="50dp"
+                android:src="@drawable/nestify_logo"
+                android:scaleType="fitStart"
+                android:contentDescription="Nestify"
+                android:paddingBottom="28dp" />
 
             <TextView
                 android:id="@+id/status_title"
@@ -49,7 +49,7 @@
                 android:textSize="30sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
-                android:paddingBottom="12dp" />
+                android:paddingBottom="10dp" />
 
             <TextView
                 android:id="@+id/info_text"
@@ -57,16 +57,16 @@
                 android:layout_height="wrap_content"
                 android:text="Відскануйте QR-код"
                 android:textSize="18sp"
-                android:textColor="#E5E0ED"
-                android:paddingBottom="24dp" />
+                android:textColor="#B0A8BB"
+                android:paddingBottom="28dp" />
 
             <TextView
                 android:id="@+id/connect_hint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Або перейдіть на сторінку:"
-                android:textSize="18sp"
-                android:textColor="#E5E0ED"
+                android:textSize="16sp"
+                android:textColor="#B0A8BB"
                 android:paddingBottom="4dp" />
 
             <TextView
@@ -74,89 +74,137 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="opencine.cloud/connect"
-                android:textSize="20sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#FFCFFA"
-                android:paddingBottom="24dp" />
+                android:paddingBottom="28dp" />
 
             <TextView
                 android:id="@+id/code_hint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Введіть код:"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textColor="#FFFFFF"
                 android:paddingBottom="12dp" />
 
-            <!-- РЯД КОДУ -->
             <LinearLayout
                 android:id="@+id/code_row"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/code_slot_1"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_2"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_3"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_4"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_5"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_6"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_7"
-                    style="@style/Nestify_CodeBubble" />
-
-                <TextView
-                    android:id="@+id/code_slot_8"
-                    style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_1" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_2" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_3" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_4" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_5" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_6" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_7" style="@style/Nestify_CodeBubble" />
+                <TextView android:id="@+id/code_slot_8" style="@style/Nestify_CodeBubble" />
             </LinearLayout>
+
+            <!-- Кнопка оновити — видима тільки коли нема мережі -->
+            <Button
+                android:id="@+id/btn_retry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="Оновити"
+                android:textSize="16sp"
+                android:textColor="#1b0d2a"
+                android:textStyle="bold"
+                android:paddingStart="32dp"
+                android:paddingEnd="32dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:background="@drawable/bg_retry_button"
+                android:visibility="gone"
+                android:focusable="true" />
 
         </LinearLayout>
 
-        <!-- ПРАВО: QR у панелі -->
         <ImageView
             android:id="@+id/qr_image"
-            android:layout_width="400dp"
-            android:layout_height="400dp"
-            android:layout_gravity="center"
+            android:layout_width="320dp"
+            android:layout_height="320dp"
+            android:layout_gravity="center_vertical"
             android:contentDescription="QR code"
-            android:background="@android:color/transparent"
             android:scaleType="fitCenter" />
-
 
     </LinearLayout>
 
-    <!-- SPLASH (старий) -->
+    <!-- ===== СТАН 2: ПІДКЛЮЧЕНИЙ — IDLE ===== -->
+    <LinearLayout
+        android:id="@+id/screen_connected"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#0d0d0d"
+        android:visibility="gone">
+
+        <!-- Аватар -->
+        <ImageView
+            android:id="@+id/avatar_image"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:contentDescription="Avatar"
+            android:scaleType="centerCrop"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Ім'я профілю -->
+        <TextView
+            android:id="@+id/connected_profile_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Профіль"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Роздільник -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="2dp"
+            android:background="#33FFFFFF"
+            android:layout_marginBottom="28dp" />
+
+        <!-- Заклик -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Оберіть що дивитись"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="і натисніть «Дивитись» у додатку"
+            android:textSize="18sp"
+            android:textColor="#B0A8BB" />
+
+    </LinearLayout>
+
+    <!-- ===== SPLASH ===== -->
     <LinearLayout
         android:id="@+id/splash_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="#151018">
+        android:background="#0d0d0d">
 
         <ImageView
             android:id="@+id/logo_image"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:src="@drawable/ic_nestify_logo"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:src="@drawable/nestify_logo"
+            android:scaleType="fitCenter"
             android:contentDescription="Logo" />
     </LinearLayout>
 

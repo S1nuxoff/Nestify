@@ -128,6 +128,9 @@ function App() {
       const deviceId = profile?.kodi_address;
       if (deviceId && deviceId.trim()) {
         nestifyPlayerClient.setProfileName(profile?.name || "");
+        if (profile?.avatar_url) {
+          nestifyPlayerClient.setAvatarUrl(`${config.backend_url}${profile.avatar_url}`);
+        }
         nestifyPlayerClient.setDeviceId(deviceId.trim());
       }
     } catch (e) {

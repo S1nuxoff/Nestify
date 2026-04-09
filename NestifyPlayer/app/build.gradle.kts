@@ -10,6 +10,15 @@ android {
         version = release(36)
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../nestify-release.jks")
+            storePassword = "nestify123"
+            keyAlias = "nestify"
+            keyPassword = "nestify123"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.nestify.nestifyplayer"
         minSdk = 24
@@ -17,18 +26,11 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        setProperty("archivesBaseName", "NestifyPlayer-$versionName")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -38,6 +40,24 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField("String", "WS_BASE_URL", "\"ws://192.168.0.178:8000\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.178:8000\"")
+        }
+        release {
+            buildConfigField("String", "WS_BASE_URL", "\"wss://api.opencine.cloud\"")
+            buildConfigField("String", "BACKEND_BASE_URL", "\"https://api.opencine.cloud\"")
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
     }
 }
 

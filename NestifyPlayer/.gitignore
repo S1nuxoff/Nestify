@@ -17,3 +17,5 @@ local.properties
 gradle/wrapper/gradle-wrapper.jar
 app/build/
 build/
+*.jks
+*.keystore

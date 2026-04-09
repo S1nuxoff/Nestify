@@ -7,21 +7,20 @@ import android.graphics.Rect
 import android.graphics.Paint
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
-import android.view.PixelCopy
-import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.AnimationUtils
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -31,46 +30,59 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
+import com.bumptech.glide.request.RequestOptions
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 
 class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, PlayerHubListener {
 
     private val TAG = "MainActivity"
 
+    // ---------- State machine ----------
+    private enum class AppState { SPLASH, DISCONNECTED, CONNECTED_IDLE, PLAYING }
+    private var appState = AppState.SPLASH
+
+    // ---------- Views ----------
     private lateinit var playerView: PlayerView
-
     private lateinit var splashContainer: LinearLayout
-    private lateinit var statusContainer: LinearLayout
+    private lateinit var screenDisconnected: LinearLayout
+    private lateinit var screenConnected: LinearLayout
 
-    private lateinit var statusTitle: TextView      // "Під'єднайте ваш пристрій"
-    private lateinit var infoText: TextView        // "Відскануйте QR-код" / "Пауза" / "Відтворюю відео"
-    private lateinit var connectHint: TextView     // "Або перейдіть на сторінку:"
-    private lateinit var linkText: TextView        // "opencine.cloud/connect"
-    private lateinit var codeHint: TextView        // "Введіть код:"
-    private lateinit var logoText: TextView        // "nestify"
-
+    // disconnected screen
+    private lateinit var statusTitle: TextView
+    private lateinit var infoText: TextView
+    private lateinit var connectHint: TextView
+    private lateinit var linkText: TextView
+    private lateinit var codeHint: TextView
     private lateinit var qrImage: ImageView
-
-    // кружечки з кодом
     private lateinit var codeSlots: List<TextView>
+    private lateinit var retryButton: Button
 
+    // connected idle screen
+    private lateinit var avatarImage: ImageView
+    private lateinit var connectedProfileName: TextView
+
+    // ---------- Services ----------
     private var player: ExoPlayer? = null
     private var httpServer: RemoteHttpServer? = null
     private var wsClient: PlayerWsClient? = null
-
     private val serverPort = 8888
 
-    // device id для WS до бекенда
+    // ---------- Identity ----------
     private var deviceId: String = ""
     private var shortCode: String = ""
 
-    // meta
+    // ---------- Current controller profile ----------
+    private var controllerProfileName: String = ""
+    private var controllerAvatarUrl: String = ""
+
+    // ---------- Current playback meta ----------
     private var currentLink: String? = null
     private var currentOriginName: String? = null
     private var currentTitle: String? = null
@@ -80,22 +92,12 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     private var currentEpisode: Int? = null
     private var currentUserId: String? = null
 
-    private val wledClient = WledClient()
-    private val ambientHandler = Handler(Looper.getMainLooper())
-    private var ambientRunning = false
+    // preserve play state across onStop/onStart
+    private var playerWasPlaying = false
 
-    private val ambientRunnable = object : Runnable {
-        override fun run() {
-            if (!ambientRunning || !AmbientConfig.enabled) return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && player != null) {
-                val surfaceView = playerView.videoSurfaceView as? SurfaceView
-                if (surfaceView != null) {
-                    captureAndSendAverageColor(surfaceView)
-                }
-            }
-            ambientHandler.postDelayed(this, AmbientConfig.updateIntervalMs)
-        }
-    }
+    // player overlay views (found inside PlayerView after initPlayer)
+    private var playerTitleView: TextView? = null
+    private var playerSubtitleView: TextView? = null
 
     private val wsProgressHandler = Handler(Looper.getMainLooper())
     private val wsProgressRunnable = object : Runnable {
@@ -116,21 +118,24 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         super.onCreate(savedInstanceState)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        AmbientConfig.load(this)
-
         setContentView(R.layout.activity_main)
 
-        playerView = findViewById(R.id.player_view)
-        splashContainer = findViewById(R.id.splash_container)
-        statusContainer = findViewById(R.id.status_container)
+        playerView       = findViewById(R.id.player_view)
+        splashContainer  = findViewById(R.id.splash_container)
+        screenDisconnected = findViewById(R.id.screen_disconnected)
+        screenConnected  = findViewById(R.id.screen_connected)
 
-        logoText = findViewById(R.id.logo_text)
-        statusTitle = findViewById(R.id.status_title)
-        infoText = findViewById(R.id.info_text)
-        connectHint = findViewById(R.id.connect_hint)
-        linkText = findViewById(R.id.link_text)
-        codeHint = findViewById(R.id.code_hint)
-        qrImage = findViewById(R.id.qr_image)
+        statusTitle  = findViewById(R.id.status_title)
+        infoText     = findViewById(R.id.info_text)
+        connectHint  = findViewById(R.id.connect_hint)
+        linkText     = findViewById(R.id.link_text)
+        codeHint     = findViewById(R.id.code_hint)
+        qrImage      = findViewById(R.id.qr_image)
+        retryButton  = findViewById(R.id.btn_retry)
+        retryButton.setOnClickListener { refreshDisconnectedScreen() }
+
+        avatarImage          = findViewById(R.id.avatar_image)
+        connectedProfileName = findViewById(R.id.connected_profile_name)
 
         codeSlots = listOf(
             findViewById(R.id.code_slot_1),
@@ -143,11 +148,9 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
             findViewById(R.id.code_slot_8),
         )
 
-        deviceId = DeviceId.get(this)
+        deviceId   = DeviceId.get(this)
+        shortCode  = buildShortCode(deviceId)
         Log.d(TAG, "DeviceId = $deviceId")
-
-        // робимо короткий красивий код
-        shortCode = buildShortCode(deviceId)
 
         startLogoAnimation()
         startHttpServer()
@@ -164,14 +167,45 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     }
 
     private fun showSplashThenStatus() {
-        splashContainer.visibility = View.VISIBLE
-        statusContainer.visibility = View.GONE
-
+        setState(AppState.SPLASH)
         Handler(Looper.getMainLooper()).postDelayed({
-            splashContainer.visibility = View.GONE
-            statusContainer.visibility = View.VISIBLE
-            updateNetworkInfo()
+            setState(AppState.DISCONNECTED)
         }, 2000)
+    }
+
+    /**
+     * Єдина точка зміни екрану.
+     * Викликати тільки з Main thread.
+     */
+    private fun setState(newState: AppState) {
+        appState = newState
+        Log.d(TAG, "setState → $newState")
+
+        splashContainer.visibility    = View.GONE
+        screenDisconnected.visibility = View.GONE
+        screenConnected.visibility    = View.GONE
+        // player_view завжди під усіма — показується коли PLAYING
+        playerView.visibility = if (newState == AppState.PLAYING) View.VISIBLE else View.GONE
+
+        when (newState) {
+            AppState.SPLASH -> {
+                splashContainer.visibility = View.VISIBLE
+            }
+
+            AppState.DISCONNECTED -> {
+                screenDisconnected.visibility = View.VISIBLE
+                refreshDisconnectedScreen()
+            }
+
+            AppState.CONNECTED_IDLE -> {
+                screenConnected.visibility = View.VISIBLE
+                refreshConnectedScreen()
+            }
+
+            AppState.PLAYING -> {
+                // player_view вже visible
+            }
+        }
     }
 
     private fun buildShortCode(deviceId: String): String {
@@ -196,44 +230,56 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         }
     }
 
-    private fun updateNetworkInfo() {
+    private fun refreshDisconnectedScreen() {
         if (!hasNetwork()) {
             statusTitle.text = "Нема з’єднання"
-            infoText.text = "Підключись до Wi-Fi"
+            statusTitle.setTextColor(Color.parseColor("#FFFFFF"))
+            infoText.text = "Підключіть пристрій до Wi-Fi"
+            infoText.setTextColor(Color.parseColor("#B0A8BB"))
             connectHint.text = ""
-            linkText.text = "Немає мережі"
-            linkText.setTextColor(Color.parseColor("#FFCFFA"))
+            linkText.text = ""
             codeHint.text = ""
             showCodeBubbles("")
             qrImage.setImageBitmap(null)
+            retryButton.visibility = View.VISIBLE
             return
         }
 
-        // кольори
+        retryButton.visibility = View.GONE
+
         val accent = Color.parseColor("#FFCFFA")
-        val white = Color.parseColor("#FFFFFF")
+        val white  = Color.parseColor("#FFFFFF")
 
-        logoText.text = "nestify"
-        logoText.setTextColor(accent)
-
-        statusTitle.text = "Під'єднайте ваш пристрій"
+        statusTitle.text = "Під’єднайте ваш пристрій"
         statusTitle.setTextColor(white)
-
         infoText.text = "Відскануйте QR-код"
         infoText.setTextColor(Color.parseColor("#E5E0ED"))
-
         connectHint.text = "Або перейдіть на сторінку:"
         linkText.text = "opencine.cloud/connect"
         linkText.setTextColor(accent)
-
         codeHint.text = "Введіть код:"
         codeHint.setTextColor(white)
-
         showCodeBubbles(shortCode)
 
-        // QR → сторінка конекту з уже підставленим девайсом
         val url = "https://opencine.cloud/connect?device=$deviceId"
         qrImage.setImageBitmap(generateQr(url, 512))
+
+        // Якщо WS не підключений — перепідключаємо
+        wsClient?.connect()
+    }
+
+    private fun refreshConnectedScreen() {
+        val name = controllerProfileName.trim().ifEmpty { "Профіль" }
+        connectedProfileName.text = name
+
+        if (controllerAvatarUrl.isNotBlank()) {
+            Glide.with(this)
+                .load(controllerAvatarUrl)
+                .apply(RequestOptions().transform(CircleCrop()))
+                .into(avatarImage)
+        } else {
+            avatarImage.setImageDrawable(null)
+        }
     }
 
     private fun generateQr(text: String, size: Int): Bitmap {
@@ -320,10 +366,8 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     }
 
     private fun startWsClient() {
-        val baseUrl = "wss://api.opencine.cloud"
-
         wsClient = PlayerWsClient(
-            baseUrl = baseUrl,
+            baseUrl = BuildConfig.WS_BASE_URL,
             deviceId = deviceId,
             controller = this,
             statusProvider = { getStatus() },
@@ -334,25 +378,54 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     // ---------- PlayerHubListener ----------
 
     override fun onControllerConnected(profileName: String) {
-        if (player != null) return  // відео грає — не чіпаємо UI
-        val name = profileName.trim().ifEmpty { "Невідомий" }
-        statusTitle.text = "Підключено"
-        infoText.text = name
-        connectHint.visibility = View.GONE
-        linkText.visibility = View.GONE
-        codeHint.visibility = View.GONE
-        qrImage.visibility = View.GONE
-        codeSlots.forEach { it.visibility = View.GONE }
+        onControllerConnectedWithAvatar(profileName, "")
+    }
+
+    override fun onControllerConnectedWithAvatar(profileName: String, avatarUrl: String) {
+        controllerProfileName = profileName
+        controllerAvatarUrl   = avatarUrl
+        // Переходимо в CONNECTED_IDLE тільки якщо зараз не грає фільм
+        runOnUiThread {
+            if (appState != AppState.PLAYING) {
+                transitionTo(AppState.CONNECTED_IDLE)
+            }
+        }
     }
 
     override fun onControllerDisconnected() {
-        if (player != null) return  // відео грає — не чіпаємо UI
-        updateNetworkInfo()
-        connectHint.visibility = View.VISIBLE
-        linkText.visibility = View.VISIBLE
-        codeHint.visibility = View.VISIBLE
-        qrImage.visibility = View.VISIBLE
-        codeSlots.forEach { it.visibility = View.VISIBLE }
+        controllerProfileName = ""
+        controllerAvatarUrl   = ""
+        runOnUiThread {
+            if (appState != AppState.PLAYING) {
+                transitionTo(AppState.DISCONNECTED)
+            }
+            // Якщо гравець грає — зупиняємо і переходимо до disconnected
+            // (на розсуд: можна лишати грати)
+        }
+    }
+
+    /** Плавний fade-перехід між екранами */
+    private fun transitionTo(newState: AppState) {
+        val current = when (appState) {
+            AppState.DISCONNECTED   -> screenDisconnected
+            AppState.CONNECTED_IDLE -> screenConnected
+            AppState.PLAYING        -> null
+            AppState.SPLASH         -> splashContainer
+        }
+
+        current?.animate()?.alpha(0f)?.setDuration(250)?.withEndAction {
+            current.alpha = 1f
+            setState(newState)
+            val next = when (newState) {
+                AppState.DISCONNECTED   -> screenDisconnected
+                AppState.CONNECTED_IDLE -> screenConnected
+                else -> null
+            }
+            next?.alpha = 0f
+            next?.animate()?.alpha(1f)?.setDuration(350)?.start()
+        }?.start() ?: run {
+            setState(newState)
+        }
     }
 
     private fun startWsProgress() {
@@ -384,24 +457,18 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         )
 
         runOnUiThread {
-            currentLink = link
+            currentLink       = link
             currentOriginName = originName
-            currentTitle = title
-            currentImage = image
-            currentMovieId = movieId
-            currentSeason = season
-            currentEpisode = episode
-            currentUserId = userId
+            currentTitle      = title
+            currentImage      = image
+            currentMovieId    = movieId
+            currentSeason     = season
+            currentEpisode    = episode
+            currentUserId     = userId
 
-            statusContainer.visibility = View.GONE
-
-            infoText.text = "Відтворюю відео"
-
+            setState(AppState.PLAYING)
             initPlayer(url, startPositionMs)
-
-            startAmbient()
             startWsProgress()
-
             ProgressReporter.start { getStatus() }
 
             val st = getStatus()
@@ -460,21 +527,24 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
             ProgressReporter.reportImmediate(stBeforeStop)
 
             releasePlayer()
-            stopAmbient(sendOff = true)
             stopWsProgress()
             ProgressReporter.stop()
 
-            statusContainer.visibility = View.VISIBLE
-            updateNetworkInfo()
-
-            currentLink = null
+            currentLink       = null
             currentOriginName = null
-            currentTitle = null
-            currentImage = null
-            currentMovieId = null
-            currentSeason = null
-            currentEpisode = null
-            currentUserId = null
+            currentTitle      = null
+            currentImage      = null
+            currentMovieId    = null
+            currentSeason     = null
+            currentEpisode    = null
+            currentUserId     = null
+
+            // Якщо контролер ще підключений — показуємо idle, інакше disconnected
+            val nextState = if (controllerProfileName.isNotEmpty())
+                AppState.CONNECTED_IDLE
+            else
+                AppState.DISCONNECTED
+            setState(nextState)
 
             val st = getStatus()
             wsClient?.sendNotification("Player.OnStop", st)
@@ -563,18 +633,31 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         Log.d(TAG, "initPlayer url=$url startPositionMs=$startPositionMs")
         player?.release()
 
-        val exoPlayer = ExoPlayer.Builder(this).build()
+        val exoPlayer = ExoPlayer.Builder(this)
+            .setSeekBackIncrementMs(15_000)
+            .setSeekForwardIncrementMs(15_000)
+            .build()
         playerView.player = exoPlayer
 
-        // Авто-стоп, коли фільм закінчився
         exoPlayer.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) {
-                    Log.d(TAG, "Playback ended → auto stop")
-                    runOnUiThread {
-                        stopPlayback()
+                when (state) {
+                    Player.STATE_ENDED -> {
+                        Log.d(TAG, "Playback ended → auto stop")
+                        runOnUiThread { stopPlayback() }
                     }
+                    Player.STATE_READY -> {
+                        // Щойно ExoPlayer готовий — seekTo вже відпрацював,
+                        // оновлюємо lastSentPosMs щоб перший tick не звітував 0
+                        ProgressReporter.syncPosition(exoPlayer.currentPosition)
+                    }
+                    else -> {}
                 }
+            }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                Log.e(TAG, "Player error: ${error.message}", error)
+                runOnUiThread { showPlayerError(error.message ?: "Помилка відтворення") }
             }
         })
 
@@ -588,6 +671,28 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
 
         exoPlayer.playWhenReady = true
         player = exoPlayer
+
+        // Bind custom title views inside the controller overlay
+        playerTitleView    = playerView.findViewById(R.id.player_title)
+        playerSubtitleView = playerView.findViewById(R.id.player_subtitle)
+        updatePlayerTitle()
+    }
+
+    private fun updatePlayerTitle() {
+        val title = currentTitle?.takeIf { it.isNotBlank() }
+            ?: currentOriginName?.takeIf { it.isNotBlank() }
+            ?: ""
+        playerTitleView?.text = title
+
+        val s = currentSeason
+        val e = currentEpisode
+        val episodeText = if (s != null && e != null) "Сезон $s  •  Серія $e" else null
+        if (episodeText != null) {
+            playerSubtitleView?.text = episodeText
+            playerSubtitleView?.visibility = View.VISIBLE
+        } else {
+            playerSubtitleView?.visibility = View.GONE
+        }
     }
 
     private fun releasePlayer() {
@@ -596,12 +701,21 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         player = null
     }
 
-    // Раніше тут усе вбивалося — тому апка жила дуже мало.
-    // Тепер в onStop нічого критичного не робимо.
+    override fun onStart() {
+        super.onStart()
+        val p = player ?: return
+        // Повертаємо плеєр до PlayerView — без цього після повернення в апп
+        // ExoPlayer не прив'язується до нового Surface і відео не відображається
+        playerView.player = p
+        if (playerWasPlaying) p.playWhenReady = true
+    }
+
     override fun onStop() {
         super.onStop()
-        // можна максимум поставити на паузу, щоб не грало в фоні
+        playerWasPlaying = player?.isPlaying == true
         player?.playWhenReady = false
+        // Від'єднуємо від Surface щоб уникнути "аудіо є, відео нема" після повернення
+        playerView.player = null
     }
 
     override fun onDestroy() {
@@ -612,7 +726,6 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
 
         ProgressReporter.stop()
         releasePlayer()
-        stopAmbient(sendOff = true)
         stopWsProgress()
 
         wsClient?.close()
@@ -628,123 +741,27 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         currentUserId = null
     }
 
-    // ---------- Ambient ----------
+    // ---------- Помилка плеєра ----------
 
-    private fun startAmbient() {
-        if (!AmbientConfig.enabled) return
-        if (AmbientConfig.wledIp.isBlank()) return
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    private fun showPlayerError(message: String) {
+        Log.e(TAG, "showPlayerError: $message")
+        // Зупиняємо все
+        releasePlayer()
+        stopWsProgress()
+        ProgressReporter.stop()
 
-        if (ambientRunning) return
-        ambientRunning = true
-        ambientHandler.post(ambientRunnable)
-    }
+        val nextState = if (controllerProfileName.isNotEmpty()) AppState.CONNECTED_IDLE else AppState.DISCONNECTED
+        setState(nextState)
 
-    private fun stopAmbient(sendOff: Boolean) {
-        ambientRunning = false
-        ambientHandler.removeCallbacks(ambientRunnable)
-        if (sendOff && AmbientConfig.enabled) {
-            Thread { wledClient.turnOff() }.start()
-        }
-    }
+        // Показуємо тост
+        android.widget.Toast.makeText(this, "Помилка: $message", android.widget.Toast.LENGTH_LONG).show()
 
-    private fun captureAndSendAverageColor(surfaceView: SurfaceView) {
-        // Беремо реальний розмір SurfaceView
-        val w = surfaceView.width
-        val h = surfaceView.height
-        if (w <= 0 || h <= 0) return
+        val st = getStatus()
+        wsClient?.sendNotification("Player.OnStop", st)
 
-        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-
-        PixelCopy.request(
-            surfaceView,
-            bmp,
-            { result ->
-                try {
-                    if (result == PixelCopy.SUCCESS) {
-                        val (top, bottom) =
-                            detectLetterboxVertical(bmp, AmbientConfig.blackBarLumaThreshold)
-
-                        var rs = 0L
-                        var gs = 0L
-                        var bs = 0L
-                        var count = 0
-
-                        // Тут вже самі ріжемо до 32×18 в процесі проходу
-                        val stepX = max(1, w / 32)
-                        val stepY = max(1, (bottom - top + 1) / 18)
-
-                        for (y in top..bottom step stepY) {
-                            for (x in 0 until w step stepX) {
-                                val c = bmp.getPixel(x, y)
-                                rs += Color.red(c)
-                                gs += Color.green(c)
-                                bs += Color.blue(c)
-                                count++
-                            }
-                        }
-
-                        if (count > 0) {
-                            val r = (rs / count).toInt().coerceIn(0, 255)
-                            val g = (gs / count).toInt().coerceIn(0, 255)
-                            val b = (bs / count).toInt().coerceIn(0, 255)
-                            Thread { wledClient.sendColor(r, g, b) }.start()
-                        }
-                    } else {
-                        // Якщо шо — просто скіпаємо, без крашу
-                        Log.w(TAG, "PixelCopy failed with code=$result")
-                    }
-                } finally {
-                    bmp.recycle()
-                }
-            },
-            ambientHandler
-        )
-    }
-
-
-    private fun detectLetterboxVertical(bmp: Bitmap, threshold: Int): Pair<Int, Int> {
-        val w = bmp.width
-        val h = bmp.height
-        if (h <= 4) return 0 to (h - 1)
-
-        fun rowLuma(y: Int): Double {
-            var sum = 0.0
-            var cnt = 0
-            val step = max(1, w / 32)
-            for (x in 0 until w step step) {
-                val c = bmp.getPixel(x, y)
-                val r = Color.red(c)
-                val g = Color.green(c)
-                val b = Color.blue(c)
-                val l = 0.2126 * r + 0.7152 * g + 0.0722 * b
-                sum += l
-                cnt++
-            }
-            return if (cnt == 0) 0.0 else sum / cnt
-        }
-
-        var top = 0
-        var bottom = h - 1
-
-        for (y in 0 until h / 3) {
-            if (rowLuma(y) > threshold) {
-                top = y
-                break
-            }
-        }
-        for (y in h - 1 downTo (2 * h) / 3) {
-            if (rowLuma(y) > threshold) {
-                bottom = y
-                break
-            }
-        }
-
-        if (bottom <= top) {
-            top = 0
-            bottom = h - 1
-        }
-        return top to bottom
+        currentLink = null; currentOriginName = null; currentTitle = null
+        currentImage = null; currentMovieId = null; currentSeason = null
+        currentEpisode = null; currentUserId = null
     }
 
     // ---------- Пульт / клавіші ----------
@@ -766,26 +783,41 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         if (event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {
 
+                // Back під час перегляду — зупиняємо, не виходимо з апки
+                KeyEvent.KEYCODE_BACK -> {
+                    if (appState == AppState.PLAYING) {
+                        stopPlayback()
+                        return true
+                    }
+                    // в інших станах — стандартна поведінка (мінімізує апку)
+                }
+
                 // Play/Pause / OK / Enter
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
                 KeyEvent.KEYCODE_DPAD_CENTER,
                 KeyEvent.KEYCODE_ENTER -> {
-                    togglePlayPause()
-                    return true
+                    if (appState == AppState.PLAYING) {
+                        togglePlayPause()
+                        return true
+                    }
                 }
 
                 // Вперед 15 сек
                 KeyEvent.KEYCODE_DPAD_RIGHT,
                 KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                    seekBy(15_000L)
-                    return true
+                    if (appState == AppState.PLAYING) {
+                        seekBy(15_000L)
+                        return true
+                    }
                 }
 
                 // Назад 15 сек
                 KeyEvent.KEYCODE_DPAD_LEFT,
                 KeyEvent.KEYCODE_MEDIA_REWIND -> {
-                    seekBy(-15_000L)
-                    return true
+                    if (appState == AppState.PLAYING) {
+                        seekBy(-15_000L)
+                        return true
+                    }
                 }
 
                 // Stop

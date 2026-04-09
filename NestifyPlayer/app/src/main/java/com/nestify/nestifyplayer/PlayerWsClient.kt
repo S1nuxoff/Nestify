@@ -10,6 +10,7 @@ import java.net.URI
 
 interface PlayerHubListener {
     fun onControllerConnected(profileName: String)
+    fun onControllerConnectedWithAvatar(profileName: String, avatarUrl: String)
     fun onControllerDisconnected()
 }
 
@@ -38,7 +39,8 @@ class PlayerWsClient(
             return
         }
 
-        val url = "$baseUrl/ws/player/$deviceId"
+        val effectiveBase = baseUrl.ifBlank { BuildConfig.WS_BASE_URL }
+        val url = "$effectiveBase/ws/player/$deviceId"
         Log.d(TAG, "Connecting to $url")
 
         val uri = URI(url)
@@ -170,8 +172,7 @@ class PlayerWsClient(
                     val image = params.optString("image", null)
                         ?.takeIf { it.isNotBlank() }
 
-                    val movieIdAny = params.opt("movie_id")
-                    val movieId = movieIdAny?.toString()
+                    val movieId = params.optStringOrNull("movie_id")
 
                     val season: Int? =
                         if (params.has("season") && !params.isNull("season"))
@@ -183,8 +184,7 @@ class PlayerWsClient(
                             params.optInt("episode")
                         else null
 
-                    val userIdAny = params.opt("user_id")
-                    val userId = userIdAny?.toString()
+                    val userId = params.optStringOrNull("user_id")
 
                     val startPositionMs: Long? = when {
                         params.has("position_ms") && !params.isNull("position_ms") -> {
@@ -262,9 +262,10 @@ class PlayerWsClient(
 
                 "PlayerHub.ControllerConnected" -> {
                     val profileName = params.optString("profile_name", "")
-                    Log.d(TAG, "ControllerConnected profileName=$profileName")
+                    val avatarUrl = params.optString("avatar_url", "")
+                    Log.d(TAG, "ControllerConnected profileName=$profileName avatar=$avatarUrl")
                     mainHandler.post {
-                        hubListener?.onControllerConnected(profileName)
+                        hubListener?.onControllerConnectedWithAvatar(profileName, avatarUrl)
                     }
                 }
 
@@ -333,4 +334,14 @@ class PlayerWsClient(
             Log.e(TAG, "sendRaw error", e)
         }
     }
+}
+
+/**
+ * Returns the string value for [key], or null if the key is absent, JSON null, or the literal
+ * string "null".
+ */
+private fun org.json.JSONObject.optStringOrNull(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    val v = optString(key, "")
+    return if (v.isEmpty() || v == "null") null else v
 }

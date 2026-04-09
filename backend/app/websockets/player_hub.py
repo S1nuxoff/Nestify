@@ -43,7 +43,7 @@ class PlayerHub:
             self.players.pop(device_id, None)
             print(f"[PlayerHub] player disconnected: {device_id}")
 
-    async def register_controller(self, device_id: str, ws: WebSocket, profile_name: str = "") -> None:
+    async def register_controller(self, device_id: str, ws: WebSocket, profile_name: str = "", avatar_url: str = "") -> None:
         self.controllers.setdefault(device_id, set()).add(ws)
         print(
             f"[PlayerHub] controller connected for {device_id} profile={profile_name!r}, total={len(self.controllers[device_id])}"
@@ -66,7 +66,7 @@ class PlayerHub:
             {
                 "jsonrpc": "2.0",
                 "method": "PlayerHub.ControllerConnected",
-                "params": {"profile_name": profile_name or ""},
+                "params": {"profile_name": profile_name or "", "avatar_url": avatar_url or ""},
             },
         )
 
@@ -233,6 +233,7 @@ async def control_ws(
     websocket: WebSocket,
     device_id: str,
     profile: str = Query(default=""),
+    avatar: str = Query(default=""),
 ):
     """
     Подключается браузер (frontend).
@@ -240,7 +241,7 @@ async def control_ws(
     мы просто прокидываем это на девайс с таким device_id.
     """
     await websocket.accept()
-    await player_hub.register_controller(device_id, websocket, profile_name=profile)
+    await player_hub.register_controller(device_id, websocket, profile_name=profile, avatar_url=avatar)
 
     try:
         while True:

@@ -94,16 +94,21 @@ class NestifyPlayerClient {
     this.profileName = name || "";
   }
 
+  setAvatarUrl(url) {
+    this.avatarUrl = url || "";
+  }
+
   getWsUrl() {
     if (!this.deviceId) {
       throw new Error("NestifyPlayerClient: deviceId is not set");
     }
     const base = this.getBackendWsBase().replace(/\/+$/, "");
     const url = `${base}/ws/control/${encodeURIComponent(this.deviceId)}`;
-    if (this.profileName) {
-      return `${url}?profile=${encodeURIComponent(this.profileName)}`;
-    }
-    return url;
+    const params = new URLSearchParams();
+    if (this.profileName) params.set("profile", this.profileName);
+    if (this.avatarUrl) params.set("avatar", this.avatarUrl);
+    const qs = params.toString();
+    return qs ? `${url}?${qs}` : url;
   }
 
   // ---------- INIT / WS ----------
