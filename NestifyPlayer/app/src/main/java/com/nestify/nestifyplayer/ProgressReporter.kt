@@ -24,6 +24,7 @@ object ProgressReporter {
 
     private val BASE_URL get() = BuildConfig.BACKEND_BASE_URL
 
+    @Synchronized
     fun start(statusProvider: () -> PlayerStatus) {
         if (running) {
             Log.d(TAG, "start() called but already running")
@@ -56,6 +57,7 @@ object ProgressReporter {
         }
     }
 
+    @Synchronized
     fun stop() {
         Log.d(TAG, "stop() called")
         running = false
@@ -127,6 +129,8 @@ object ProgressReporter {
             conn.requestMethod = "PUT"
             conn.setRequestProperty("Content-Type", "application/json")
             conn.doOutput = true
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
 
             val json = JSONObject()
                 .put("user_id", userId)

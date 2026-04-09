@@ -29,6 +29,11 @@ class PlayerWsClient(
     private val reconnectDelayMs = 5000L
     private var reconnectScheduled = false
 
+    private val reconnectRunnable = Runnable {
+        reconnectScheduled = false
+        connect()
+    }
+
     // ------------- PUBLIC -------------
 
     fun connect() {
@@ -77,6 +82,7 @@ class PlayerWsClient(
 
     fun close() {
         reconnectScheduled = false
+        mainHandler.removeCallbacks(reconnectRunnable)
         try {
             client?.close()
         } catch (_: Exception) {
@@ -93,10 +99,7 @@ class PlayerWsClient(
     private fun scheduleReconnect() {
         if (reconnectScheduled) return
         reconnectScheduled = true
-        mainHandler.postDelayed({
-            reconnectScheduled = false
-            connect()
-        }, reconnectDelayMs)
+        mainHandler.postDelayed(reconnectRunnable, reconnectDelayMs)
     }
 
     private fun trySendNotification(method: String, st: PlayerStatus) {

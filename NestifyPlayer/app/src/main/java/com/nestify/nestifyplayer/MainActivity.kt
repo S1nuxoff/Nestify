@@ -95,6 +95,9 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     // preserve play state across onStop/onStart
     private var playerWasPlaying = false
 
+    // cache last known status for getStatus() fallback
+    @Volatile private var lastKnownStatus: PlayerStatus? = null
+
     // player overlay views (found inside PlayerView after initPlayer)
     private var playerTitleView: TextView? = null
     private var playerSubtitleView: TextView? = null
@@ -102,7 +105,7 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     private val wsProgressHandler = Handler(Looper.getMainLooper())
     private val wsProgressRunnable = object : Runnable {
         override fun run() {
-            if (player != null) {
+            if (player != null && appState == AppState.PLAYING) {
                 val st = getStatus()
                 wsClient?.sendNotification("Player.OnProgress", st)
                 wsProgressHandler.postDelayed(this, 3000L)
@@ -261,8 +264,11 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         codeHint.setTextColor(white)
         showCodeBubbles(shortCode)
 
-        val url = "https://opencine.cloud/connect?device=$deviceId"
-        qrImage.setImageBitmap(generateQr(url, 512))
+        val qrUrl = "https://opencine.cloud/connect?device=$deviceId"
+        Thread {
+            val bmp = generateQr(qrUrl, 512)
+            runOnUiThread { qrImage.setImageBitmap(bmp) }
+        }.start()
 
         // Якщо WS не підключений — перепідключаємо
         wsClient?.connect()
@@ -572,7 +578,7 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
 
     override fun getStatus(): PlayerStatus {
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            return buildStatusOnMain()
+            return buildStatusOnMain().also { lastKnownStatus = it }
         }
 
         var result: PlayerStatus? = null
@@ -580,7 +586,7 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
 
         runOnUiThread {
             try {
-                result = buildStatusOnMain()
+                result = buildStatusOnMain().also { lastKnownStatus = it }
             } finally {
                 latch.countDown()
             }
@@ -588,7 +594,8 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
 
         latch.await(300, TimeUnit.MILLISECONDS)
 
-        return result ?: PlayerStatus(
+        // Use cached status as fallback to avoid reporting position=0 on timeout
+        return result ?: lastKnownStatus ?: PlayerStatus(
             positionMs = 0L,
             durationMs = 0L,
             isPlaying = false,
@@ -769,9 +776,10 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     private fun seekBy(deltaMs: Long) {
         val p = player ?: return
         val duration = if (p.duration > 0) p.duration else Long.MAX_VALUE
+        val maxPos = if (duration < Long.MAX_VALUE) (duration - 1000L).coerceAtLeast(0L) else Long.MAX_VALUE
         val newPos = (p.currentPosition + deltaMs)
             .coerceAtLeast(0L)
-            .coerceAtMost(duration)
+            .coerceAtMost(maxPos)
 
         p.seekTo(newPos)
         val st = getStatus()
