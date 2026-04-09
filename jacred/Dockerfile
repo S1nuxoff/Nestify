@@ -22,6 +22,6 @@ COPY Data ./Data
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
-EXPOSE 9117
+EXPOSE 9118
 
 ENTRYPOINT ["sh", "entrypoint.sh"]

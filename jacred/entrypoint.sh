@@ -25,7 +25,7 @@ service cron start
   sleep 30
   echo "[init] Triggering initial updateTasksParse..."
   for tracker in rutor rutracker kinozal nnmclub toloka selezen bitru torrentby underverse; do
-    curl -s "http://127.0.0.1:9117/cron/${tracker}/updateTasksParse" > /dev/null
+    curl -s "http://127.0.0.1:9118/cron/${tracker}/updateTasksParse" > /dev/null
     echo "[init] ${tracker} updateTasksParse done"
   done
 ) &
