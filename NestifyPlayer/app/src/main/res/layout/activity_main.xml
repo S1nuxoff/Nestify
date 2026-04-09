@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#151018">
+
+    <!-- ВІДЕОПЛЕЄР ПОЗАДУ -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/player_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:use_controller="true"
+        app:show_buffering="when_playing" />
+
+    <!-- ГОЛОВНИЙ ЕКРАН (як на макеті) -->
+    <LinearLayout
+        android:id="@+id/status_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="48dp"
+        android:background="#18121F">
+
+        <!-- ЛІВО: текст -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/logo_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="nestify"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="#FFCFFA"
+                android:letterSpacing="0.05"
+                android:paddingBottom="24dp" />
+
+            <TextView
+                android:id="@+id/status_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Під'єднайте ваш пристрій"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:paddingBottom="12dp" />
+
+            <TextView
+                android:id="@+id/info_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Відскануйте QR-код"
+                android:textSize="18sp"
+                android:textColor="#E5E0ED"
+                android:paddingBottom="24dp" />
+
+            <TextView
+                android:id="@+id/connect_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Або перейдіть на сторінку:"
+                android:textSize="18sp"
+                android:textColor="#E5E0ED"
+                android:paddingBottom="4dp" />
+
+            <TextView
+                android:id="@+id/link_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="opencine.cloud/connect"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FFCFFA"
+                android:paddingBottom="24dp" />
+
+            <TextView
+                android:id="@+id/code_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Введіть код:"
+                android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:paddingBottom="12dp" />
+
+            <!-- РЯД КОДУ -->
+            <LinearLayout
+                android:id="@+id/code_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/code_slot_1"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_2"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_3"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_4"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_5"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_6"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_7"
+                    style="@style/Nestify_CodeBubble" />
+
+                <TextView
+                    android:id="@+id/code_slot_8"
+                    style="@style/Nestify_CodeBubble" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ПРАВО: QR у панелі -->
+        <ImageView
+            android:id="@+id/qr_image"
+            android:layout_width="400dp"
+            android:layout_height="400dp"
+            android:layout_gravity="center"
+            android:contentDescription="QR code"
+            android:background="@android:color/transparent"
+            android:scaleType="fitCenter" />
+
+
+    </LinearLayout>
+
+    <!-- SPLASH (старий) -->
+    <LinearLayout
+        android:id="@+id/splash_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#151018">
+
+        <ImageView
+            android:id="@+id/logo_image"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:src="@drawable/ic_nestify_logo"
+            android:contentDescription="Logo" />
+    </LinearLayout>
+
+</FrameLayout>
