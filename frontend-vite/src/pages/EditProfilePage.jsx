@@ -60,6 +60,7 @@ export default function EditProfilePage() {
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
@@ -136,12 +137,34 @@ export default function EditProfilePage() {
     ? `${config.backend_url}${profile.avatar_url}`
     : null;
 
+  const handleAvatarSelect = async (av) => {
+    setSelectedAvatar(av);
+    setShowPicker(false);
+    setAvatarSaving(true);
+    try {
+      const updated = await updateProfile(id, {
+        name: name.trim() || profile?.name,
+        avatar_url: av.local_url,
+        is_kids: isKids,
+        default_lang: defaultLang,
+      });
+      const current = getCurrentProfile();
+      if (current && String(current.id) === String(id)) {
+        setCurrentProfile({ ...current, ...updated });
+      }
+    } catch {
+      // silent — avatar still shown locally
+    } finally {
+      setAvatarSaving(false);
+    }
+  };
+
   if (showPicker) {
     return (
       <AvatarPickerPage
         avatars={avatars}
         selected={selectedAvatar}
-        onSelect={(av) => { setSelectedAvatar(av); setShowPicker(false); }}
+        onSelect={handleAvatarSelect}
         onBack={() => setShowPicker(false)}
       />
     );
@@ -160,16 +183,16 @@ export default function EditProfilePage() {
 
       {/* Avatar */}
       <div className="ep-avatar-wrap">
-        <button className="ep-avatar" onClick={() => setShowPicker(true)}>
+        <button className="ep-avatar" onClick={() => setShowPicker(true)} disabled={avatarSaving}>
           {avatarSrc ? (
-            <img src={avatarSrc} alt="avatar" />
+            <img src={avatarSrc} alt="avatar" style={{ opacity: avatarSaving ? 0.5 : 1 }} />
           ) : (
             <div className="ep-avatar__placeholder">
               {name ? name[0].toUpperCase() : "?"}
             </div>
           )}
           <div className="ep-avatar__edit">
-            <Pencil size={16} />
+            {avatarSaving ? <span style={{ fontSize: 12 }}>…</span> : <Pencil size={16} />}
           </div>
         </button>
         <p className="ep-avatar-name">{name || profile?.name}</p>

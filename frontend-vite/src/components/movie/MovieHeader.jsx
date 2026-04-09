@@ -25,9 +25,6 @@ export default function MovieHeader({
   onToggleLike,
   onMainPlayClick,
   onCastClick,
-  resumeInfo = null,
-  resumeLoading = false,
-  onResumeClick = null,
 }) {
   // meta
   const computed = useMemo(() => {
@@ -280,22 +277,6 @@ export default function MovieHeader({
                   <Play fill="black" /> Дивитися
                 </button>
 
-                {resumeInfo && onResumeClick && (
-                  <button
-                    className="mh-play mh-play--secondary tv-focusable"
-                    type="button"
-                    tabIndex={0}
-                    onClick={onResumeClick}
-                    disabled={resumeLoading}
-                    aria-label="Продовжити перегляд"
-                  >
-                    {resumeLoading
-                      ? <span className="mh-resume__spinner" />
-                      : <History size={18} strokeWidth={2.5} />
-                    }
-                    з {Math.floor(resumeInfo.position_seconds / 60)} хв
-                  </button>
-                )}
               </div>
             </div>
           </div>

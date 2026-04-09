@@ -258,10 +258,8 @@ export default function TmdbMoviePage() {
   const [activeVideo, setActiveVideo] = useState(null);
   const [titleEnglish, setTitleEnglish] = useState(null);
   const [titlePolish, setTitlePolish] = useState(null);
-  const [resumeInfo, setResumeInfo] = useState(null);
   const [descExpanded, setDescExpanded] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false); // { position_seconds, torrent_hash, torrent_file_id, torrent_fname, torrent_magnet }
-  const [resumeLoading, setResumeLoading] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   let currentUser = null;
   try {
@@ -324,9 +322,8 @@ export default function TmdbMoviePage() {
       .finally(() => setLoading(false));
 
     getReviews(tmdbId, mediaType).then(data => {
-      console.log("[Reviews]", data);
       setReviews(data);
-    }).catch(e => console.error("[Reviews error]", e));
+    }).catch(() => {});
 
     getRecommendations(tmdbId, mediaType)
       .then((items) =>
@@ -392,23 +389,6 @@ export default function TmdbMoviePage() {
       .finally(() => setSeasonLoading(false));
   }, [tmdbId, selectedSeason, mediaType]);
 
-  // Перевіряємо збережений прогрес і торент для "Продовжити"
-  useEffect(() => {
-    if (!currentUser?.id || !movieDetails?.id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await getProgress({ user_id: currentUser.id, movie_id: movieDetails.id });
-        if (cancelled) return;
-        if (data?.torrent_hash && data?.position_seconds > 30) {
-          setResumeInfo(data);
-        } else {
-          setResumeInfo(null);
-        }
-      } catch { setResumeInfo(null); }
-    })();
-    return () => { cancelled = true; };
-  }, [currentUser?.id, movieDetails?.id]);
 
   useEffect(() => {
     if (!currentUser?.id || !tmdbId) return;
@@ -455,47 +435,6 @@ export default function TmdbMoviePage() {
     }
   };
 
-  const handleResume = async () => {
-    if (!resumeInfo || resumeLoading) return;
-    setResumeLoading(true);
-    try {
-      const { position_seconds, torrent_hash, torrent_file_id, torrent_fname, torrent_magnet } = resumeInfo;
-      const hash = torrent_hash;
-
-      // Перевіряємо чи торент вже в TorrServe — якщо ні, додаємо (не блокуємо якщо timeout)
-      try {
-        await getTorrentStatus(hash);
-      } catch {
-        // Торент не знайдено — додаємо через магнет (fire and don't await indefinitely)
-        addTorrent(torrent_magnet, `[Nestify] ${movieDetails.title}`, movieDetails.poster_tmdb || "").catch(() => {});
-        // Невелика пауза щоб TorrServe встиг зареєструвати торент перед HLS
-        await new Promise(r => setTimeout(r, 1500));
-      }
-
-      // Стартуємо HLS з позиції де зупинились
-      const knownDuration = rawDetails?.runtime ? rawDetails.runtime * 60 : 0;
-      const hlsData = await startHlsSession(hash, torrent_file_id, torrent_fname, position_seconds, knownDuration);
-      navigate(`/player/tmdb_${mediaType}_${tmdbId}`, {
-        state: {
-          movieDetails,
-          sources: [{ quality: "auto", url: hlsData.playlist_url }],
-          movie_url: hlsData.playlist_url,
-          subtitles: [],
-          fileDuration: knownDuration || null,
-          hlsInfo: {
-            sessionId: hlsData.session_id,
-            hash,
-            fileId: torrent_file_id,
-            fname: torrent_fname,
-            magnet: torrent_magnet,
-            startOffset: position_seconds,
-          },
-        },
-      });
-    } catch {
-      setResumeLoading(false);
-    }
-  };
 
   const handlePlayInBrowser = (file, durationSeconds = null, hlsInfo = null, hlsPlaylistUrl = null) => {
     const streamUrl = hlsPlaylistUrl || file.stream_url;
@@ -592,9 +531,6 @@ export default function TmdbMoviePage() {
                 onToggleLike={toggleLike}
                 onMainPlayClick={() => setTorrentOpen(true)}
                 onCastClick={() => setTorrentOpen(true)}
-                resumeInfo={resumeInfo}
-                resumeLoading={resumeLoading}
-                onResumeClick={handleResume}
               />
 
               <div className="container">
@@ -844,7 +780,7 @@ export default function TmdbMoviePage() {
           runtimeMinutes={rawDetails?.runtime || null}
           titleEnglish={titleEnglish}
           titlePolish={titlePolish}
-          watchedMagnet={resumeInfo?.torrent_magnet || null}
+          watchedMagnet={null}
           onClose={() => setTorrentOpen(false)}
           onPlayInBrowser={handlePlayInBrowser}
           onSendToTv={playerOnline ? handleSendToTv : null}
