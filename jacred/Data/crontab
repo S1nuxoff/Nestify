@@ -52,6 +52,12 @@
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/anifilm/parse"
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/anidub/parse"
 
+# YTS — English movies
+*/30 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/yts/parse"
+
+# EZTV — English TV shows
+*/30 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/eztv/parse"
+
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/baibako/parse"
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/hamsterstudio/parse"
 */15 *   *   *   *    curl -s "http://127.0.0.1:9118/cron/hdrezka/parse"
