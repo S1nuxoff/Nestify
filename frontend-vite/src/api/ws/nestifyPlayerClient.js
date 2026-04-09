@@ -316,13 +316,13 @@ class NestifyPlayerClient {
     switch (method) {
       case "Player.OnStop":
         this.status = null;
+        this._lastProgressEmitAt = 0;
         this.emit("status", null);
         break;
       case "Player.OnConnect":
       case "Player.OnPlay":
       case "Player.OnPause":
       case "Player.OnSeek":
-      case "Player.OnProgress":
       case "Application.OnVolume":
         if (data) {
           this.status = {
@@ -332,6 +332,25 @@ class NestifyPlayerClient {
           this.emit("status", this.status);
         }
         break;
+      case "Player.OnProgress": {
+        if (!data) break;
+        const now = Date.now();
+        if (!this._lastProgressEmitAt || now - this._lastProgressEmitAt >= 2000) {
+          this._lastProgressEmitAt = now;
+          this.status = {
+            ...(this.status || {}),
+            ...data,
+          };
+          this.emit("status", this.status);
+        } else {
+          // update internal state silently so getStatus() stays accurate
+          this.status = {
+            ...(this.status || {}),
+            ...data,
+          };
+        }
+        break;
+      }
       case "PlayerHub.DeviceStatus":
         console.log("[NestifyPlayerClient] Notification:", method, data);
         if (data?.online === true) {

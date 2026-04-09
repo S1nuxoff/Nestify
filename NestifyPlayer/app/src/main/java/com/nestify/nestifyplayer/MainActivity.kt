@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
             if (player != null) {
                 val st = getStatus()
                 wsClient?.sendNotification("Player.OnProgress", st)
-                wsProgressHandler.postDelayed(this, 1000L)
+                wsProgressHandler.postDelayed(this, 3000L)
             }
         }
     }
