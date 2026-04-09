@@ -1,7 +1,7 @@
 #!/bin/sh
-# Generate Data/tr.conf from environment variables
 mkdir -p /app/Data/temp
 
+# Generate tr.conf from environment variables
 cat > /app/Data/tr.conf <<EOF
 kinozalCookie = ${KINOZAL_COOKIE:-}
 selezenCookie = ${SELEZEN_COOKIE:-}
@@ -15,5 +15,19 @@ hamsterPassword = ${HAMSTER_PASSWORD:-}
 animelayerLogin = ${ANIMELAYER_LOGIN:-}
 animelayerPassword = ${ANIMELAYER_PASSWORD:-}
 EOF
+
+# Start cron with the project crontab
+crontab /app/Data/crontab
+service cron start
+
+# Initial parse trigger in background (after app starts)
+(
+  sleep 30
+  echo "[init] Triggering initial updateTasksParse..."
+  for tracker in rutor rutracker kinozal nnmclub toloka selezen bitru torrentby underverse; do
+    curl -s "http://127.0.0.1:9117/cron/${tracker}/updateTasksParse" > /dev/null
+    echo "[init] ${tracker} updateTasksParse done"
+  done
+) &
 
 exec dotnet JacRed.dll
