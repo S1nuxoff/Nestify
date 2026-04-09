@@ -39,7 +39,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController {
+class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, PlayerHubListener {
 
     private val TAG = "MainActivity"
 
@@ -326,8 +326,33 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController {
             baseUrl = baseUrl,
             deviceId = deviceId,
             controller = this,
-            statusProvider = { getStatus() }
+            statusProvider = { getStatus() },
+            hubListener = this,
         ).also { it.connect() }
+    }
+
+    // ---------- PlayerHubListener ----------
+
+    override fun onControllerConnected(profileName: String) {
+        if (player != null) return  // відео грає — не чіпаємо UI
+        val name = profileName.trim().ifEmpty { "Невідомий" }
+        statusTitle.text = "Підключено"
+        infoText.text = name
+        connectHint.visibility = View.GONE
+        linkText.visibility = View.GONE
+        codeHint.visibility = View.GONE
+        qrImage.visibility = View.GONE
+        codeSlots.forEach { it.visibility = View.GONE }
+    }
+
+    override fun onControllerDisconnected() {
+        if (player != null) return  // відео грає — не чіпаємо UI
+        updateNetworkInfo()
+        connectHint.visibility = View.VISIBLE
+        linkText.visibility = View.VISIBLE
+        codeHint.visibility = View.VISIBLE
+        qrImage.visibility = View.VISIBLE
+        codeSlots.forEach { it.visibility = View.VISIBLE }
     }
 
     private fun startWsProgress() {

@@ -90,13 +90,20 @@ class NestifyPlayerClient {
     return "wss://api.opencine.cloud";
   }
 
+  setProfileName(name) {
+    this.profileName = name || "";
+  }
+
   getWsUrl() {
     if (!this.deviceId) {
       throw new Error("NestifyPlayerClient: deviceId is not set");
     }
     const base = this.getBackendWsBase().replace(/\/+$/, "");
-    // бекенд-роут: /ws/control/{device_id}
-    return `${base}/ws/control/${encodeURIComponent(this.deviceId)}`;
+    const url = `${base}/ws/control/${encodeURIComponent(this.deviceId)}`;
+    if (this.profileName) {
+      return `${url}?profile=${encodeURIComponent(this.profileName)}`;
+    }
+    return url;
   }
 
   // ---------- INIT / WS ----------

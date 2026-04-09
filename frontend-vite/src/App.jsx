@@ -127,6 +127,7 @@ function App() {
       const profile = getCurrentProfile();
       const deviceId = profile?.kodi_address;
       if (deviceId && deviceId.trim()) {
+        nestifyPlayerClient.setProfileName(profile?.name || "");
         nestifyPlayerClient.setDeviceId(deviceId.trim());
       }
     } catch (e) {

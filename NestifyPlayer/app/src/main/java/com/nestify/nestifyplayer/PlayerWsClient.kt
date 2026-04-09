@@ -8,11 +8,17 @@ import org.java_websocket.handshake.ServerHandshake
 import org.json.JSONObject
 import java.net.URI
 
+interface PlayerHubListener {
+    fun onControllerConnected(profileName: String)
+    fun onControllerDisconnected()
+}
+
 class PlayerWsClient(
     private val baseUrl: String,                      // напр. "wss://api.opencine.cloud"
     private val deviceId: String,                     // DeviceId.get(context)
     private val controller: RemoteHttpServer.RemoteController,
-    private val statusProvider: () -> PlayerStatus
+    private val statusProvider: () -> PlayerStatus,
+    private val hubListener: PlayerHubListener? = null,
 ) {
 
     private val TAG = "PlayerWsClient"
@@ -252,6 +258,21 @@ class PlayerWsClient(
                     val st = statusProvider()
                     val res = statusToJson(st)
                     sendResponse(idAny, res)
+                }
+
+                "PlayerHub.ControllerConnected" -> {
+                    val profileName = params.optString("profile_name", "")
+                    Log.d(TAG, "ControllerConnected profileName=$profileName")
+                    mainHandler.post {
+                        hubListener?.onControllerConnected(profileName)
+                    }
+                }
+
+                "PlayerHub.ControllerDisconnected" -> {
+                    Log.d(TAG, "ControllerDisconnected")
+                    mainHandler.post {
+                        hubListener?.onControllerDisconnected()
+                    }
                 }
 
                 else -> {

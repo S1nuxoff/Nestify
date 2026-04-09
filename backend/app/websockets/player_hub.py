@@ -2,7 +2,7 @@
 import json
 from typing import Dict, Set, Optional
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 
@@ -43,10 +43,10 @@ class PlayerHub:
             self.players.pop(device_id, None)
             print(f"[PlayerHub] player disconnected: {device_id}")
 
-    async def register_controller(self, device_id: str, ws: WebSocket) -> None:
+    async def register_controller(self, device_id: str, ws: WebSocket, profile_name: str = "") -> None:
         self.controllers.setdefault(device_id, set()).add(ws)
         print(
-            f"[PlayerHub] controller connected for {device_id}, total={len(self.controllers[device_id])}"
+            f"[PlayerHub] controller connected for {device_id} profile={profile_name!r}, total={len(self.controllers[device_id])}"
         )
 
         # при коннекте сразу скажем, онлайн ли плеер
@@ -60,7 +60,17 @@ class PlayerHub:
             },
         )
 
-    def unregister_controller(self, device_id: str, ws: WebSocket) -> None:
+        # уведомим TV-плеер что контроллер подключился
+        await self._notify_player(
+            device_id,
+            {
+                "jsonrpc": "2.0",
+                "method": "PlayerHub.ControllerConnected",
+                "params": {"profile_name": profile_name or ""},
+            },
+        )
+
+    async def unregister_controller(self, device_id: str, ws: WebSocket) -> None:
         conns = self.controllers.get(device_id)
         if not conns:
             return
@@ -69,6 +79,18 @@ class PlayerHub:
         if not conns:
             self.controllers.pop(device_id, None)
         print(f"[PlayerHub] controller disconnected for {device_id}")
+
+        # если контроллеров больше нет — уведомим TV
+        remaining = len(self.controllers.get(device_id) or [])
+        if remaining == 0:
+            await self._notify_player(
+                device_id,
+                {
+                    "jsonrpc": "2.0",
+                    "method": "PlayerHub.ControllerDisconnected",
+                    "params": {},
+                },
+            )
 
     # ---------- обработка входящих сообщений -----------
 
@@ -164,6 +186,15 @@ class PlayerHub:
         if not conns:
             self.controllers.pop(device_id, None)
 
+    async def _notify_player(self, device_id: str, obj: dict) -> None:
+        player_ws = self.players.get(device_id)
+        if player_ws is None:
+            return
+        try:
+            await player_ws.send_json(obj)
+        except Exception as e:
+            print(f"[PlayerHub] error notify player {device_id}: {e}")
+
     async def _send_json_safe(self, ws: WebSocket, obj: dict) -> None:
         try:
             await ws.send_json(obj)
@@ -198,21 +229,25 @@ async def player_ws(websocket: WebSocket, device_id: str):
 
 
 @router.websocket("/ws/control/{device_id}")
-async def control_ws(websocket: WebSocket, device_id: str):
+async def control_ws(
+    websocket: WebSocket,
+    device_id: str,
+    profile: str = Query(default=""),
+):
     """
     Подключается браузер (frontend).
     Фронт продолжает говорить JSON-RPC (Player.PlayUrl, Player.PlayPause и т.д.),
     мы просто прокидываем это на девайс с таким device_id.
     """
     await websocket.accept()
-    await player_hub.register_controller(device_id, websocket)
+    await player_hub.register_controller(device_id, websocket, profile_name=profile)
 
     try:
         while True:
             raw = await websocket.receive_text()
             await player_hub.handle_from_controller(device_id, websocket, raw)
     except WebSocketDisconnect:
-        player_hub.unregister_controller(device_id, websocket)
+        await player_hub.unregister_controller(device_id, websocket)
     except Exception as e:
         print(f"[Control WS] error for {device_id}: {e}")
-        player_hub.unregister_controller(device_id, websocket)
+        await player_hub.unregister_controller(device_id, websocket)
