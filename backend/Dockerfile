@@ -12,11 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Спершу залежності — для кешу
-COPY backend/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Далі код
-COPY backend /app
+COPY . /app
 
 # Порт сервісу
 EXPOSE 8000
