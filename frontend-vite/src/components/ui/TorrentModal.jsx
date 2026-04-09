@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { searchTorrents, addTorrent, getTorrentStatus, removeTorrent, preloadTorrent, getFileInfo, startHlsSession } from "../../api/v3";
 import { X, Play, Tv, Loader2, Zap, ChevronRight } from "lucide-react";
 import { getCurrentProfile } from "../../core/session";
+import { getCachedTorrents, setCachedTorrents, makeTorrentCacheKey } from "../../core/torrentCache";
 
 /* ─── helpers ──────────────────────────────────────────────── */
 function formatSize(b) {
@@ -119,6 +120,12 @@ export default function TorrentModal({
   const itemRefs         = useRef([]);
   const selectedMagnetRef = useRef(null);
 
+  /* ── hide mini player while modal is open ── */
+  useEffect(() => {
+    document.body.classList.add("torrent-modal-open");
+    return () => document.body.classList.remove("torrent-modal-open");
+  }, []);
+
   /* ── season grouping ── */
   const seasonMap = useMemo(() => groupBySeason(files), [files]);
   const isSeries  = seasonMap.size > 0;
@@ -135,6 +142,16 @@ export default function TorrentModal({
 
   /* ── search ── */
   const doSearch = useCallback(async () => {
+    const cacheKey = makeTorrentCacheKey({ tmdbId, mediaType, title: title || titleOriginal });
+    const cached = getCachedTorrents(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setFocusedIdx(0);
+      const total = cached.uk.length + cached.ru.length + cached.en.length + cached.pl.length;
+      if (!total) setError("Нічого не знайдено");
+      return;
+    }
+
     setError(null); setLoading(true); setResults({ uk: [], ru: [], en: [], pl: [] }); setFocusedIdx(0);
     try {
       const data = await searchTorrents({
@@ -147,6 +164,7 @@ export default function TorrentModal({
         imdb_id: imdbId, tmdb_id: tmdbId, media_type: mediaType || "movie",
       });
       const grouped = { uk: data.uk || [], ru: data.ru || [], en: data.en || [], pl: data.pl || [] };
+      setCachedTorrents(cacheKey, grouped);
       setResults(grouped);
       const total = grouped.uk.length + grouped.ru.length + grouped.en.length;
       if (!total) setError("Нічого не знайдено");

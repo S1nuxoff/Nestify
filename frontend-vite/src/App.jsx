@@ -36,6 +36,9 @@ import PickerPage from "./pages/PickerPage";
 import TikTokPickerPage from "./pages/TikTokPickerPage";
 import AdminPage from "./pages/AdminPage";
 import AccountPrefsPage from "./pages/AccountPrefsPage";
+import AccountPage from "./pages/AccountPage";
+import AccountDevicesPage from "./pages/AccountDevicesPage";
+import AccountAboutPage from "./pages/AccountAboutPage";
 import "./styles/App.css";
 import "./styles/tv.css";
 import "@vidstack/react/player/styles/default/theme.css";
@@ -119,22 +122,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // піднімаємо WS до TV-плеєра, якщо вже є збережений deviceId
+    // піднімаємо WS до TV-плеєра з kodi_address профілю
     try {
-      const savedDeviceId = window.localStorage.getItem(
-        "nestify_player_device_id"
-      );
-      if (savedDeviceId && savedDeviceId.trim()) {
-        console.log(
-          "[App] found saved nestify_player_device_id:",
-          savedDeviceId.trim()
-        );
-        nestifyPlayerClient.setDeviceId(savedDeviceId.trim());
-      } else {
-        console.log("[App] no saved nestify_player_device_id yet");
+      const profile = getCurrentProfile();
+      const deviceId = profile?.kodi_address;
+      if (deviceId && deviceId.trim()) {
+        nestifyPlayerClient.setDeviceId(deviceId.trim());
       }
     } catch (e) {
-      console.warn("[App] failed to read nestify_player_device_id:", e);
+      console.warn("[App] failed to read kodi_address from profile:", e);
     }
   }, []);
 
@@ -143,10 +139,10 @@ function App() {
       <ScrollToTop />
 
       {/* Мини-плеер поверх всего (десктоп) */}
-      <MiniPlayer />
+      {!location.pathname.startsWith("/auth/") && location.pathname !== "/profiles" && <MiniPlayer />}
 
-      {/* Нав бар — скрываем на плеере и админке */}
-      {!location.pathname.startsWith("/player/") && !location.pathname.startsWith("/admin") && (
+      {/* Нав бар — скрываем на плеере, адмінці і auth сторінках */}
+      {!location.pathname.startsWith("/player/") && !location.pathname.startsWith("/admin") && !location.pathname.startsWith("/auth/") && location.pathname !== "/profiles" && (
         <MobileBottomNav
           currentAvatar={currentUser?.avatar_url ? `${config.backend_url}${currentUser.avatar_url}` : ""}
         />
@@ -174,9 +170,7 @@ function App() {
               path="/"
               element={
                 !hasAccountSession() ? (
-                  <PageTransition>
-                    <LandingPage />
-                  </PageTransition>
+                  <Navigate to="/auth/login" replace />
                 ) : !hasSelectedProfile() ? (
                   <Navigate to="/profiles" replace />
                 ) : (
@@ -275,6 +269,9 @@ function App() {
               }
             />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/account/account" element={<AccountPage />} />
+            <Route path="/account/devices" element={<AccountDevicesPage />} />
+            <Route path="/account/about" element={<AccountAboutPage />} />
             <Route path="/account/prefs" element={<AccountPrefsPage />} />
             <Route
               path="/browse/:categoryTitle"

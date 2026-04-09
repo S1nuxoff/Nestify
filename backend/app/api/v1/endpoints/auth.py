@@ -45,6 +45,7 @@ class UpdateProfileRequest(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=50)
     avatar_url: str | None = Field(None, max_length=255)
     default_lang: str | None = Field(None, pattern="^(best|uk|ru|en|pl)$")
+    kodi_address: str | None = Field(None, max_length=255)
 
 
 class UpdateAccountRequest(BaseModel):
@@ -253,6 +254,8 @@ async def update_profile(
             profile.avatar_url = payload.avatar_url
         if payload.default_lang is not None:
             profile.default_lang = payload.default_lang
+        if payload.kodi_address is not None:
+            profile.kodi_address = payload.kodi_address
         profile.updated_at = datetime.utcnow()
 
         try:

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import "../styles/Login.css";
-import UserLoginCard from "../components/ui/UserLoginCard";
-import PlusIcon from "../assets/icons/plus.svg?react";
+import { Plus } from "lucide-react";
 import { getMe } from "../api/auth";
 import config from "../core/config";
 import {
@@ -10,88 +8,65 @@ import {
   hasAccountSession,
   hasSelectedProfile,
   setCurrentProfile,
+  getProfilesCache,
+  setProfilesCache,
 } from "../core/session";
+import "../styles/WhoWatching.css";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(() => getProfilesCache());
   const [error, setError] = useState("");
 
-  if (!hasAccountSession()) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  if (hasSelectedProfile()) {
-    return <Navigate to="/" replace />;
-  }
-
-  const handleAddUser = () => {
-    navigate("/profiles/new");
-  };
-
-  const handleUserSelect = (user) => {
-    setCurrentProfile(user);
-    navigate("/");
-  };
-
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await getMe();
-        setUsers(Array.isArray(data?.profiles) ? data.profiles : []);
-      } catch (err) {
+    if (!hasAccountSession()) return;
+    getMe()
+      .then((data) => {
+        const list = Array.isArray(data?.profiles) ? data.profiles : [];
+        setUsers(list);
+        setProfilesCache(list);
+      })
+      .catch(() => {
         clearAuthSession();
         setError("Сесія завершилась. Увійди ще раз.");
-        console.error("❌ Failed to load users:", err);
-      }
-    };
-
-    fetchUsers();
+      });
   }, []);
 
+  if (!hasAccountSession()) return <Navigate to="/auth/login" replace />;
+  if (hasSelectedProfile()) return <Navigate to="/" replace />;
+
   return (
-    <div className="container">
-      <div className="login-container">
-        <h2 className="login-title">Who&apos;s watching?</h2>
-        {error ? <div className="mt-4 text-sm text-[#ff8b8b]">{error}</div> : null}
+    <div className="ww-page">
+      <h1 className="ww-title">Хто дивиться?</h1>
 
-        <div className="login-users-list">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="login-user-card-wrapper tv-focusable"
-              tabIndex={0}
-              role="button"
-              aria-label={user.name}
-              onClick={() => handleUserSelect(user)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleUserSelect(user);
-                }
-              }}
-            >
-              <UserLoginCard
-                name={user.name}
-                image={`${config.backend_url}${user.avatar_url}`}
-              />
-            </div>
-          ))}
+      {error && <p className="ww-error">{error}</p>}
 
+      <div className="ww-grid">
+        {users.map((user, i) => (
           <button
-            type="button"
-            onClick={handleAddUser}
-            className="login-create-user login-user-card-wrapper tv-focusable"
-            tabIndex={0}
-            aria-label="Додати користувача"
+            key={user.id}
+            className="ww-profile"
+            onClick={() => { setCurrentProfile(user); navigate("/"); }}
+            style={{ animationDelay: `${i * 0.07}s` }}
           >
-            <PlusIcon />
+            <div className="ww-avatar">
+              <img src={`${config.backend_url}${user.avatar_url}`} alt={user.name} />
+            </div>
+            <span className="ww-name">{user.name}</span>
           </button>
-        </div>
-      </div>
+        ))}
 
-      <div className="background-blur-100" />
-      <div className="background-glow-center" />
+        <button
+          className="ww-profile"
+          onClick={() => navigate("/profiles/new")}
+          style={{ animationDelay: `${users.length * 0.07}s` }}
+        >
+          <div className="ww-avatar ww-avatar--add">
+            <Plus size={28} strokeWidth={1.5} />
+          </div>
+          <span className="ww-name ww-name--dim">Додати профіль</span>
+        </button>
+      </div>
     </div>
   );
 }

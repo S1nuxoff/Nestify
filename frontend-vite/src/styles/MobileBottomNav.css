@@ -1,5 +1,9 @@
 /* MobileBottomNav.css */
 
+body.torrent-modal-open .mbn-mini-player {
+  display: none !important;
+}
+
 .mobile-bottom-nav-wrap {
   position: fixed;
   bottom: 0;

@@ -1,5 +1,9 @@
 /* MiniPlayer.css */
 
+body.torrent-modal-open .mini-player-wrapper {
+  display: none !important;
+}
+
 :root {
   --mp-bg: #0d0d0d;
   --mp-border: rgba(255, 255, 255, 0.1);

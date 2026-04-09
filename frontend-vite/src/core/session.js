@@ -1,6 +1,7 @@
 const AUTH_TOKEN_KEY = "auth_token";
 const AUTH_ACCOUNT_KEY = "current_account";
 const CURRENT_USER_KEY = "current_user";
+const PROFILES_CACHE_KEY = "profiles_cache";
 
 function readJson(key) {
   try {
@@ -55,10 +56,19 @@ export function setAuthSession({ token, account, profile = null }) {
   writeJson(CURRENT_USER_KEY, profile);
 }
 
+export function getProfilesCache() {
+  return readJson(PROFILES_CACHE_KEY) || [];
+}
+
+export function setProfilesCache(profiles) {
+  writeJson(PROFILES_CACHE_KEY, profiles);
+}
+
 export function clearAuthSession() {
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
   window.localStorage.removeItem(AUTH_ACCOUNT_KEY);
   window.localStorage.removeItem(CURRENT_USER_KEY);
+  window.localStorage.removeItem(PROFILES_CACHE_KEY);
 }
 
 export { AUTH_TOKEN_KEY, AUTH_ACCOUNT_KEY, CURRENT_USER_KEY };

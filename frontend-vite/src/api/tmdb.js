@@ -38,6 +38,31 @@ export const getTrending = async (timeWindow = "week") => {
   return res.data.results || [];
 };
 
+// Популярне за місяць — discover з датою 30 днів
+export const getMonthlyTrending = async (mediaType = "all") => {
+  const date = new Date();
+  date.setDate(date.getDate() - 30);
+  const since = date.toISOString().split("T")[0];
+  const types = mediaType === "all" ? ["movie", "tv"] : [mediaType];
+  const dateKey = mediaType === "tv" ? "first_air_date.gte" : "primary_release_date.gte";
+
+  if (mediaType === "all") {
+    const [movies, tv] = await Promise.all([
+      tmdb.get("/discover/movie", { params: { sort_by: "popularity.desc", "primary_release_date.gte": since } }),
+      tmdb.get("/discover/tv",    { params: { sort_by: "popularity.desc", "first_air_date.gte": since } }),
+    ]);
+    return [
+      ...(movies.data.results || []).map(i => ({ ...i, media_type: "movie" })),
+      ...(tv.data.results    || []).map(i => ({ ...i, media_type: "tv" })),
+    ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 20);
+  }
+
+  const res = await tmdb.get(`/discover/${mediaType}`, {
+    params: { sort_by: "popularity.desc", [dateKey]: since },
+  });
+  return (res.data.results || []).map(i => ({ ...i, media_type: mediaType }));
+};
+
 // Популярні фільми
 export const getPopularMovies = async () => {
   const res = await tmdb.get("/movie/popular");

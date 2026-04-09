@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
+import { updateProfile } from "../api/auth";
+import { getCurrentProfile, setCurrentProfile } from "../core/session";
 
 import "../styles/ConnectPlayerPage.css";
 
@@ -29,18 +31,21 @@ const ConnectPlayerPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get("device");
-    const fromStorage =
-      window.localStorage.getItem("nestify_player_device_id") || "";
+    const profile = getCurrentProfile();
+    const raw = profile?.kodi_address || "";
+    // Вважаємо кодом тільки рядки з 8 алфанумеричних символів (без крапок/двокрапок)
+    const isDeviceCode = /^[0-9A-Za-z]{8}$/.test(raw);
+    const fromProfile = isDeviceCode ? raw : "";
 
     if (fromUrl) {
       fillFromString(fromUrl);
       setStatus({ type: "success", message: "Код розпізнано автоматично ✨" });
-    } else if (fromStorage) {
-      fillFromString(fromStorage);
+    } else if (fromProfile) {
+      fillFromString(fromProfile);
     }
-    setSavedDeviceCode(fromStorage);
+    setSavedDeviceCode(fromProfile);
 
-    if (!fromUrl && !fromStorage) {
+    if (!fromUrl && !fromProfile) {
       inputsRef.current[0]?.focus();
     }
   }, [location.search]);
@@ -77,23 +82,24 @@ const ConnectPlayerPage = () => {
       return;
     }
 
+    const profile = getCurrentProfile();
+    if (!profile?.id) {
+      setStatus({ type: "error", message: "Профіль не знайдено" });
+      return;
+    }
+
     setIsSaving(true);
     try {
-      window.localStorage.setItem("nestify_player_device_id", trimmed);
-      const rawUser = window.localStorage.getItem("current_user");
-      if (rawUser) {
-        const user = JSON.parse(rawUser);
-        user.player_device_id = trimmed;
-        window.localStorage.setItem("current_user", JSON.stringify(user));
-      }
+      const updated = await updateProfile(profile.id, { kodi_address: trimmed });
+
+      // Оновлюємо профіль в сесії
+      setCurrentProfile({ ...profile, ...updated });
+
       if (typeof nestifyPlayerClient.setDeviceId === "function") {
         nestifyPlayerClient.setDeviceId(trimmed);
       }
 
-      setStatus({
-        type: "success",
-        message: "Пристрій підключено. Приємного перегляду!",
-      });
+      setStatus({ type: "success", message: "Пристрій підключено. Приємного перегляду!" });
       setTimeout(() => navigate("/"), 1000);
     } catch (e) {
       setStatus({ type: "error", message: "Помилка збереження." });
@@ -104,7 +110,6 @@ const ConnectPlayerPage = () => {
 
   return (
     <div className="hbo-container">
-      {/* Світіння на фоні в стилі Max */}
       <div className="hbo-aura-1"></div>
       <div className="hbo-aura-2"></div>
 
@@ -112,8 +117,7 @@ const ConnectPlayerPage = () => {
         <div className="hbo-header">
           <h1 className="hbo-title">Підключення телевізора</h1>
           <p className="hbo-description">
-            Введіть код, який ви бачите на екрані вашого пристрою, щоб почати
-            трансляцію.
+            Введіть код, який ви бачите на екрані вашого пристрою, щоб почати трансляцію.
           </p>
         </div>
 

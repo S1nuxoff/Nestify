@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getTrending,
+  getMonthlyTrending,
   getPopularMovies,
   getPopularTv,
   getNowPlaying,
@@ -119,8 +120,9 @@ const pageCache = {};
 
 async function fetchCategoryData(category) {
   if (category === "all") {
-    const [trending, pm, ptv, np, tm, ttv, onAir] = await Promise.all([
+    const [trending, trendingMonth, pm, ptv, np, tm, ttv, onAir] = await Promise.all([
       getTrending("week"),
+      getMonthlyTrending("all"),
       getPopularMovies(),
       getPopularTv(),
       getNowPlaying(),
@@ -134,7 +136,7 @@ async function fetchCategoryData(category) {
     return {
       featured,
       sections: [
-        { title: "Тренд тижня", data: trending.map(normalizeTmdbItem), wide: W },
+        { title: "Тренд місяця", data: trendingMonth.map(normalizeTmdbItem), wide: W },
         { title: "Найкраще за весь час", data: topMix, wide: N },
         { title: "Зараз в кіно", data: norm(np, "movie"), wide: W },
         { title: "Популярні серіали", data: norm(ptv, "tv"), wide: N },
@@ -145,8 +147,9 @@ async function fetchCategoryData(category) {
   }
 
   if (category === "movies") {
-    const [trending, np, pm, tm, upcoming] = await Promise.all([
+    const [trending, trendingMonth, np, pm, tm, upcoming] = await Promise.all([
       getTrending("week").then((r) => r.filter((i) => i.media_type === "movie")),
+      getMonthlyTrending("movie"),
       getNowPlaying(),
       getPopularMovies(),
       getTopRated("movie"),
@@ -156,7 +159,7 @@ async function fetchCategoryData(category) {
     return {
       featured,
       sections: [
-        { title: "Тренд тижня", data: norm(pm, "movie"), wide: W },
+        { title: "Тренд місяця", data: norm(trendingMonth, "movie"), wide: W },
         { title: "Найкраще за весь час", data: norm(tm, "movie"), wide: N },
         { title: "Зараз в кіно", data: norm(np, "movie"), wide: W },
         { title: "Нові фільми", data: norm(upcoming, "movie"), wide: N },
@@ -165,8 +168,9 @@ async function fetchCategoryData(category) {
   }
 
   if (category === "tv") {
-    const [trending, ptv, ttv, onAir] = await Promise.all([
+    const [trending, trendingMonth, ptv, ttv, onAir] = await Promise.all([
       getTrending("week").then((r) => r.filter((i) => i.media_type === "tv")),
+      getMonthlyTrending("tv"),
       getPopularTv(),
       getTopRated("tv"),
       getOnTheAir(),
@@ -175,7 +179,7 @@ async function fetchCategoryData(category) {
     return {
       featured,
       sections: [
-        { title: "Тренд тижня", data: norm(ptv, "tv"), wide: W },
+        { title: "Тренд місяця", data: norm(trendingMonth, "tv"), wide: W },
         { title: "Найкраще за весь час", data: norm(ttv, "tv"), wide: N },
         { title: "Зараз в ефірі", data: norm(onAir, "tv"), wide: W },
         { title: "В тренді цього тижня", data: trending.map(normalizeTmdbItem), wide: N },
@@ -184,18 +188,21 @@ async function fetchCategoryData(category) {
   }
 
   if (category === "animation") {
-    const [animM, animTv, topAnim, topAnimTv] = await Promise.all([
+    const date = new Date(); date.setDate(date.getDate() - 30);
+    const since = date.toISOString().split("T")[0];
+    const [animM, animTv, topAnim, topAnimTv, animMonthM] = await Promise.all([
       discover("movie", { with_genres: "16" }).then((r) => r.results),
       discover("tv", { with_genres: "16" }).then((r) => r.results),
       discover("movie", { with_genres: "16", sort_by: "vote_average.desc", "vote_count.gte": "300" }).then((r) => r.results),
       discover("tv", { with_genres: "16", sort_by: "vote_average.desc", "vote_count.gte": "300" }).then((r) => r.results),
+      discover("movie", { with_genres: "16", sort_by: "popularity.desc", "primary_release_date.gte": since }).then((r) => r.results),
     ]);
     const allAnim = [...animM.map((i) => ({ ...i, media_type: "movie" })), ...animTv.map((i) => ({ ...i, media_type: "tv" }))];
     const featured = await buildFeatured(allAnim);
     return {
       featured,
       sections: [
-        { title: "Тренд тижня", data: norm(animM, "movie"), wide: W },
+        { title: "Тренд місяця", data: norm(animMonthM, "movie"), wide: W },
         { title: "Топ мультсеріали", data: norm(topAnimTv, "tv"), wide: N },
         { title: "Популярні мультсеріали", data: norm(animTv, "tv"), wide: W },
         { title: "Топ мультфільми", data: norm(topAnim, "movie"), wide: N },
