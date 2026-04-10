@@ -188,7 +188,7 @@ export default function FeaturedCard({
             {genreItems.length > 0 && (
               <div className="fh-genres">
                 {genreItems.map((g, i) => (
-                  <React.Fragment key={g}>
+                  <React.Fragment key={`${g}-${i}`}>
                     {i > 0 && <span className="fh-genre-dot">·</span>}
                     <span className="fh-genre">{g}</span>
                   </React.Fragment>

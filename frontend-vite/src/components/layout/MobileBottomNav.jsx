@@ -176,11 +176,11 @@ function DesktopMiniPlayer({ navHidden, setNavHidden }) {
         <div className="mbn-dmp__info">
           <span className="mbn-dmp__title">{title}</span>
           <span className="mbn-dmp__time">
-            {PREVIEW ? "1:12:34 / 2:28:01" : (durationSec > 0 ? `${formatTime(currentSec)} / ${formatTime(durationSec)}` : "")}
+            {durationSec > 0 ? `${formatTime(currentSec)} / ${formatTime(durationSec)}` : ""}
           </span>
         </div>
         <button className="mbn-dmp__btn" onClick={handlePlayPause} type="button">
-          {(PREVIEW || isPlaying) ? <Pause size={20} fill="currentColor" strokeWidth={0} /> : <Play size={20} fill="currentColor" strokeWidth={0} />}
+          {isPlaying ? <Pause size={20} fill="currentColor" strokeWidth={0} /> : <Play size={20} fill="currentColor" strokeWidth={0} />}
         </button>
         <button className="mbn-dmp__btn mbn-dmp__btn--stop" onClick={handleStop} type="button">
           <Square size={16} fill="currentColor" strokeWidth={0} />
