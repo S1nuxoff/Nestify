@@ -99,6 +99,9 @@ async function buildFeatured(rawItems) {
       ? tmdbImgOriginal(cleanBackdrop.file_path)
       : (tmdbImgOriginal(featuredRaw[i]?.backdrop_path) || item.backdrop);
 
+    const cast = (details?.credits?.cast || []).slice(0, 4).map((a) => a.name);
+    const director = (details?.credits?.crew || []).find((c) => c.job === "Director")?.name || null;
+
     return {
       ...item,
       backdrop: backdropUrl,
@@ -107,6 +110,9 @@ async function buildFeatured(rawItems) {
       logo_url: pickTmdbLogo(details?.images?.logos || []),
       country: details?.production_countries?.[0]?.iso_3166_1 || null,
       genres_list: (details?.genres || []).map((g) => g.name).slice(0, 2),
+      cast,
+      director,
+      runtime: details?.runtime || null,
     };
   });
 }

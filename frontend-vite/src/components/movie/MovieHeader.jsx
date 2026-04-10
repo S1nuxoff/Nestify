@@ -1,7 +1,7 @@
 // src/components/movie/MovieHeader.jsx
 import React, { useMemo } from "react";
 import CastIcon from "../../assets/icons/cast.svg?react";
-import { Play, Plus, Check, Share2, History } from "lucide-react";
+import { Play, Plus, Check, Share2 } from "lucide-react";
 
 import "../../styles/MovieHeaderHero.css";
 
@@ -18,7 +18,6 @@ function formatTime(sec) {
 export default function MovieHeader({
   movieDetails,
   tagline = "",
-  reactions = [],
   playerOnline,
   isLiked,
   likePending,
@@ -26,7 +25,6 @@ export default function MovieHeader({
   onMainPlayClick,
   onCastClick,
 }) {
-  // meta
   const computed = useMemo(() => {
     const year = movieDetails?.release_date
       ? String(movieDetails.release_date).split(",")[0]
@@ -80,8 +78,6 @@ export default function MovieHeader({
 
   const posterImage = movieDetails?.backdrop || movieDetails?.image || bgImage;
 
-  const ratingValue = computed.ratingValue;
-
   const metaItems = [];
   if (movieDetails?.release_date) {
     metaItems.push({ key: "year", content: computed.year });
@@ -98,6 +94,11 @@ export default function MovieHeader({
   if (movieDetails?.studios?.length) {
     metaItems.push({ key: "studio", content: movieDetails.studios[0] });
   }
+
+  const genreItems = (movieDetails?.genre || []).slice(0, 3);
+
+  const castNames = (movieDetails?.actors || []).slice(0, 4).map((a) => a.name);
+  const directorNames = movieDetails?.director_names || [];
 
   return (
     <>
@@ -117,158 +118,85 @@ export default function MovieHeader({
 
         <div className="mh-content">
           <div className="mh-bottom">
-            <div className="mh-titles">
-              {movieDetails.logo_url && (
-                <img className="mh-title-logo" src={movieDetails.logo_url} alt={movieDetails.title} />
-              )}
-              {movieDetails.logo_url ? (
-                <div className="mh-origin">
-                  {movieDetails.title}
-                  {movieDetails?.origin_name && <> · {movieDetails.origin_name}</>}
-                </div>
-              ) : (
-                <>
-                  <div className="mh-title">{movieDetails.title}</div>
-                  {movieDetails?.origin_name && (
-                    <div className="mh-origin">{movieDetails.origin_name}</div>
-                  )}
-                </>
-              )}
-            </div>
 
-            <div className="mh-meta">
-              {metaItems.map((item) => (
-                <span key={item.key} className="mh-meta-item">
-                  {item.content}
-                </span>
-              ))}
-            </div>
-
-            {tagline && <div className="mh-tagline">«{tagline}»</div>}
-
-            {reactions.length > 0 && (
-              <div className="mh-reactions">
-                {["fire", "nice", "think", "bore", "shit"].map((type) => {
-                  const reaction = reactions.find((item) => item.type === type);
-                  if (!reaction) return null;
-
-                  const count =
-                    reaction.counter >= 1000
-                      ? `${(reaction.counter / 1000)
-                          .toFixed(1)
-                          .replace(".0", "")}K`
-                      : reaction.counter;
-
-                  return (
-                    <div key={type} className="mh-reaction">
-                      <img
-                        src={`https://cub.rip/img/reactions/${type}.svg`}
-                        alt={type}
-                        className="mh-reaction__icon"
-                      />
-                      <span className="mh-reaction__count">{count}</span>
-                    </div>
-                  );
-                })}
+            {/* LEFT column */}
+            <div className="mh-left">
+              <div className="mh-titles">
+                {movieDetails.logo_url ? (
+                  <>
+                    <img className="mh-title-logo" src={movieDetails.logo_url} alt={movieDetails.title} />
+                    <div className="mh-origin mh-origin--under-logo">{movieDetails.title}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mh-title">{movieDetails.title}</div>
+                    {movieDetails?.origin_name && (
+                      <div className="mh-origin">{movieDetails.origin_name}</div>
+                    )}
+                  </>
+                )}
               </div>
-            )}
 
-            {computed.lastWatch && computed.hasLastProgress && (
-              <div className="mh-progress">
-                <div className="mh-progress__top">
-                  {movieDetails.action === "get_stream" &&
-                  computed.lastWatch.season &&
-                  computed.lastWatch.episode ? (
-                    <span className="mh-progress__label">
-                      Продовжити: S{computed.lastWatch.season}E
-                      {computed.lastWatch.episode}
-                    </span>
-                  ) : (
-                    <span className="mh-progress__label">
-                      Продовжити перегляд
-                    </span>
-                  )}
+              {/* genres — desktop only */}
+              {genreItems.length > 0 && (
+                <div className="mh-genres">
+                  {genreItems.map((g, i) => (
+                    <React.Fragment key={g}>
+                      {i > 0 && <span className="mh-genre-dot">·</span>}
+                      <span className="mh-genre">{g}</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
 
-                  <span className="mh-progress__time">
-                    {formatTime(computed.lastPositionSec)} /{" "}
-                    {formatTime(computed.lastDurationSec)}
+              <div className="mh-meta">
+                {metaItems.map((item) => (
+                  <span key={item.key} className="mh-meta-item">
+                    {item.content}
                   </span>
-                </div>
-
-                <div className="mh-progress__bar">
-                  <div
-                    className={
-                      "mh-progress__fill" +
-                      (computed.isFullyWatched
-                        ? " mh-progress__fill--complete"
-                        : "")
-                    }
-                    style={{ width: `${computed.lastPercentDisplay || 0}%` }}
-                  />
-                </div>
-
-                <div className="mh-progress__percent">
-                  {computed.isFullyWatched
-                    ? "Переглянуто"
-                    : `${computed.lastPercentDisplay}%`}
-                </div>
+                ))}
               </div>
-            )}
 
-            {movieDetails.description && (
-              <div className="mh-desc-mobile">
-                {movieDetails.description.slice(0, 160)}{movieDetails.description.length > 160 ? "…" : ""}
-              </div>
-            )}
+              {tagline && <div className="mh-tagline">«{tagline}»</div>}
 
-            {/* Icon actions — above play buttons */}
-            <div className="mh-icon-actions">
-              <button
-                className={`mh-icon-btn tv-focusable${isLiked ? " is-active" : ""}`}
-                type="button"
-                tabIndex={0}
-                onClick={onToggleLike}
-                disabled={likePending}
-                title={isLiked ? "Видалити зі списку" : "Додати до списку"}
-                aria-label={isLiked ? "Видалити зі списку" : "Додати до списку"}
-              >
-                {isLiked ? <Check size={22} strokeWidth={2.5} /> : <Plus size={22} strokeWidth={2.5} />}
-              </button>
+              {computed.lastWatch && computed.hasLastProgress && (
+                <div className="mh-progress">
+                  <div className="mh-progress__top">
+                    {movieDetails.action === "get_stream" &&
+                    computed.lastWatch.season &&
+                    computed.lastWatch.episode ? (
+                      <span className="mh-progress__label">
+                        Продовжити: S{computed.lastWatch.season}E{computed.lastWatch.episode}
+                      </span>
+                    ) : (
+                      <span className="mh-progress__label">Продовжити перегляд</span>
+                    )}
+                    <span className="mh-progress__time">
+                      {formatTime(computed.lastPositionSec)} /{" "}
+                      {formatTime(computed.lastDurationSec)}
+                    </span>
+                  </div>
+                  <div className="mh-progress__bar">
+                    <div
+                      className={
+                        "mh-progress__fill" +
+                        (computed.isFullyWatched ? " mh-progress__fill--complete" : "")
+                      }
+                      style={{ width: `${computed.lastPercentDisplay || 0}%` }}
+                    />
+                  </div>
+                  <div className="mh-progress__percent">
+                    {computed.isFullyWatched
+                      ? "Переглянуто"
+                      : `${computed.lastPercentDisplay}%`}
+                  </div>
+                </div>
+              )}
 
-              <button
-                className="mh-icon-btn tv-focusable"
-                type="button"
-                tabIndex={0}
-                onClick={() => {
-                  const url = window.location.href;
-                  if (navigator.share) {
-                    navigator.share({ title: movieDetails?.title || "", url });
-                  } else {
-                    navigator.clipboard?.writeText(url);
-                  }
-                }}
-                title="Поділитися"
-                aria-label="Поділитися"
-              >
-                <Share2 size={22} strokeWidth={2} />
-              </button>
-
-              <button
-                className={`mh-icon-btn tv-focusable${!playerOnline ? " is-disabled" : ""}`}
-                type="button"
-                tabIndex={0}
-                onClick={playerOnline ? onCastClick : undefined}
-                title={playerOnline ? "Відправити на Nestify Player" : "Nestify Player офлайн"}
-                aria-label="Відправити на Nestify Player"
-              >
-                <CastIcon style={{ width: 22, height: 22 }} />
-              </button>
-            </div>
-
-            <div className="mh-actions">
-              <div className="mh-play-group">
+              <div className="mh-btn-row">
+              <div className="mh-actions">
                 <button
-                  className="mh-play tv-focusable"
+                  className="mh-play"
                   type="button"
                   tabIndex={0}
                   onClick={onMainPlayClick}
@@ -276,9 +204,71 @@ export default function MovieHeader({
                 >
                   <Play fill="black" /> Дивитися
                 </button>
-
               </div>
+              <div className="mh-icon-actions">
+                <button
+                  className={`mh-icon-btn${isLiked ? " is-active" : ""}`}
+                  type="button"
+                  tabIndex={0}
+                  onClick={onToggleLike}
+                  disabled={likePending}
+                  title={isLiked ? "Видалити зі списку" : "Додати до списку"}
+                  aria-label={isLiked ? "Видалити зі списку" : "Додати до списку"}
+                >
+                  {isLiked ? <Check size={22} strokeWidth={2.5} /> : <Plus size={22} strokeWidth={2.5} />}
+                </button>
+
+                <button
+                  className="mh-icon-btn"
+                  type="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    const url = window.location.href;
+                    if (navigator.share) {
+                      navigator.share({ title: movieDetails?.title || "", url });
+                    } else {
+                      navigator.clipboard?.writeText(url);
+                    }
+                  }}
+                  title="Поділитися"
+                  aria-label="Поділитися"
+                >
+                  <Share2 size={22} strokeWidth={2} />
+                </button>
+
+                <button
+                  className={`mh-icon-btn${!playerOnline ? " is-disabled" : ""}`}
+                  type="button"
+                  tabIndex={0}
+                  onClick={playerOnline ? onCastClick : undefined}
+                  title={playerOnline ? "Відправити на Nestify Player" : "Nestify Player офлайн"}
+                  aria-label="Відправити на Nestify Player"
+                >
+                  <CastIcon style={{ width: 22, height: 22 }} />
+                </button>
+              </div>
+
+              </div>{/* end mh-btn-row */}
             </div>
+
+            {/* RIGHT column — desktop only */}
+            {(castNames.length > 0 || directorNames.length > 0) && (
+              <div className="mh-right">
+                {castNames.length > 0 && (
+                  <div className="mh-crew-row">
+                    <span className="mh-crew-label">Виконавці:</span>
+                    <span className="mh-crew-value">{castNames.join(", ")}</span>
+                  </div>
+                )}
+                {directorNames.length > 0 && (
+                  <div className="mh-crew-row">
+                    <span className="mh-crew-label">Режисер:</span>
+                    <span className="mh-crew-value">{directorNames.join(", ")}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       </section>

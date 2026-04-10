@@ -206,12 +206,8 @@
 
 /* Bottom save */
 .ep-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  background: #0d0d0d;
+  margin-top: auto;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
 }
 
 .ep-save {

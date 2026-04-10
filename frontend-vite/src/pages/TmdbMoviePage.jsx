@@ -254,7 +254,6 @@ export default function TmdbMoviePage() {
   const [seasonLoading, setSeasonLoading] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
   const [collectionItems, setCollectionItems] = useState([]);
-  const [reactions, setReactions] = useState([]);
   const [activeVideo, setActiveVideo] = useState(null);
   const [titleEnglish, setTitleEnglish] = useState(null);
   const [titlePolish, setTitlePolish] = useState(null);
@@ -333,12 +332,6 @@ export default function TmdbMoviePage() {
       )
       .catch(() => {});
 
-    // Реакції з cub.rip
-    const cubType = mediaType === "tv" ? "tv" : "movie";
-    fetch(`https://cub.rip/api/reactions/get/${cubType}_${tmdbId}`)
-      .then((r) => r.json())
-      .then((d) => setReactions(d.result || []))
-      .catch(() => {});
   }, [tmdbId, mediaType]);
 
   useEffect(() => {
@@ -524,7 +517,6 @@ export default function TmdbMoviePage() {
               <MovieHeader
                 movieDetails={movieDetails}
                 tagline={rawDetails?.tagline || ""}
-                reactions={reactions}
                 playerOnline={playerOnline}
                 isLiked={isLiked}
                 likePending={likePending}

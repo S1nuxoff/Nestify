@@ -55,7 +55,6 @@ export default function EditProfilePage() {
   const [profile, setProfile] = useState(null);
   const [name, setName] = useState("");
   const [isKids, setIsKids] = useState(false);
-  const [defaultLang, setDefaultLang] = useState("best");
   const [avatars, setAvatars] = useState([]);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -73,7 +72,6 @@ export default function EditProfilePage() {
         setProfile(found);
         setName(found.name || "");
         setIsKids(found.is_kids || false);
-        setDefaultLang(found.default_lang || "best");
       }
     }).catch(() => {});
 
@@ -100,7 +98,6 @@ export default function EditProfilePage() {
         name: name.trim(),
         avatar_url: selectedAvatar?.local_url || null,
         is_kids: isKids,
-        default_lang: defaultLang,
       });
       // Update session if this is the current profile
       const current = getCurrentProfile();
@@ -146,7 +143,6 @@ export default function EditProfilePage() {
         name: name.trim() || profile?.name,
         avatar_url: av.local_url,
         is_kids: isKids,
-        default_lang: defaultLang,
       });
       const current = getCurrentProfile();
       if (current && String(current.id) === String(id)) {
@@ -211,29 +207,7 @@ export default function EditProfilePage() {
           />
         </div>
 
-        <div className="ep-field-group">
-          <label className="ep-field-label">Default torrent language</label>
-          <div className="ep-lang-picker">
-            {[
-              { value: "best", label: "⚡ Best" },
-              { value: "uk",   label: "🇺🇦 Ukrainian" },
-              { value: "ru",   label: "🇷🇺 Russian" },
-              { value: "en",   label: "🇬🇧 English" },
-              { value: "pl",   label: "🇵🇱 Polish" },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                className={`ep-lang-btn${defaultLang === value ? " ep-lang-btn--on" : ""}`}
-                onClick={() => setDefaultLang(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ep-toggle-row">
+<div className="ep-toggle-row">
           <span className="ep-toggle-label">Kids profile</span>
           <button
             className={`ep-toggle${isKids ? " ep-toggle--on" : ""}`}
@@ -260,7 +234,7 @@ export default function EditProfilePage() {
           disabled={!name.trim() || saving}
           onClick={handleSave}
         >
-          {saving ? "Збереження…" : "Save changes"}
+          {saving ? "Збереження…" : "Зберегти"}
         </button>
       </div>
     </div>

@@ -60,7 +60,7 @@ function EpisodeSelector({
 
   return (
     <div
-      className={containerClass + " tv-focusable"}
+      className={containerClass + ""}
       onClick={() => onSelect?.(episde_id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

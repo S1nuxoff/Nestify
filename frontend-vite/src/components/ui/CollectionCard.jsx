@@ -32,7 +32,7 @@ function CollectionCardInner(props) {
 
   return (
     <div
-      className="collection-card tv-focusable"
+      className="collection-card"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}

@@ -40,10 +40,8 @@ import AccountPage from "./pages/AccountPage";
 import AccountDevicesPage from "./pages/AccountDevicesPage";
 import AccountAboutPage from "./pages/AccountAboutPage";
 import "./styles/App.css";
-import "./styles/tv.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import { useTVKeyboard } from "./hooks/useTVKeyboard";
 import {
   getCurrentProfile,
   hasAccountSession,
@@ -90,8 +88,6 @@ function App() {
   const location = useLocation();
   const currentUser = getCurrentProfile();
 
-  // Activate D-pad / TV remote spatial navigation
-  useTVKeyboard();
 
   // Detect TV remote usage: hide cursor and add tv-mode class
   useEffect(() => {
@@ -420,9 +416,9 @@ function App() {
           </Routes>
         </AnimatePresence>
 
-        {/* Person sheet overlay — rendered on top, background page stays mounted */}
+        {/* Person sheet overlay — mobile only (desktop uses regular route scroll) */}
         <AnimatePresence>
-          {location.pathname.startsWith("/person/") && (
+          {location.pathname.startsWith("/person/") && window.innerWidth <= 860 && (
             <SheetTransition key={location.pathname}>
               <TmdbPersonPage />
             </SheetTransition>

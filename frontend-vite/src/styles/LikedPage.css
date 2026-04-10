@@ -217,3 +217,52 @@
   text-align: center;
   padding: 60px 0;
 }
+
+/* ── Desktop ── */
+
+@media (min-width: 861px) {
+  .lib-root {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 40px 60px;
+  }
+
+  .lib-title {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .lib-tabs {
+    width: 100%;
+    margin-bottom: 36px;
+  }
+
+  /* genres: horizontal slider */
+  .lib-genre-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin: 0 -40px;
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  .lib-genre-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lib-genre-grid .sp-genre-tile {
+    flex: 0 0 200px;
+    width: 200px;
+    height: 120px;
+  }
+
+  /* favorites grid: more columns */
+  .sp-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px 12px;
+  }
+}

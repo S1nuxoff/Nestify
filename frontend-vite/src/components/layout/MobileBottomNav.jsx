@@ -1,7 +1,7 @@
 // src/components/layout/MobileBottomNav.jsx
-import React, { useMemo, useCallback, useEffect } from "react";
+import React, { useMemo, useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Search, Bookmark, User, Play, Pause, Square } from "lucide-react";
+import { Home, Search, Bookmark, User, Play, Pause, Square, X } from "lucide-react";
 import usePlayerStatus from "../../hooks/usePlayerStatus";
 import nestifyPlayerClient from "../../api/ws/nestifyPlayerClient";
 import { toRezkaSlug } from "../../core/rezkaLink";
@@ -40,6 +40,7 @@ const formatTime = (sec) => {
     : `${m}:${String(s).padStart(2, "0")}`;
 };
 
+// ── Mobile mini player bar (above mobile nav) ──
 function MiniPlayerBar() {
   const { status } = usePlayerStatus();
   const navigate = useNavigate();
@@ -69,28 +70,17 @@ function MiniPlayerBar() {
     return () => document.body.classList.remove("has-mini-player");
   }, [isActive]);
 
-  const handlePlayPause = useCallback((e) => {
-    e.stopPropagation();
-    nestifyPlayerClient.playPause();
-  }, []);
-
-  const handleStop = useCallback((e) => {
-    e.stopPropagation();
-    nestifyPlayerClient.stop();
-  }, []);
-
-  const handleClick = useCallback(() => {
-    if (currentSlug) navigate(`/movie/${currentSlug}`);
-  }, [currentSlug, navigate]);
-
-  if (!isActive) return null;
+  const handlePlayPause = useCallback((e) => { e.stopPropagation(); nestifyPlayerClient.playPause(); }, []);
+  const handleStop = useCallback((e) => { e.stopPropagation(); nestifyPlayerClient.stop(); }, []);
+  const handleClick = useCallback(() => { if (currentSlug) navigate(`/movie/${currentSlug}`); }, [currentSlug, navigate]);
 
   const title = status?.title || "Без назви";
   const image = status?.image;
 
+  if (!isActive) return null;
+
   return (
     <div className="mbn-mini-player" onClick={handleClick} role="button" tabIndex={0}>
-      {/* Ring + poster */}
       <div className="mbn-mini-ring">
         <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`} style={{ transform: "rotate(-90deg)", position: "absolute", inset: 0 }}>
           <circle cx={RING/2} cy={RING/2} r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.2" />
@@ -100,24 +90,102 @@ function MiniPlayerBar() {
         </svg>
         <div className="mbn-mini-thumb" style={image ? { backgroundImage: `url(${image})` } : undefined} />
       </div>
-
-      {/* Text */}
       <div className="mbn-mini-content">
         <span className="mbn-mini-title">{title}</span>
         {durationSec > 0 && (
-          <span className="mbn-mini-time">{formatTime(currentSec)} / {formatTime(durationSec)}</span>
+          <span className="mbn-mini-time">{`${formatTime(currentSec)} / ${formatTime(durationSec)}`}</span>
         )}
       </div>
-
-      {/* Controls */}
-      <button className="mbn-mini-btn" onClick={handlePlayPause} type="button" aria-label={isPlaying ? "Pause" : "Play"}>
-        {isPlaying
-          ? <Pause size={20} fill="currentColor" strokeWidth={0} />
-          : <Play size={20} fill="currentColor" strokeWidth={0} />}
+      <button className="mbn-mini-btn" onClick={handlePlayPause} type="button">
+        {isPlaying ? <Pause size={20} fill="currentColor" strokeWidth={0} /> : <Play size={20} fill="currentColor" strokeWidth={0} />}
       </button>
-      <button className="mbn-mini-btn mbn-mini-btn--stop" onClick={handleStop} type="button" aria-label="Stop">
+      <button className="mbn-mini-btn mbn-mini-btn--stop" onClick={handleStop} type="button">
         <Square size={16} fill="currentColor" strokeWidth={0} />
       </button>
+    </div>
+  );
+}
+
+const DRING = 60;
+const DR = DRING / 2 - 8;
+const DC = 2 * Math.PI * DR;
+
+// ── Desktop mini player circle that expands on click ──
+function DesktopMiniPlayer({ navHidden, setNavHidden }) {
+  const { status } = usePlayerStatus();
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+
+  const state = status?.state || (status?.is_playing ? "playing" : "paused");
+  const isActive = !!(status && (status.link || status.title) && state !== "stopped" && state !== "idle");
+  const isPlaying = !!(status && (status.is_playing || state === "playing"));
+
+  const currentSec = Math.floor((status?.position_ms || 0) / 1000);
+  const durationSec = Math.max(0, Math.floor((status?.duration_ms || 0) / 1000));
+
+  const progressPercent = useMemo(() => {
+    if (!durationSec) return 0;
+    return Math.min(100, (currentSec / durationSec) * 100);
+  }, [currentSec, durationSec]);
+
+  const dashOffset = DC * (1 - progressPercent / 100);
+
+  const currentSlug = useMemo(() => {
+    if (!status?.link) return null;
+    try { return toRezkaSlug(status.link); } catch { return null; }
+  }, [status?.link]);
+
+  const handleToggle = useCallback(() => {
+    setExpanded((v) => {
+      setNavHidden(!v);
+      return !v;
+    });
+  }, [setNavHidden]);
+
+  const handlePlayPause = useCallback((e) => { e.stopPropagation(); nestifyPlayerClient.playPause(); }, []);
+  const handleStop = useCallback((e) => {
+    e.stopPropagation();
+    nestifyPlayerClient.stop();
+    setExpanded(false);
+    setNavHidden(false);
+  }, [setNavHidden]);
+
+  const title = status?.title || "Без назви";
+  const image = status?.image;
+
+  if (!isActive) return null;
+
+  return (
+    <div
+      className={`mbn-dmp${expanded ? " mbn-dmp--expanded" : ""}`}
+      onClick={!expanded ? handleToggle : undefined}
+    >
+      {/* Ring */}
+      <div className="mbn-dmp__ring" onClick={expanded ? handleToggle : undefined} style={{ cursor: "pointer" }}>
+        <svg width={DRING} height={DRING} viewBox={`0 0 ${DRING} ${DRING}`} style={{ transform: "rotate(-90deg)", position: "absolute", inset: 0 }}>
+          <circle cx={DRING/2} cy={DRING/2} r={DR} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.5" />
+          <circle cx={DRING/2} cy={DRING/2} r={DR} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5"
+            strokeLinecap="round" strokeDasharray={DC} strokeDashoffset={dashOffset}
+            style={{ transition: "stroke-dashoffset 300ms ease" }} />
+        </svg>
+        <div className="mbn-dmp__thumb" style={image ? { backgroundImage: `url(${image})` } : undefined} />
+      </div>
+
+      {/* Expanded content */}
+      <div className="mbn-dmp__body">
+        <div className="mbn-dmp__info">
+          <span className="mbn-dmp__title">{title}</span>
+          <span className="mbn-dmp__time">
+            {PREVIEW ? "1:12:34 / 2:28:01" : (durationSec > 0 ? `${formatTime(currentSec)} / ${formatTime(durationSec)}` : "")}
+          </span>
+        </div>
+        <button className="mbn-dmp__btn" onClick={handlePlayPause} type="button">
+          {(PREVIEW || isPlaying) ? <Pause size={20} fill="currentColor" strokeWidth={0} /> : <Play size={20} fill="currentColor" strokeWidth={0} />}
+        </button>
+        <button className="mbn-dmp__btn mbn-dmp__btn--stop" onClick={handleStop} type="button">
+          <Square size={16} fill="currentColor" strokeWidth={0} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -125,6 +193,7 @@ function MiniPlayerBar() {
 export default function MobileBottomNav({ currentAvatar }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [navHidden, setNavHidden] = useState(false);
 
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
@@ -138,30 +207,37 @@ export default function MobileBottomNav({ currentAvatar }) {
   ];
 
   return (
-    <div className="mobile-bottom-nav-wrap">
-      <MiniPlayerBar />
-      <nav className="mobile-bottom-nav">
-        {tabs.map(({ path, label }) => {
-          const active = isActive(path);
-          const Icon = active ? FILLED[path] : OUTLINE[path];
-          return (
-            <button key={path} type="button"
-              className={`mbn-tab${active ? " mbn-tab--active" : ""}`}
-              onClick={() => navigate(path)} aria-label={label}>
-              <Icon size={26} {...(!active && { strokeWidth: 1.6 })} />
-              <span className="mbn-tab__label">{label}</span>
-            </button>
-          );
-        })}
-        <button type="button"
-          className={`mbn-tab mbn-tab--avatar${isActive("/account") ? " mbn-tab--active" : ""}`}
-          onClick={() => navigate("/account")} aria-label="Профіль">
-          {currentAvatar
-            ? <img src={currentAvatar} alt="" className="mbn-avatar-img" />
-            : <div className="mbn-avatar-placeholder"><User size={24} strokeWidth={1.8} /></div>}
-          <span className="mbn-tab__label">Профіль</span>
-        </button>
-      </nav>
+    <div className="mbn-dock">
+      {/* Desktop only circle player */}
+      <DesktopMiniPlayer navHidden={navHidden} setNavHidden={setNavHidden} />
+
+      {/* Nav capsule */}
+      <div className={`mobile-bottom-nav-wrap${navHidden ? " mbn-nav--hidden" : ""}`}>
+        {/* Mobile mini player bar */}
+        <MiniPlayerBar />
+        <nav className="mobile-bottom-nav">
+          {tabs.map(({ path, label }) => {
+            const active = isActive(path);
+            const Icon = active ? FILLED[path] : OUTLINE[path];
+            return (
+              <button key={path} type="button"
+                className={`mbn-tab${active ? " mbn-tab--active" : ""}`}
+                onClick={() => navigate(path)} aria-label={label}>
+                <Icon size={26} {...(!active && { strokeWidth: 1.6 })} />
+                <span className="mbn-tab__label">{label}</span>
+              </button>
+            );
+          })}
+          <button type="button"
+            className={`mbn-tab mbn-tab--avatar${isActive("/account") ? " mbn-tab--active" : ""}`}
+            onClick={() => navigate("/account")} aria-label="Профіль">
+            {currentAvatar
+              ? <img src={currentAvatar} alt="" className="mbn-avatar-img" />
+              : <div className="mbn-avatar-placeholder"><User size={24} strokeWidth={1.8} /></div>}
+            <span className="mbn-tab__label">Профіль</span>
+          </button>
+        </nav>
+      </div>
     </div>
   );
 }

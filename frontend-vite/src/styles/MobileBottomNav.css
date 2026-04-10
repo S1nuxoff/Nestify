@@ -4,6 +4,16 @@ body.torrent-modal-open .mbn-mini-player {
   display: none !important;
 }
 
+/* Mobile: dock is transparent passthrough */
+.mbn-dock {
+  display: contents;
+}
+
+/* Desktop mini player hidden on mobile */
+.mbn-dmp {
+  display: none;
+}
+
 .mobile-bottom-nav-wrap {
   position: fixed;
   bottom: 0;
@@ -159,6 +169,188 @@ body.torrent-modal-open .mbn-mini-player {
 .mbn-tab--active .mbn-avatar-placeholder {
   border-color: #fff;
   color: #fff;
+}
+
+/* ── Desktop: floating dock ── */
+
+@media (min-width: 861px) {
+  /* Dock: fixed center bottom, relative for absolute child */
+  .mbn-dock {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000000;
+  }
+
+
+  /* Nav capsule: static inside dock */
+  .mobile-bottom-nav-wrap {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+    width: auto;
+    background: rgba(18, 18, 20, 0.82);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+
+  /* Nav hidden but keeps its space so dock width stays stable */
+  .mbn-nav--hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Hide mobile mini player bar on desktop */
+  .mbn-mini-player {
+    display: none;
+  }
+
+  .mobile-bottom-nav {
+    border-top: none;
+    gap: 4px;
+    padding: 8px 12px;
+    height: 60px;
+  }
+
+  .mbn-tab {
+    padding: 0 16px;
+    height: 44px;
+    border-radius: 999px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .mbn-tab--active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mbn-tab__label {
+    font-size: 11px;
+  }
+
+  /* ── Desktop mini player circle ── */
+
+  .mbn-dmp {
+    display: flex;
+    align-items: center;
+    height: 60px;
+    width: 60px;
+    border-radius: 999px;
+    justify-content: flex-start;
+    background: rgba(18, 18, 20, 0.82);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    overflow: hidden;
+    transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+                height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+                border-radius 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .mbn-dmp--expanded {
+    /* stretch to fill the dock exactly where the nav sits */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 999px;
+    cursor: default;
+  }
+
+  .mbn-dmp__ring {
+    width: 60px;
+    height: 60px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mbn-dmp__thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08) center/cover no-repeat;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* expanded body — hidden when collapsed */
+  .mbn-dmp__body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 10px;
+    min-width: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease 0.1s;
+    pointer-events: none;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .mbn-dmp--expanded .mbn-dmp__body {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mbn-dmp__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mbn-dmp__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mbn-dmp__time {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mbn-dmp__btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+  }
+
+  .mbn-dmp__btn--stop {
+    color: rgba(255, 255, 255, 0.4);
+  }
 }
 
 /* ── Category tabs (home page) ── */

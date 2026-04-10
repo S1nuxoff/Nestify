@@ -36,7 +36,7 @@ function MediaCardInner({ movie, onMovieSelect, type }) {
   return (
     <div
       className={
-        "video-card-container tv-focusable" +
+        "video-card-container" +
         (type === "explorer-card" ? " video-card-container-explorer" : "")
       }
       onClick={handleClick}

@@ -121,34 +121,5 @@ export default function Header({
     return () => window.removeEventListener("scroll", onScroll);
   }, [isMobile]);
 
-  if (isMobile) {
-    return null;
-  }
-
-  return (
-    <header className="header-desktop">
-      <div className="desktop-header-container">
-        <a className="header-logo-wrapper" href="/" aria-label="Home">
-          <Logo className="header-logo" />
-        </a>
-
-        {showMenu && <HeaderMenu categories={categories} />}
-
-        <div className="header-right">
-          <SearchButton onSearch={onSearch} onMovieSelect={onMovieSelect} />
-
-          <UserAvatarMenu
-            isMobile={isMobile}
-            currentUser={currentUser}
-            currentAvatar={currentAvatar}
-            users={sortedUsers}
-            backendUrl={config.backend_url}
-            onSwitchUser={handleUserSwitch}
-            onLogout={handleLogout}
-            onOpenSettings={() => navigate("/settings")}
-          />
-        </div>
-      </div>
-    </header>
-  );
+  return null;
 }

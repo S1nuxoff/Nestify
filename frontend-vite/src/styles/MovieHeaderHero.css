@@ -268,18 +268,17 @@
 /* ===== actions ===== */
 
 .mh-actions {
-  width: 100%;
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-top: 14px;
+  margin-top: 4px;
 }
 
 /* HBO play */
 .mh-play {
-  width: 100%;
-  max-width: 320px;
-  height: 54px;
+  width: auto;
+  height: 58px;
+  padding: 0 72px;
   border-radius: 14px;
   background: #ffff;
   color: #000;
@@ -512,6 +511,164 @@
 /* Mobile-only description — hidden on desktop */
 .mh-desc-mobile { display: none; }
 
+/* ===== desktop ===== */
+@media (min-width: 901px) {
+  .mh-hero {
+    height: 100vh;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .mh-content {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0 40px;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  .mh-bottom {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 80px;
+    gap: 40px;
+  }
+
+  .mh-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 520px;
+  }
+
+  .mh-titles {
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  .mh-title-logo {
+    max-width: 260px;
+    max-height: 90px;
+  }
+
+  .mh-title {
+    font-size: 42px;
+  }
+
+  /* hide origin title under logo on desktop */
+  .mh-origin--under-logo {
+    display: none !important;
+  }
+
+  /* genres */
+  .mh-genres {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mh-genre {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 500;
+  }
+
+  .mh-genre-dot {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 13px;
+  }
+
+  /* description 2-line clamp */
+  .mh-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.55);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .mh-meta {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .mh-meta-item {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+  }
+
+  .mh-meta-item + .mh-meta-item::before {
+    content: "·";
+    margin-right: 6px;
+    opacity: 0.4;
+  }
+
+  /* desktop: icon-actions + play in one row */
+  .mh-btn-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .mh-icon-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mh-actions {
+    display: flex;
+    margin-top: 0;
+  }
+
+  .mh-play {
+    border-radius: 999px;
+  }
+
+  /* RIGHT — crew info */
+  .mh-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    max-width: 240px;
+    text-align: right;
+    align-self: flex-end;
+  }
+
+  .mh-crew-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mh-crew-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mh-crew-value {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+  }
+}
+
 /* ===== tablet ===== */
 @media (max-width: 900px) {
   .mh-content { width: 100%; align-items: flex-start; }
@@ -521,6 +678,16 @@
   .mh-desc { max-width: 100%; text-align: left; -webkit-line-clamp: 2; }
   .mh-actions { justify-content: flex-start; }
   .mh-play { max-width: 100%; }
+
+  .mh-genres,
+  .mh-description,
+  .mh-right {
+    display: none;
+  }
+
+  .mh-left {
+    display: contents;
+  }
 }
 
 /* ===== mobile ===== */
@@ -625,7 +792,14 @@
     opacity: 0.4;
   }
 
-  /* Icon actions — відступ знизу 16 */
+  /* Icon actions — in hero flow */
+  .mh-btn-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
   .mh-icon-actions {
     justify-content: center;
     gap: 12px;
@@ -641,15 +815,25 @@
     margin-bottom: 12px;
   }
 
-  /* Actions: fixed at bottom, only play buttons */
+  /* Play button: fixed at bottom, full width */
   .mh-actions {
     position: fixed;
-    bottom: 0;
     left: 0;
     right: 0;
     z-index: 50;
-    padding: 16px 16px max(20px, env(safe-area-inset-bottom));
+    padding: 12px 16px max(16px, env(safe-area-inset-bottom));
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mh-actions .mh-play {
+    flex: 1;
+    width: 100%;
+    max-width: none;
+    border-radius: 50px;
+    height: 52px;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 0;
   }
 
   body.has-mini-player .mh-actions {
@@ -661,23 +845,6 @@
     gap: 10px;
   }
 
-  .mh-play-group {
-    max-width: none;
-    flex: 1;
-    gap: 8px;
-  }
-  .mh-play {
-    max-width: none;
-    border-radius: 50px;
-    height: 52px;
-    font-size: 16px;
-    font-weight: 800;
-  }
-  .mh-play.mh-play--secondary {
-    padding: 0 14px;
-    font-size: 14px;
-    height: 52px;
-  }
 }
 
 @media (max-width: 420px) {

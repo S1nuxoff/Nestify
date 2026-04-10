@@ -40,7 +40,7 @@ const MoviePlayDialog = ({
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => {
-      const first = dialogRef.current?.querySelector('.tv-focusable');
+      const first = dialogRef.current?.querySelector('.');
       if (first) first.focus({ preventScroll: true });
     }, 80);
     return () => clearTimeout(timer);
@@ -93,7 +93,7 @@ const MoviePlayDialog = ({
           </div>
 
           <button
-            className="movie-page__play-dialog-x movie-page__play-dialog-x--pretty tv-focusable"
+            className="movie-page__play-dialog-x movie-page__play-dialog-x--pretty"
             type="button"
             tabIndex={0}
             onClick={onClose}
@@ -128,7 +128,7 @@ const MoviePlayDialog = ({
               type="button"
               tabIndex={0}
               className={
-                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty tv-focusable" +
+                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty" +
                 (playMode === "browser"
                   ? " movie-page__play-dialog-mode-btn--active"
                   : "")
@@ -144,7 +144,7 @@ const MoviePlayDialog = ({
               type="button"
               tabIndex={0}
               className={
-                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty tv-focusable" +
+                "movie-page__play-dialog-mode-btn movie-page__play-dialog-mode-btn--pretty" +
                 (playMode === "tv"
                   ? " movie-page__play-dialog-mode-btn--active"
                   : "") +
@@ -180,7 +180,7 @@ const MoviePlayDialog = ({
             <button
               key={translator.id}
               className={
-                "movie-page__play-dialog-voice-btn tv-focusable" +
+                "movie-page__play-dialog-voice-btn" +
                 (selectedTranslatorId === translator.id
                   ? " movie-page__play-dialog-voice-btn--selected"
                   : "")
