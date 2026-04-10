@@ -26,7 +26,7 @@ body.torrent-modal-open .mini-player-wrapper {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 12px;
+  bottom: 19px;
   z-index: 9999998;
   pointer-events: auto;
 }
