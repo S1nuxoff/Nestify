@@ -21,7 +21,9 @@ import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 import Alert from "../components/ui/Alert";
 
 import { fromRezkaSlug } from "../core/rezkaLink";
+import { getCurrentProfile } from "../core/session";
 import config from "../core/config";
+import { useTvDevice } from "../hooks/useTvDevice";
 
 import MovieHeader from "../components/movie/MovieHeader";
 import MovieEpisodes from "../components/movie/MovieEpisodes";
@@ -51,10 +53,6 @@ const MoviePage = () => {
   }
 
   const [categories, setCategories] = useState([]);
-  const [playerOnline, setPlayerOnline] = useState(
-    nestifyPlayerClient.isConnected
-  );
-
   const [selectedTranslatorId, setSelectedTranslatorId] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [selectedEpisode, setSelectedEpisode] = useState(null);
@@ -73,6 +71,8 @@ const MoviePage = () => {
   const { playMovieSource } = useMovieSource();
   const { movieDetails, loading } = useMovieDetails(fullMovieLink);
   const { status: playerStatus } = usePlayerStatus();
+  const { device: tvDevice } = useTvDevice();
+  const playerOnline = !!tvDevice;
 
   // Категории для Header
   useEffect(() => {
@@ -86,12 +86,49 @@ const MoviePage = () => {
     })();
   }, []);
 
-  // Статус Nestify Player
-  useEffect(() => {
-    const handler = (status) => setPlayerOnline(status);
-    nestifyPlayerClient.on("connected", handler);
-    return () => nestifyPlayerClient.off("connected", handler);
-  }, []);
+  const ensureTvConnected = async () => {
+    if (!tvDevice) return false;
+
+    const profile = getCurrentProfile();
+    nestifyPlayerClient.setProfileName(profile?.name || "");
+    nestifyPlayerClient.setAvatarUrl(
+      profile?.avatar_url ? `${config.backend_url}${profile.avatar_url}` : ""
+    );
+    nestifyPlayerClient.setUserId(profile?.id || "");
+
+    if (nestifyPlayerClient.deviceId !== tvDevice.device_id) {
+      nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    }
+
+    if (nestifyPlayerClient.isConnected) {
+      return true;
+    }
+
+    return await new Promise((resolve) => {
+      let settled = false;
+
+      const cleanup = () => {
+        nestifyPlayerClient.off("connected", onConnected);
+        clearTimeout(timer);
+      };
+
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(result);
+      };
+
+      const onConnected = (connected) => {
+        if (connected) finish(true);
+      };
+
+      const timer = setTimeout(() => finish(false), 4000);
+
+      nestifyPlayerClient.on("connected", onConnected);
+      nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    });
+  };
 
   // Пресет сезона / эпизода из last_watch, если есть
   useEffect(() => {
@@ -284,6 +321,16 @@ const MoviePage = () => {
       return;
     }
 
+    const profile = getCurrentProfile();
+    if (tvDevice?.device_id) {
+      nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    }
+    nestifyPlayerClient.setProfileName(profile?.name || "");
+    nestifyPlayerClient.setAvatarUrl(
+      profile?.avatar_url ? `${config.backend_url}${profile.avatar_url}` : ""
+    );
+    nestifyPlayerClient.setUserId(profile?.id || "");
+
     if (!translatorId) {
       setValidationMessage("Будь ласка, виберіть озвучку");
       return;
@@ -475,7 +522,7 @@ const MoviePage = () => {
 
   // умный Cast
   const handleCastClick = async () => {
-    if (!playerOnline || !movieDetails) return;
+    if (!tvDevice || !movieDetails) return;
 
     const last = movieDetails.last_watch || null;
 
@@ -588,7 +635,7 @@ const MoviePage = () => {
                 likePending={likePending}
                 onToggleLike={toggleLike}
                 onMainPlayClick={handleMainPlayClick}
-                onCastClick={handleCastClick}
+                onCastClick={tvDevice ? handleCastClick : null}
               />
 
               <div className="container">

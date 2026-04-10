@@ -14,22 +14,51 @@ def _proxy_stream_url(fname: str, hash_: str, file_id: int, transcode: bool = Tr
 VIDEO_EXT = {".mkv", ".mp4", ".avi", ".mov", ".ts", ".m2ts", ".wmv", ".flv", ".webm"}
 
 
+def _torrserve_error(detail: str, status_code: int = 502) -> HTTPException:
+    return HTTPException(status_code, detail)
+
+
+async def _post_torrserve(
+    client: httpx.AsyncClient,
+    path: str,
+    payload: dict,
+    *,
+    timeout_message: str,
+) -> httpx.Response:
+    url = f"{settings.TORRSERVE_URL}{path}"
+    try:
+        response = await client.post(url, json=payload)
+    except httpx.ReadTimeout as exc:
+        raise _torrserve_error(timeout_message) from exc
+    except httpx.TimeoutException as exc:
+        raise _torrserve_error("TorrServe timed out") from exc
+    except httpx.HTTPError as exc:
+        raise _torrserve_error(f"TorrServe request failed: {exc}") from exc
+
+    if response.status_code != 200:
+        raise _torrserve_error(
+            f"TorrServe error: {response.status_code} {response.text}".strip()
+        )
+
+    return response
+
+
 async def add_torrent(magnet: str, title: str = "", poster: str = "") -> dict:
     """Add magnet to TorrServe, wait for files, return hash + stream urls."""
     async with httpx.AsyncClient(timeout=90) as client:
-        res = await client.post(
-            f"{settings.TORRSERVE_URL}/torrents",
-            json={
-                "action":      "add",
-                "link":        magnet,
-                "title":       title,
-                "poster":      poster,
-                "data":        "",
-                "save_to_db":  False,  # не зберігати в БД — автоматично прибирається
+        res = await _post_torrserve(
+            client,
+            "/torrents",
+            {
+                "action": "add",
+                "link": magnet,
+                "title": title,
+                "poster": poster,
+                "data": "",
+                "save_to_db": False,
             },
+            timeout_message="TorrServe did not respond while adding torrent",
         )
-        if res.status_code != 200:
-            raise HTTPException(502, f"TorrServe add error: {res.status_code} {res.text}")
 
         data = res.json()
         hash_ = data.get("hash")
@@ -38,9 +67,11 @@ async def add_torrent(magnet: str, title: str = "", poster: str = "") -> dict:
 
         files = []
         for _ in range(20):
-            r = await client.post(
-                f"{settings.TORRSERVE_URL}/torrents",
-                json={"action": "get", "hash": hash_},
+            r = await _post_torrserve(
+                client,
+                "/torrents",
+                {"action": "get", "hash": hash_},
+                timeout_message="TorrServe did not respond while reading torrent files",
             )
             info = r.json()
             files = info.get("file_stats") or info.get("files") or []
@@ -56,12 +87,12 @@ async def add_torrent(magnet: str, title: str = "", poster: str = "") -> dict:
 
 async def get_torrent_status(hash_: str) -> dict:
     async with httpx.AsyncClient(timeout=15) as client:
-        res = await client.post(
-            f"{settings.TORRSERVE_URL}/torrents",
-            json={"action": "get", "hash": hash_},
+        res = await _post_torrserve(
+            client,
+            "/torrents",
+            {"action": "get", "hash": hash_},
+            timeout_message="TorrServe did not respond while reading torrent status",
         )
-        if res.status_code != 200:
-            raise HTTPException(502, f"TorrServe error: {res.status_code}")
 
         info = res.json()
         files = info.get("file_stats") or info.get("files") or []
@@ -82,12 +113,12 @@ async def get_torrent_status(hash_: str) -> dict:
 
 async def remove_torrent(hash_: str) -> None:
     async with httpx.AsyncClient(timeout=15) as client:
-        res = await client.post(
-            f"{settings.TORRSERVE_URL}/torrents",
-            json={"action": "rem", "hash": hash_},
+        await _post_torrserve(
+            client,
+            "/torrents",
+            {"action": "rem", "hash": hash_},
+            timeout_message="TorrServe did not respond while removing torrent",
         )
-        if res.status_code != 200:
-            raise HTTPException(502, f"TorrServe remove error: {res.status_code}")
 
 
 def _build_stream_files(hash_: str, files: list) -> list[dict]:

@@ -47,10 +47,12 @@ android {
         debug {
             buildConfigField("String", "WS_BASE_URL", "\"ws://192.168.0.178:8000\"")
             buildConfigField("String", "BACKEND_BASE_URL", "\"http://192.168.0.178:8000\"")
+            buildConfigField("String", "FRONTEND_BASE_URL", "\"http://192.168.0.178:5173\"")
         }
         release {
             buildConfigField("String", "WS_BASE_URL", "\"wss://api.opencine.cloud\"")
             buildConfigField("String", "BACKEND_BASE_URL", "\"https://api.opencine.cloud\"")
+            buildConfigField("String", "FRONTEND_BASE_URL", "\"https://opencine.cloud\"")
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
@@ -111,7 +113,5 @@ dependencies {
 // картинки для постерів / аватарок
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("org.java-websocket:Java-WebSocket:1.5.6")
-
-
-
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 }

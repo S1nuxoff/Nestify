@@ -40,6 +40,13 @@ class Settings(BaseSettings):
     REZKA_MIRROR: str = "hdrezka-home.tv"
     REZKA_REPLACE_FROM: str = "rezka.ag,hdrezka.ag,rezka.fi,rezka.me,rezka.uno"
     REZKA_PROXY: str = ""
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # TMDB
+    TMDB_KEY: str = ""
+    TMDB_BASE: str = "https://api.themoviedb.org/3"
+    TMDB_IMG: str = "https://image.tmdb.org/t/p"
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @property

@@ -10,7 +10,7 @@ import java.net.URI
 
 interface PlayerHubListener {
     fun onControllerConnected(profileName: String)
-    fun onControllerConnectedWithAvatar(profileName: String, avatarUrl: String)
+    fun onControllerConnectedWithAvatar(profileName: String, avatarUrl: String, userId: String = "")
     fun onControllerDisconnected()
 }
 
@@ -28,6 +28,8 @@ class PlayerWsClient(
     private val mainHandler = Handler(Looper.getMainLooper())
     private val reconnectDelayMs = 5000L
     private var reconnectScheduled = false
+    @Volatile
+    private var shouldReconnect = true
 
     private val reconnectRunnable = Runnable {
         reconnectScheduled = false
@@ -37,6 +39,7 @@ class PlayerWsClient(
     // ------------- PUBLIC -------------
 
     fun connect() {
+        shouldReconnect = true
         // isConnecting в цій бібліотеці немає, перевіряємо тільки isOpen
         val existing = client
         if (existing != null && existing.isOpen) {
@@ -69,7 +72,9 @@ class PlayerWsClient(
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
                 Log.d(TAG, "WS closed code=$code reason=$reason remote=$remote")
                 client = null
-                scheduleReconnect()
+                if (shouldReconnect) {
+                    scheduleReconnect()
+                }
             }
 
             override fun onError(ex: Exception?) {
@@ -81,6 +86,7 @@ class PlayerWsClient(
     }
 
     fun close() {
+        shouldReconnect = false
         reconnectScheduled = false
         mainHandler.removeCallbacks(reconnectRunnable)
         try {
@@ -266,9 +272,10 @@ class PlayerWsClient(
                 "PlayerHub.ControllerConnected" -> {
                     val profileName = params.optString("profile_name", "")
                     val avatarUrl = params.optString("avatar_url", "")
-                    Log.d(TAG, "ControllerConnected profileName=$profileName avatar=$avatarUrl")
+                    val userId = params.optString("user_id", "")
+                    Log.d(TAG, "ControllerConnected profileName=$profileName avatar=$avatarUrl userId=$userId")
                     mainHandler.post {
-                        hubListener?.onControllerConnectedWithAvatar(profileName, avatarUrl)
+                        hubListener?.onControllerConnectedWithAvatar(profileName, avatarUrl, userId)
                     }
                 }
 
@@ -324,7 +331,7 @@ class PlayerWsClient(
         sendRaw(obj.toString())
     }
 
-    private fun sendRaw(text: String) {
+    fun sendRaw(text: String) {
         val c = client
         if (c == null || !c.isOpen) {
             Log.d(TAG, "skip sendRaw: ws not open")

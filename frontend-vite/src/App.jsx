@@ -39,6 +39,8 @@ import AccountPrefsPage from "./pages/AccountPrefsPage";
 import AccountPage from "./pages/AccountPage";
 import AccountDevicesPage from "./pages/AccountDevicesPage";
 import AccountAboutPage from "./pages/AccountAboutPage";
+import TvLoginPage from "./pages/TvLoginPage";
+import { useTvDevice } from "./hooks/useTvDevice";
 import "./styles/App.css";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
@@ -87,6 +89,7 @@ const SheetTransition = ({ children }) => {
 function App() {
   const location = useLocation();
   const currentUser = getCurrentProfile();
+  const { device: tvDevice } = useTvDevice(5000);
 
 
   // Detect TV remote usage: hide cursor and add tv-mode class
@@ -118,21 +121,29 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // піднімаємо WS до TV-плеєра з kodi_address профілю
     try {
       const profile = getCurrentProfile();
-      const deviceId = profile?.kodi_address;
-      if (deviceId && deviceId.trim()) {
-        nestifyPlayerClient.setProfileName(profile?.name || "");
-        if (profile?.avatar_url) {
-          nestifyPlayerClient.setAvatarUrl(`${config.backend_url}${profile.avatar_url}`);
-        }
-        nestifyPlayerClient.setDeviceId(deviceId.trim());
+      nestifyPlayerClient.setProfileName(profile?.name || "");
+      nestifyPlayerClient.setAvatarUrl(
+        profile?.avatar_url ? `${config.backend_url}${profile.avatar_url}` : ""
+      );
+      nestifyPlayerClient.setUserId(profile?.id || "");
+
+      if (tvDevice?.device_id && (tvDevice.playing || nestifyPlayerClient.shouldHoldConnection())) {
+        nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+      } else {
+        nestifyPlayerClient.disconnect();
       }
     } catch (e) {
-      console.warn("[App] failed to read kodi_address from profile:", e);
+      console.warn("[App] failed to initialize TV device:", e);
     }
-  }, []);
+  }, [
+    tvDevice?.device_id,
+    tvDevice?.playing,
+    currentUser?.id,
+    currentUser?.name,
+    currentUser?.avatar_url,
+  ]);
 
   return (
     <>
@@ -273,6 +284,14 @@ function App() {
             <Route path="/account/devices" element={<AccountDevicesPage />} />
             <Route path="/account/about" element={<AccountAboutPage />} />
             <Route path="/account/prefs" element={<AccountPrefsPage />} />
+            <Route
+              path="/tv-login"
+              element={
+                <PageTransition>
+                  <TvLoginPage />
+                </PageTransition>
+              }
+            />
             <Route
               path="/browse/:categoryTitle"
               element={

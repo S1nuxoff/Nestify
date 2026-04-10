@@ -118,15 +118,15 @@ object ProgressReporter {
         }
 
         try {
-            val url = URL("$BASE_URL/api/v1/rezka/progress")
+            val url = URL("$BASE_URL/api/v3/watch/progress")
             Log.d(
                 TAG,
-                "sending PUT $url userId=$userId movieId=$movieId posMs=${st.positionMs} durMs=${st.durationMs} " +
+                "sending POST $url userId=$userId movieId=$movieId posMs=${st.positionMs} durMs=${st.durationMs} " +
                         "season=${st.season} episode=${st.episode} force=$force"
             )
 
             val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "PUT"
+            conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")
             conn.doOutput = true
             conn.connectTimeout = 5000
@@ -139,6 +139,10 @@ object ProgressReporter {
                 .put("duration", st.durationMs / 1000)
                 .put("season", st.season)
                 .put("episode", st.episode)
+                .put("torrent_hash", st.torrentHash)
+                .put("torrent_file_id", st.torrentFileId)
+                .put("torrent_fname", st.torrentFname)
+                .put("torrent_magnet", st.torrentMagnet)
                 .toString()
 
             conn.outputStream.use { os ->

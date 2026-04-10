@@ -1,5 +1,8 @@
 // src/api/ws/nestifyPlayerClient.js
 
+import config from "../../core/config";
+import { getAuthToken } from "../../core/session";
+
 /**
  * NestifyPlayerClient v2
  *
@@ -36,6 +39,8 @@ class NestifyPlayerClient {
     this.shouldReconnect = true;
     this.reconnectDelay = 3000;
     this.reconnectTimer = null;
+    this.skipReconnectOnce = false;
+    this.keepAliveUntil = 0;
 
     // TV / Player
     this.deviceId = null;
@@ -50,9 +55,8 @@ class NestifyPlayerClient {
   setDeviceId(deviceId) {
     const trimmed = (deviceId || "").trim();
     if (!trimmed) {
-      console.warn("[NestifyPlayerClient] setDeviceId: empty");
       this.deviceId = null;
-      this._cleanupSocket();
+      this.disconnect();
       return;
     }
 
@@ -98,6 +102,10 @@ class NestifyPlayerClient {
     this.avatarUrl = url || "";
   }
 
+  setUserId(id) {
+    this.userId = id ? String(id) : "";
+  }
+
   getWsUrl() {
     if (!this.deviceId) {
       throw new Error("NestifyPlayerClient: deviceId is not set");
@@ -107,6 +115,7 @@ class NestifyPlayerClient {
     const params = new URLSearchParams();
     if (this.profileName) params.set("profile", this.profileName);
     if (this.avatarUrl) params.set("avatar", this.avatarUrl);
+    if (this.userId) params.set("user_id", this.userId);
     const qs = params.toString();
     return qs ? `${url}?${qs}` : url;
   }
@@ -160,6 +169,7 @@ class NestifyPlayerClient {
     this.ws = ws;
 
     ws.onopen = () => {
+      this.skipReconnectOnce = false;
       console.log("[NestifyPlayerClient] WS connected:", url);
       this.isConnected = true;
       this.emit("connected", true);
@@ -185,6 +195,11 @@ class NestifyPlayerClient {
 
       this.ws = null;
 
+      if (this.skipReconnectOnce) {
+        this.skipReconnectOnce = false;
+        return;
+      }
+
       if (this.shouldReconnect) {
         this.scheduleReconnect();
       }
@@ -201,6 +216,10 @@ class NestifyPlayerClient {
   }
 
   _cleanupSocket() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.ws) {
       try {
         this.ws.close();
@@ -214,6 +233,22 @@ class NestifyPlayerClient {
       reject(new Error("WS reset before response"))
     );
     this.pending.clear();
+  }
+
+  disconnect() {
+    this.skipReconnectOnce = true;
+    this._cleanupSocket();
+    this.status = null;
+    this.emit("connected", false);
+    this.emit("status", null);
+  }
+
+  holdConnection(ms = 15000) {
+    this.keepAliveUntil = Date.now() + ms;
+  }
+
+  shouldHoldConnection() {
+    return Date.now() < this.keepAliveUntil;
   }
 
   scheduleReconnect() {
@@ -267,6 +302,10 @@ class NestifyPlayerClient {
         params,
       };
 
+      if (method === "Player.PlayUrl") {
+        this.holdConnection();
+      }
+
       this.pending.set(id, { resolve, reject });
 
       try {
@@ -318,6 +357,7 @@ class NestifyPlayerClient {
         this.status = null;
         this._lastProgressEmitAt = 0;
         this.emit("status", null);
+        this.disconnect();
         break;
       case "Player.OnConnect":
       case "Player.OnPlay":
@@ -448,7 +488,8 @@ class NestifyPlayerClient {
     positionSeconds,
   }) {
     try {
-      const params = {
+      const payload = {
+        device_id: this.deviceId,
         url: streamUrl,
         link: link || null,
         origin_name: originName || null,
@@ -461,13 +502,24 @@ class NestifyPlayerClient {
       };
 
       if (typeof positionSeconds === "number") {
-        params.position_ms = Math.max(0, Math.floor(positionSeconds * 1000));
+        payload.position_ms = Math.max(0, Math.floor(positionSeconds * 1000));
       }
 
-      await this.sendRpc("Player.PlayUrl", params);
+      const res = await fetch(`${config.backend_url}/api/v3/tv/play`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`TV play failed: ${res.status}`);
+      }
+      this.holdConnection();
       return true;
     } catch (e) {
-      console.error("[NestifyPlayerClient] playOnTv via WS error:", e);
+      console.error("[NestifyPlayerClient] playOnTv via backend error:", e);
       return false;
     }
   }

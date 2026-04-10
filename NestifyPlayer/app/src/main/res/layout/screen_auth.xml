@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0d0d0d">
+
+    <!-- Background subtle gradient -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/featured_slide_gradient" />
+
+    <!-- Two-column layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="56dp">
+
+        <!-- LEFT: logo + email/password -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingEnd="48dp">
+
+            <ImageView
+                android:layout_width="160dp"
+                android:layout_height="50dp"
+                android:src="@drawable/nestify_logo"
+                android:scaleType="fitStart"
+                android:contentDescription="Nestify"
+                android:layout_marginBottom="32dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Привіт!"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Увійди у свій акаунт"
+                android:textSize="18sp"
+                android:textColor="#B0A8BB"
+                android:layout_marginBottom="32dp" />
+
+            <!-- Email -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email"
+                android:textSize="13sp"
+                android:textColor="#88FFFFFF"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/auth_email"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:inputType="textEmailAddress"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#55FFFFFF"
+                android:hint="your@email.com"
+                android:textSize="16sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="@drawable/bg_input_field"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Password -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Пароль"
+                android:textSize="13sp"
+                android:textColor="#88FFFFFF"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/auth_password"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:inputType="textPassword"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#55FFFFFF"
+                android:hint="••••••••"
+                android:textSize="16sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="@drawable/bg_input_field"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Error text -->
+            <TextView
+                android:id="@+id/auth_error"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="13sp"
+                android:textColor="#FF6B6B"
+                android:layout_marginBottom="20dp"
+                android:visibility="gone" />
+
+            <!-- Login button -->
+            <Button
+                android:id="@+id/auth_btn_login"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="Увійти"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#0d0d0d"
+                android:background="@drawable/bg_retry_button" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="280dp"
+            android:background="#22FFFFFF"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp" />
+
+        <!-- RIGHT: QR code -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingStart="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Або відскануй QR"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Зайди на сайті та підтвердь вхід"
+                android:textSize="14sp"
+                android:textColor="#88FFFFFF"
+                android:layout_marginBottom="24dp"
+                android:gravity="center" />
+
+            <ImageView
+                android:id="@+id/auth_qr"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
+                android:contentDescription="QR code"
+                android:scaleType="fitCenter"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:id="@+id/auth_qr_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Очікуємо підтвердження…"
+                android:textSize="13sp"
+                android:textColor="#66FFFFFF"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -13,6 +13,8 @@ import config from "../core/config";
 import { addLikedMovie, removeLikedMovie, getLikedMovieStatus } from "../api/user";
 import { getProgress } from "../api/hdrezka/progressApi";
 import { addTorrent, getTorrentStatus, startHlsSession } from "../api/v3";
+import { getCurrentProfile } from "../core/session";
+import { useTvDevice } from "../hooks/useTvDevice";
 import "../styles/MoviePage.css";
 import "../styles/TorrentModal.css";
 
@@ -245,7 +247,6 @@ export default function TmdbMoviePage() {
   const [rawDetails, setRawDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [torrentOpen, setTorrentOpen] = useState(false);
-  const [playerOnline, setPlayerOnline] = useState(nestifyPlayerClient.isConnected);
   const [isLiked, setIsLiked] = useState(false);
   const [likePending, setLikePending] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(null);
@@ -276,12 +277,52 @@ export default function TmdbMoviePage() {
   );
 
   const [reviews, setReviews] = useState([]);
+  const { device: tvDevice } = useTvDevice();
+  const playerOnline = !!tvDevice;
 
-  useEffect(() => {
-    const handler = (status) => setPlayerOnline(status);
-    nestifyPlayerClient.on("connected", handler);
-    return () => nestifyPlayerClient.off("connected", handler);
-  }, []);
+  const ensureTvConnected = async () => {
+    if (!tvDevice) return false;
+
+    const profile = getCurrentProfile();
+    nestifyPlayerClient.setProfileName(profile?.name || "");
+    nestifyPlayerClient.setAvatarUrl(
+      profile?.avatar_url ? `${config.backend_url}${profile.avatar_url}` : ""
+    );
+    nestifyPlayerClient.setUserId(profile?.id || "");
+
+    if (nestifyPlayerClient.deviceId !== tvDevice.device_id) {
+      nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    }
+
+    if (nestifyPlayerClient.isConnected) {
+      return true;
+    }
+
+    return await new Promise((resolve) => {
+      let settled = false;
+
+      const cleanup = () => {
+        nestifyPlayerClient.off("connected", onConnected);
+        clearTimeout(timer);
+      };
+
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(result);
+      };
+
+      const onConnected = (connected) => {
+        if (connected) finish(true);
+      };
+
+      const timer = setTimeout(() => finish(false), 4000);
+
+      nestifyPlayerClient.on("connected", onConnected);
+      nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    });
+  };
 
   useEffect(() => {
     if (!activeVideo) return undefined;
@@ -443,8 +484,8 @@ export default function TmdbMoviePage() {
     });
   };
 
-  const handleSendToTv = (file) => {
-    if (!playerOnline || !movieDetails) return;
+  const handleSendToTv = async (file) => {
+    if (!tvDevice || !movieDetails) return;
     let streamUrl = file.stream_url;
     try {
       const parsed = new URL(streamUrl);
@@ -455,10 +496,19 @@ export default function TmdbMoviePage() {
       streamUrl = parsed.toString();
     } catch {}
     console.log("[handleSendToTv] streamUrl:", streamUrl);
-    nestifyPlayerClient.sendRpc("Player.PlayUrl", {
-      url: streamUrl,
+    nestifyPlayerClient.setDeviceId(tvDevice.device_id);
+    nestifyPlayerClient.setProfileName(getCurrentProfile()?.name || "");
+    nestifyPlayerClient.setAvatarUrl(
+      getCurrentProfile()?.avatar_url
+        ? `${config.backend_url}${getCurrentProfile().avatar_url}`
+        : ""
+    );
+    nestifyPlayerClient.setUserId(getCurrentProfile()?.id || "");
+    await nestifyPlayerClient.playOnTv({
+      streamUrl,
       title: movieDetails.title,
       image: movieDetails.poster_tmdb || "",
+      movieId: `tmdb_${mediaType}_${tmdbId}`,
     });
   };
 
@@ -522,7 +572,7 @@ export default function TmdbMoviePage() {
                 likePending={likePending}
                 onToggleLike={toggleLike}
                 onMainPlayClick={() => setTorrentOpen(true)}
-                onCastClick={() => setTorrentOpen(true)}
+                onCastClick={tvDevice ? () => setTorrentOpen(true) : null}
               />
 
               <div className="container">

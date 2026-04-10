@@ -16,7 +16,11 @@ data class PlayerStatus(
     val movieId: String?,
     val season: Int?,
     val episode: Int?,
-    val userId: String?
+    val userId: String?,
+    val torrentHash: String? = null,
+    val torrentFileId: Int? = null,
+    val torrentFname: String? = null,
+    val torrentMagnet: String? = null,
 )
 
 class RemoteHttpServer(
@@ -122,6 +126,10 @@ class RemoteHttpServer(
                     .put("season",       st.season)
                     .put("episode",      st.episode)
                     .put("user_id",      st.userId)
+                    .put("torrent_hash", st.torrentHash)
+                    .put("torrent_file_id", st.torrentFileId)
+                    .put("torrent_fname", st.torrentFname)
+                    .put("torrent_magnet", st.torrentMagnet)
                     .toString()
                 withCors(newFixedLengthResponse(Response.Status.OK, "application/json", json))
             }
