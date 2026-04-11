@@ -4,12 +4,21 @@ android {
     namespace "com.nestify.tvshell"
     compileSdk rootProject.ext.compileSdkVersion
 
+    signingConfigs {
+        release {
+            storeFile file("../../../NestifyPlayer/nestify-release.jks")
+            storePassword "nestify123"
+            keyAlias "nestify"
+            keyPassword "nestify123"
+        }
+    }
+
     defaultConfig {
         applicationId "com.nestify.tvshell"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
-        versionName "1.0"
+        versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -31,6 +40,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
             buildConfigField "String", "START_URL", "\"https://tv.nestify.club/\""
             buildConfigField "String", "BACKEND_BASE_URL", "\"https://nestify.club\""
             buildConfigField "String", "WS_BASE_URL", "\"wss://nestify.club\""
