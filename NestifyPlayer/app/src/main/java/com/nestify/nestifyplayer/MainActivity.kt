@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     private lateinit var avatarImage: ImageView
     private lateinit var connectedProfileName: TextView
     private lateinit var featuredPager: ViewPager2
-    private lateinit var sliderLoading: LinearLayout
+    private var sliderLoading: LinearLayout? = null  // unused, kept for compat
     private lateinit var slideDots: LinearLayout
     private lateinit var profilePill: LinearLayout
     private lateinit var pillAvatar: ImageView
@@ -106,6 +106,19 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
     private lateinit var selectionTitle: TextView
     private lateinit var selectionSubtitle: TextView
     private lateinit var selectionList: LinearLayout
+    // home screen new views
+    private lateinit var initialLoading: LinearLayout
+    private lateinit var continueRowContainer: LinearLayout
+    private lateinit var continueRecycler: androidx.recyclerview.widget.RecyclerView
+    private lateinit var categorySelector: LinearLayout
+    private lateinit var sectionsRecycler: androidx.recyclerview.widget.RecyclerView
+    private lateinit var contentLoading: LinearLayout
+    private lateinit var catAll: Button
+    private lateinit var catMovies: Button
+    private lateinit var catTv: Button
+    private lateinit var catAnimation: Button
+    private var currentCategory = "all"
+    private var homeDataJob: Job? = null
     private var pillExpanded = false
 
     // ---------- Services ----------
@@ -208,8 +221,18 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         avatarImage          = findViewById(R.id.avatar_image)
         connectedProfileName = findViewById(R.id.connected_profile_name)
         featuredPager        = findViewById(R.id.featured_pager)
-        sliderLoading        = findViewById(R.id.slider_loading)
+        // sliderLoading removed from layout
         slideDots            = findViewById(R.id.slide_dots)
+        initialLoading       = findViewById(R.id.initial_loading)
+        continueRowContainer = findViewById(R.id.continue_row_container)
+        continueRecycler     = findViewById(R.id.continue_recycler)
+        categorySelector     = findViewById(R.id.category_selector)
+        sectionsRecycler     = findViewById(R.id.sections_recycler)
+        contentLoading       = findViewById(R.id.content_loading)
+        catAll               = findViewById(R.id.cat_all)
+        catMovies            = findViewById(R.id.cat_movies)
+        catTv                = findViewById(R.id.cat_tv)
+        catAnimation         = findViewById(R.id.cat_animation)
         profilePill          = findViewById(R.id.profile_pill)
         pillAvatar           = findViewById(R.id.pill_avatar)
         pillName             = findViewById(R.id.pill_name)
@@ -242,6 +265,16 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         profilePill.onFocusChangeListener = collapseFocusListener
         pillBtnSwitch.onFocusChangeListener = collapseFocusListener
         pillBtnLogout.onFocusChangeListener = collapseFocusListener
+
+        // Category buttons
+        listOf(catAll to "all", catMovies to "movies", catTv to "tv", catAnimation to "animation").forEach { (btn, cat) ->
+            btn.setOnClickListener { selectCategory(cat) }
+        }
+        // Setup RecyclerViews
+        continueRecycler.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this, androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+        sectionsRecycler.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        (sectionsRecycler.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).isAutoMeasureEnabled = false
+        sectionsRecycler.isNestedScrollingEnabled = false
 
         screenAuth          = findViewById(R.id.screen_auth)
         screenProfilePicker = findViewById(R.id.screen_profile_picker)
@@ -492,7 +525,6 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
         connectedProfileName.text = name
         pillName.text = name
 
-        // Loading placeholder avatar
         if (controllerAvatarUrl.isNotBlank()) {
             Glide.with(this).load(controllerAvatarUrl)
                 .apply(RequestOptions().transform(CircleCrop()))
@@ -505,46 +537,147 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
             pillAvatar.setImageDrawable(null)
         }
 
-        // Show loading state, hide slider
-        sliderLoading.visibility = View.VISIBLE
+        // Show initial loading, hide everything else
+        initialLoading.visibility = View.VISIBLE
         featuredPager.visibility = View.GONE
         slideDots.visibility = View.GONE
         profilePill.visibility = View.GONE
+        categorySelector.visibility = View.GONE
+        sectionsRecycler.visibility = View.GONE
+        continueRowContainer.visibility = View.GONE
 
-        // Load recommendations in background
-        loadFeaturedSlider()
+        HomeDataSource.clearCache()
+        loadHomeData(currentCategory)
     }
 
-    private fun loadFeaturedSlider() {
-        sliderJob?.cancel()
-        val userId = controllerUserId
-        val backendUrl = BuildConfig.BACKEND_BASE_URL
+    private fun loadHomeData(category: String) {
+        homeDataJob?.cancel()
+        val authToken = TvSession.getAuthToken(this) ?: return
+        val profileId = TvSession.getProfileId(this)
 
-        sliderJob = ioScope.launch {
-            val items = FeaturedDataSource.load(userId, backendUrl)
+        homeDataJob = ioScope.launch {
+            // Fetch TMDB key if not yet loaded
+            if (TmdbClient.apiKey.isBlank()) {
+                val key = TvApiClient.fetchTmdbKey(BuildConfig.BACKEND_BASE_URL, authToken)
+                if (!key.isNullOrBlank()) TmdbClient.apiKey = key
+            }
+
+            // Load home data and watch history
+            val data = HomeDataSource.load(category)
+            val history: List<HistoryItem> = if (profileId > 0) {
+                TvApiClient.fetchWatchHistory(BuildConfig.BACKEND_BASE_URL, authToken, profileId)
+            } else emptyList()
+
             runOnUiThread {
-                if (appState != AppState.CONNECTED_IDLE) return@runOnUiThread
-                if (items.isEmpty()) {
-                    // No data — hide spinner, show static idle message
-                    sliderLoading.visibility = View.VISIBLE
-                    connectedProfileName.text = controllerProfileName.trim().ifEmpty { "Профіль" }
-                    val hint = sliderLoading.getChildAt(2) as? TextView
-                    hint?.text = "Оберіть фільм і натисніть «Дивитись»"
-                    return@runOnUiThread
+                if (appState != AppState.CONNECTED_IDLE && appState != AppState.CONNECTED_DETAILS && appState != AppState.CONNECTED_SELECTION) return@runOnUiThread
+
+                // Setup featured slider
+                if (data.featured.isNotEmpty()) {
+                    sliderItems = data.featured
+                    setupSlider(data.featured)
                 }
-                sliderItems = items
-                setupSlider(items)
+                initialLoading.visibility = View.GONE
+
+                // Continue watching
+                if (history.isNotEmpty()) {
+                    continueRecycler.adapter = ContinueCardAdapter(history) { item ->
+                        openMovieDetailsFromHistory(item)
+                    }
+                    continueRowContainer.visibility = View.VISIBLE
+                } else {
+                    continueRowContainer.visibility = View.GONE
+                }
+
+                // Category selector
+                categorySelector.visibility = View.VISIBLE
+                updateCategoryButtons(category)
+
+                // Sections
+                if (data.sections.isNotEmpty()) {
+                    sectionsRecycler.adapter = HomeSectionAdapter(data.sections) { item ->
+                        openMovieDetailsFromTmdb(item)
+                    }
+                    sectionsRecycler.visibility = View.VISIBLE
+                }
             }
         }
     }
 
+    private fun selectCategory(cat: String) {
+        if (cat == currentCategory && sectionsRecycler.adapter != null) return
+        currentCategory = cat
+        updateCategoryButtons(cat)
+        sectionsRecycler.visibility = View.GONE
+        contentLoading.visibility = View.VISIBLE
+        homeDataJob?.cancel()
+        val authToken = TvSession.getAuthToken(this) ?: return
+        homeDataJob = ioScope.launch {
+            val data = HomeDataSource.load(cat)
+            runOnUiThread {
+                contentLoading.visibility = View.GONE
+                if (data.sections.isNotEmpty()) {
+                    sectionsRecycler.adapter = HomeSectionAdapter(data.sections) { item ->
+                        openMovieDetailsFromTmdb(item)
+                    }
+                    sectionsRecycler.visibility = View.VISIBLE
+                }
+                // Update featured slider too
+                if (data.featured.isNotEmpty()) {
+                    sliderItems = data.featured
+                    setupSlider(data.featured)
+                }
+            }
+        }
+    }
+
+    private fun updateCategoryButtons(active: String) {
+        val buttons = mapOf("all" to catAll, "movies" to catMovies, "tv" to catTv, "animation" to catAnimation)
+        buttons.forEach { (key, btn) ->
+            if (key == active) {
+                btn.setBackgroundResource(R.drawable.bg_cat_btn_selected)
+                btn.setTextColor(android.graphics.Color.parseColor("#0d0d0d"))
+            } else {
+                btn.setBackgroundResource(R.drawable.bg_cat_btn)
+                btn.setTextColor(android.graphics.Color.WHITE)
+            }
+        }
+    }
+
+    private fun openMovieDetailsFromTmdb(item: TmdbItem) {
+        val fi = FeaturedItem(
+            tmdbId = item.tmdbId,
+            mediaType = item.mediaType,
+            title = item.title,
+            backdropUrl = item.backdropUrl,
+            posterUrl = item.posterUrl,
+            genres = emptyList(),
+            year = item.year,
+            rating = item.rating,
+            overview = item.overview,
+        )
+        openMovieDetails(fi)
+    }
+
+    private fun openMovieDetailsFromHistory(item: HistoryItem) {
+        val fi = FeaturedItem(
+            tmdbId = item.tmdbId,
+            mediaType = item.mediaType,
+            title = item.title,
+            backdropUrl = item.backdropUrl,
+            posterUrl = item.posterUrl,
+            genres = emptyList(),
+            year = "",
+            rating = "",
+            overview = "",
+        )
+        openMovieDetails(fi)
+    }
+
     private fun setupSlider(items: List<FeaturedItem>) {
-        // Adapter
         val adapter = FeaturedSliderAdapter(items) { item -> openMovieDetails(item) }
         featuredPager.adapter = adapter
         featuredPager.offscreenPageLimit = 2
 
-        // Dots
         buildDots(items.size, 0)
 
         featuredPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -554,10 +687,8 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
             }
         })
 
-        // Show slider, hide loading
-        sliderLoading.visibility = View.GONE
         featuredPager.visibility = View.VISIBLE
-        slideDots.visibility = View.VISIBLE
+        slideDots.visibility = if (items.size > 1) View.VISIBLE else View.GONE
         profilePill.visibility = View.VISIBLE
 
         startAutoScroll(items.size)
@@ -1645,22 +1776,23 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
                     // в інших станах — стандартна поведінка (мінімізує апку)
                 }
 
-                // D-pad Up → focus pill and expand
-                // D-pad Up → just focus the pill (don't expand yet)
+                // D-pad Up → go to pill only when featuredPager is focused
                 KeyEvent.KEYCODE_DPAD_UP -> {
-                    if (appState == AppState.CONNECTED_IDLE && !isPillHierarchyFocused()) {
+                    if (appState == AppState.CONNECTED_IDLE && currentFocus == featuredPager) {
                         profilePill.requestFocus()
                         return true
                     }
+                    // otherwise let system navigate between rows
                 }
 
-                // D-pad Down from pill → collapse and return focus
+                // D-pad Down from pill → collapse and return focus to slider
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
                     if (appState == AppState.CONNECTED_IDLE && isPillHierarchyFocused()) {
                         collapsePill()
                         featuredPager.requestFocus()
                         return true
                     }
+                    // otherwise let system navigate between rows
                 }
 
                 // Play/Pause
@@ -1691,10 +1823,12 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
                             // Button focused → perform its click directly
                             focused is Button && isPillHierarchyFocused() ->
                                 focused.performClick()
-                            // Anywhere else → consume silently
-                            else -> {
+                            // featuredPager focused → open featured item
+                            focused == featuredPager || focused == null -> {
                                 sliderItems.getOrNull(featuredPager.currentItem)?.let { openMovieDetails(it) }
                             }
+                            // Card in a row → let system fire the click
+                            else -> return super.dispatchKeyEvent(event)
                         }
                         return true
                     }
@@ -1710,7 +1844,9 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
                     }
                 }
 
-                // LEFT/RIGHT — navigate buttons when pill open, slide otherwise
+                // LEFT/RIGHT — navigate buttons when pill open,
+                //              slide slider when featuredPager focused,
+                //              otherwise let system navigate cards in rows
                 KeyEvent.KEYCODE_DPAD_RIGHT,
                 KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
                     if (appState == AppState.PLAYING) { seekBy(15_000L); return true }
@@ -1718,11 +1854,12 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
                         if (isPillHierarchyFocused() && pillExpanded) {
                             navigatePillButtons(forward = true); return true
                         }
-                        if (sliderItems.isNotEmpty()) {
+                        if (currentFocus == featuredPager && sliderItems.isNotEmpty()) {
                             val next = (featuredPager.currentItem + 1) % sliderItems.size
                             featuredPager.setCurrentItem(next, true)
                             return true
                         }
+                        // focus is on a card row — let system handle
                     }
                 }
 
@@ -1733,11 +1870,12 @@ class MainActivity : ComponentActivity(), RemoteHttpServer.RemoteController, Pla
                         if (isPillHierarchyFocused() && pillExpanded) {
                             navigatePillButtons(forward = false); return true
                         }
-                        if (sliderItems.isNotEmpty()) {
+                        if (currentFocus == featuredPager && sliderItems.isNotEmpty()) {
                             val prev = (featuredPager.currentItem - 1 + sliderItems.size) % sliderItems.size
                             featuredPager.setCurrentItem(prev, true)
                             return true
                         }
+                        // focus is on a card row — let system handle
                     }
                 }
 

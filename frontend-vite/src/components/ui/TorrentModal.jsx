@@ -96,10 +96,11 @@ function extractBtih(magnet) {
 export default function TorrentModal({
   title, titleOriginal, titleEnglish = null, titlePolish = null, year, imdbId, tmdbId, mediaType, poster, runtimeMinutes,
   watchedMagnet = null,
-  onClose, onSendToTv, onPlayInBrowser,
+  onClose, onSendToTv, onPlayInBrowser, onPlayEmbed,
 }) {
   const watchedBtih = extractBtih(watchedMagnet);
   const [results, setResults]         = useState({ uk: [], ru: [], en: [], pl: [] });
+  const [embed, setEmbed]             = useState(null);
   const [files, setFiles]             = useState([]);
   const [currentHash, setCurrentHash] = useState(null);
   const [loading, setLoading]         = useState(false);
@@ -145,14 +146,16 @@ export default function TorrentModal({
     const cacheKey = makeTorrentCacheKey({ tmdbId, mediaType, title: title || titleOriginal });
     const cached = getCachedTorrents(cacheKey);
     if (cached) {
-      setResults(cached);
+      setResults(cached.results || cached);
+      setEmbed(cached.embed || null);
       setFocusedIdx(0);
-      const total = cached.uk.length + cached.ru.length + cached.en.length + cached.pl.length;
+      const cachedResults = cached.results || cached;
+      const total = cachedResults.uk.length + cachedResults.ru.length + cachedResults.en.length + cachedResults.pl.length + (cached.embed ? 1 : 0);
       if (!total) setError("Нічого не знайдено");
       return;
     }
 
-    setError(null); setLoading(true); setResults({ uk: [], ru: [], en: [], pl: [] }); setFocusedIdx(0);
+    setError(null); setLoading(true); setResults({ uk: [], ru: [], en: [], pl: [] }); setEmbed(null); setFocusedIdx(0);
     try {
       const data = await searchTorrents({
         q: title || titleOriginal || "",
@@ -164,9 +167,11 @@ export default function TorrentModal({
         imdb_id: imdbId, tmdb_id: tmdbId, media_type: mediaType || "movie",
       });
       const grouped = { uk: data.uk || [], ru: data.ru || [], en: data.en || [], pl: data.pl || [] };
-      setCachedTorrents(cacheKey, grouped);
+      const embedSource = data.embed || null;
+      setCachedTorrents(cacheKey, { results: grouped, embed: embedSource });
       setResults(grouped);
-      const total = grouped.uk.length + grouped.ru.length + grouped.en.length;
+      setEmbed(embedSource);
+      const total = grouped.uk.length + grouped.ru.length + grouped.en.length + grouped.pl.length + (embedSource ? 1 : 0);
       if (!total) setError("Нічого не знайдено");
     } catch { setError("Помилка пошуку."); }
     finally { setLoading(false); }
@@ -259,6 +264,7 @@ export default function TorrentModal({
 
   /* ── tab results ── */
   const availableQualities = useMemo(() => {
+    if (langTab === "direct") return [];
     const base = langTab === "best"
       ? [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])]
       : (results[langTab] || []);
@@ -267,6 +273,7 @@ export default function TorrentModal({
   }, [results, langTab]);
 
   const tabResults = useMemo(() => {
+    if (langTab === "direct") return [];
     let items;
     if (langTab === "best") {
       const all = [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])];
@@ -299,6 +306,10 @@ export default function TorrentModal({
           break;
         case "Enter":
           e.preventDefault();
+          if (step === "search" && langTab === "direct" && embed && onPlayEmbed) {
+            onPlayEmbed(embed);
+            break;
+          }
           if (step === "search" && tabResults[focusedIdx]) handleSelectTorrent(tabResults[focusedIdx], focusedIdx);
           if (step === "files") {
             const f = isSeries ? episodesInSeason[focusedIdx] : files[focusedIdx];
@@ -364,6 +375,7 @@ export default function TorrentModal({
                   { key: "ru",   label: null,  icon: "/images/ru.svg", text: "Рус", count: results.ru.length },
                   { key: "en",   label: null,  icon: "/images/us.svg", text: "Eng", count: results.en.length },
                   { key: "pl",   label: null,  icon: "/images/pl.svg", text: "Pol", count: results.pl.length },
+                  { key: "direct", label: null, icon: null, text: "Direct", count: embed ? 1 : 0 },
                 ].map(({ key, icon, emoji, text, count }) => count > 0 && (
                   <button
                     key={key}
@@ -405,7 +417,36 @@ export default function TorrentModal({
             )}
             {error && <div className="tv-error">{error}</div>}
 
-            {!loading && tabResults.length > 0 && (
+            {!loading && embed && langTab === "direct" && (
+              <div className="tv-embed-card">
+                <div className="tv-embed-card__head">
+                  <span className="tv-pill tv-pill--src">Direct source</span>
+                  <span className="tv-stat">domem.ws</span>
+                </div>
+                <div className="tv-embed-card__title">{embed.title || title || titleOriginal}</div>
+                <div className="tv-embed-card__meta">
+                  Вбудований веб-плеєр з озвучками, субтитрами та оригінальним playback runtime.
+                </div>
+                <div className="tv-item__row">
+                  {embed.hls && <span className="tv-pill tv-pill--voice">HLS</span>}
+                  {embed.dash && <span className="tv-pill tv-pill--voice">DASH</span>}
+                  {Array.isArray(embed.subtitles) && embed.subtitles.length > 0 && (
+                    <span className="tv-pill tv-pill--hdr">CC {embed.subtitles.length}</span>
+                  )}
+                </div>
+                <div className="tv-file-btns" style={{ marginTop: 12 }}>
+                  <button
+                    className="tv-file-btn tv-file-btn--play"
+                    onClick={() => onPlayEmbed?.(embed)}
+                    disabled={!onPlayEmbed || (!embed.hls && !embed.dash)}
+                  >
+                    <Play size={14} /> Дивитись напряму
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!loading && langTab !== "direct" && tabResults.length > 0 && (
               <ul className="tv-list" ref={listRef}>
                 {tabResults.map((t, i) => {
                   const meta = parseMeta(t.title, t.quality, t.videotype);
@@ -447,7 +488,7 @@ export default function TorrentModal({
               </ul>
             )}
 
-            {!loading && tabResults.length > 0 && (
+            {!loading && langTab !== "direct" && tabResults.length > 0 && (
               <div className="tv-action-bar">
                 <button
                   className={`tv-action-btn${selectedIdx === null ? " tv-action-btn--disabled" : ""}`}

@@ -1,0 +1,338 @@
+.playback-controls-container {
+  background-color: var(--white-opacity-10);
+  height: 64px;
+  border-radius: 32px;
+  align-items: center;
+  display: flex;
+  backdrop-filter: blur(15px);
+  flex-wrap: nowrap;
+  position: fixed;
+  bottom: 32px;
+  width: 1000px;
+  z-index: 1000000;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: 0.3s ease-in-out;
+}
+.playback-controls-mobile-container {
+  height: 80px;
+  border-radius: 40px;
+  align-items: center;
+  flex-wrap: nowrap;
+  position: fixed;
+  bottom: 48px;
+  width: 1000px;
+  z-index: 1000000;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 94%;
+  align-items: center;
+}
+.player-controls-mobile {
+  display: flex;
+  width: 100%;
+  background-color: var(--white-opacity-10);
+  backdrop-filter: blur(7px);
+  height: 80px;
+  align-items: center;
+  border-radius: 40px;
+  gap: 32px;
+  justify-content: center;
+  border: 1px solid var(--white-opacity-10);
+}
+.player-central-controls-mobile {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.player-controls {
+  margin: 16px 32px;
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  align-items: center;
+}
+.player-rewind-controls {
+  display: flex;
+  gap: 16px;
+}
+.player-backward-icon,
+.player-forward-icon,
+.player-play-icon,
+.player-volume-max-icon,
+.player-volume-min-icon {
+  cursor: pointer;
+}
+.player-timer {
+  font-size: 16px;
+  color: var(--white);
+  font-weight: 600;
+  width: 50px;
+}
+.player-progress-bar {
+  flex: 1;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background: none;
+  outline: none;
+  width: 100%;
+  border-radius: 16px;
+  height: 7px;
+}
+.player-progress-bar-mobile {
+  flex: 1;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background: none;
+  outline: none;
+  width: 100%;
+  border-radius: 16px;
+  height: 10px;
+}
+.plater-play-back {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+.plater-play-back-mobile {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+/* Трек в WebKit */
+.player-progress-bar::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent; /* убираем, чтобы не мешать градиенту */
+  backdrop-filter: blur(4px);
+}
+
+.player-progress-bar-mobile::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent;
+  backdrop-filter: blur(4px); /* убираем, чтобы не мешать градиенту */
+}
+
+/* Ползунок (thumb) в WebKit */
+.player-progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+  margin-top: -4px; /* чтобы центрировать бегунок по высоте трека */
+}
+
+/* Ползунок (thumb) в WebKit */
+.player-progress-bar-mobile::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+  margin-top: -7px; /* чтобы центрировать бегунок по высоте трека */
+}
+/* Трек в Firefox */
+.player-progress-bar::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent;
+}
+
+/* Трек в Firefox */
+.player-progress-bar-mobile::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: transparent;
+}
+
+/* Ползунок (thumb) в Firefox */
+.player-progress-bar::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+}
+
+.player-progress-bar-mobile::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--white);
+  cursor: pointer;
+}
+
+/* (не обязательно) «Левая часть» в Firefox через псевдоэлемент */
+.player-progress-bar::-moz-range-progress {
+  background: var(--red);
+  border-radius: 3px;
+  height: 6px;
+}
+.player-progress-bar-mobile::-moz-range-progress {
+  background: var(--red);
+  border-radius: 3px;
+  height: 6px;
+}
+
+.player-backward-icon:hover,
+.player-forward-icon:hover,
+.player-play-icon:hover,
+.player-volume-max-icon:hover,
+.player-volume-min-icon:hover {
+  transition: ease-in 0.1s;
+  transform: scale(1.1);
+}
+/* Контейнер для иконок */
+.icon-wrapper {
+  position: relative;
+  width: 24px; /* Задайте нужную ширину */
+  height: 24px; /* Задайте нужную высоту */
+}
+
+/* Общие стили для иконок */
+.icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Активная иконка видна */
+.icon.active {
+  opacity: 1;
+}
+/* Стили для иконок Play/Pause */
+.icon-wrapper {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.icon.active {
+  opacity: 1;
+}
+
+/* Стили для регулятора громкости */
+.volume-control {
+  position: relative;
+  display: inline-block;
+}
+
+.volume-slider-wrapper {
+  position: absolute;
+  bottom: 120%;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 5px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+}
+
+.volume-slider-wrapper input.volume-slider {
+  width: 100px;
+}
+.volume-slider-container-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7); /* затемнение */
+  backdrop-filter: blur(10px); /* блюр заднего фона */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.volume-slider-mobile {
+  transform: rotate(-90deg);
+  width: 100px; /* длина "высоты" ползунка */
+  height: 200px; /* толщина ползунка */
+  appearance: none;
+  background-color: var(--dark);
+}
+
+.custom-volume-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7); /* затемнение */
+  backdrop-filter: blur(10px); /* блюр заднего фона */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  flex-direction: column; /* расположим tooltip и слайдер вертикально */
+}
+
+/* Сам блок-слайдер */
+.slider {
+  position: relative;
+  width: 130px; /* ширина самого контейнера */
+  height: 400px; /* высота самого контейнера */
+  border-radius: 32px;
+  overflow: hidden;
+
+  /* Для мобильных, чтобы не скролилось при движении пальцем */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Фоновая часть (тёмная) */
+.slider-track-background {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gray-2); /* любой цвет фона */
+}
+
+/* Оранжевая заливка, высота завязана на var(--value) */
+.slider-track-bar {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: calc(var(--value) * 100%);
+  background: var(--white);
+  border-radius: 32px;
+  transition: height 0.1s; /* плавная анимация */
+}
+
+/* Подсказка (проценты) */
+.tooltip-outside {
+  position: relative;
+  color: white;
+  font-size: 16px;
+  margin-bottom: 12px;
+  pointer-events: none;
+}
+.player-icon {
+  width: 24px;
+  height: 24px;
+}
+.progress-bar-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}

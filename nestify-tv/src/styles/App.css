@@ -1,0 +1,215 @@
+.route-page-wrapper {
+  min-height: 100vh;
+  will-change: opacity;
+}
+
+/* ─── TV mode ────────────────────────────────────────────────────────────── */
+
+/* Scale up all text for the 10-foot UI */
+body.tv-mode {
+  font-size: 120%;
+}
+
+/* Push main content when sidebar is open */
+.App {
+  transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+body.sidebar-open .App {
+  transform: translateX(278px); /* SIDEBAR_W(264) + GAP(14) */
+}
+
+/* Disable mouse entirely — cursor hidden, no pointer events */
+body.tv-mode,
+body.tv-mode * {
+  cursor: none !important;
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events only for elements that need to scroll
+   (e.g. the scroll containers so JS scrollTo still works internally) */
+body.tv-mode .cr-scroll,
+body.tv-mode .cw-scroll,
+body.tv-mode .ft-scroll {
+  pointer-events: auto !important;
+}
+
+/* D-pad focus ring — visible white outline around any focusable element */
+body.tv-mode *:focus {
+  outline: none;
+}
+body.tv-mode *:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Give scroll rows enough vertical padding so the scaled card + shadow
+   don't get clipped by overflow-x: auto (which forces overflow-y to auto) */
+body.tv-mode .cr-scroll,
+body.tv-mode .cw-scroll {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+}
+
+/* tv-hscroll — lightweight horizontal scroll for non-ContentRow containers
+   (season pills, episode list, cast rail). No layout-breaking margins. */
+body.tv-mode .tv-hscroll {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 12px;
+}
+
+/* ── Cards: scale the whole card, but show the ring only on the image ── */
+
+/* MediaCard — remove any outline on the container */
+body.tv-mode .video-card-container:focus-visible {
+  outline: none;
+  z-index: 10;
+}
+/* Ring + scale on the image wrapper inside */
+body.tv-mode .video-card-container:focus-visible .video-card-preview-wrapper {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+  border-radius: 8px;
+}
+
+/* BackdropCard */
+body.tv-mode .bdc-card:focus-visible {
+  outline: none;
+  z-index: 10;
+}
+body.tv-mode .bdc-thumb {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+body.tv-mode .bdc-card:focus-visible .bdc-thumb {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+}
+
+/* ContinueCard */
+body.tv-mode .cc-card:focus-visible {
+  outline: none;
+  z-index: 10;
+}
+body.tv-mode .cc-thumb {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+body.tv-mode .cc-card:focus-visible .cc-thumb {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+}
+
+/* Featured hero slide — ring on the whole slide is fine */
+body.tv-mode .fh-hero:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
+/* Category selector pills */
+body.tv-mode .home-cat-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Generic buttons */
+body.tv-mode button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Video/clip card buttons in cr-scroll — ring only on the thumbnail div */
+body.tv-mode .cr-scroll button:focus-visible {
+  outline: none;
+}
+body.tv-mode .cr-scroll button:focus-visible > div:first-child {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* Episode cards in tv-hscroll — ring only on the thumbnail (first child div) */
+body.tv-mode .tv-hscroll [tabindex="0"]:focus-visible {
+  outline: none;
+}
+body.tv-mode .tv-hscroll [tabindex="0"]:focus-visible > div:first-child {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* Pill buttons inside tv-hscroll (season tabs etc.) keep a normal ring */
+body.tv-mode .tv-hscroll button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+/* Genre tiles — inset border, works on all TV browsers */
+body.tv-mode .tv-hscroll .sp-genre-tile:focus-visible,
+body.tv-mode .tv-hscroll .sp-genre-tile:focus {
+  outline: none;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* Review cards — ring on the whole card, cancel first-child highlight */
+body.tv-mode .tv-hscroll [role="article"]:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  border-radius: 16px;
+}
+body.tv-mode .tv-hscroll [role="article"]:focus-visible > div:first-child {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Cast cards — ring only on the avatar photo, not the whole card */
+body.tv-mode .tv-hscroll .movie-cast__card:focus-visible,
+body.tv-mode .tv-hscroll .movie-cast__card:focus-visible:is(a) {
+  outline: none;
+  border-radius: 0;
+}
+body.tv-mode .tv-hscroll .movie-cast__card:focus-visible .movie-cast__avatar {
+  box-shadow: 0 0 0 3px #fff;
+  transform: scale(1.05);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* Info modal — full pointer-events in TV mode */
+.info-modal-overlay,
+.info-modal-overlay * {
+  pointer-events: auto !important;
+  cursor: default !important;
+}
+
+/* Filter panel + TV keyboard + Torrent modal — full pointer-events in TV mode */
+.fp-overlay,
+.fp-overlay *,
+.tvkb-overlay,
+.tvkb-overlay *,
+.tv-overlay,
+.tv-overlay * {
+  pointer-events: auto !important;
+  cursor: default !important;
+}
+body.tv-mode .info-modal-sheet button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+
+/* Sheet — slides up from bottom, sits on top of everything */
+.route-sheet-wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 10000002;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: 0 !important;
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+}
+

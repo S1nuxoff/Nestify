@@ -13,6 +13,7 @@ import LandingPage from "./pages/LandingPage";
 import AuthLoginPage from "./pages/AuthLoginPage";
 import AuthRegisterPage from "./pages/AuthRegisterPage";
 import PlayerPage from "./pages/PlayerPage";
+import DomemPlayerPage from "./pages/DomemPlayerPage";
 import CreateUserPage from "./pages/CreateUserPage";
 import ManageProfilesPage from "./pages/ManageProfilesPage";
 import EditProfilePage from "./pages/EditProfilePage";
@@ -162,6 +163,14 @@ function App() {
       {/* Отдельный роут для полноэкранного плеера */}
       <Routes>
         <Route
+          path="/player/domem/:imdbId"
+          element={
+            <PrivateRoute>
+              <DomemPlayerPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/player/:movieId"
           element={
             <PrivateRoute>
@@ -176,6 +185,7 @@ function App() {
       <div style={{ position: "relative", zIndex: 1 }} className="App">
         <AnimatePresence mode="wait">
           <Routes location={location.state?.backgroundLocation || location} key={(location.state?.backgroundLocation || location).key}>
+            <Route path="/player/domem/:imdbId" element={null} />
             <Route path="/player/:movieId" element={null} />
             <Route
               path="/"

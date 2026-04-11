@@ -1,0 +1,155 @@
+/* контейнер секции */
+.explorer-container {
+  position: relative;
+  overflow: visible;
+}
+
+/* рядок: капсула + кнопка вверх */
+.explorer-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 👈 как ты хотел: два отдельні елементи з гепом 8 */
+  /* margin-top: 24px; */
+
+  /* по умолчанию НЕ sticky */
+  position: static;
+}
+
+/* sticky только на малых экранах */
+@media (max-width: 1649px) {
+  .explorer-header-row--stuck {
+    position: sticky;
+    top: 16px;
+    z-index: 5;
+  }
+}
+
+/* сама капсула с заголовком */
+.category-content-title {
+  display: flex;
+
+  align-items: center;
+  gap: 16px;
+
+  border-radius: 32px;
+
+  background: transparent;
+  backdrop-filter: none;
+  padding: 0;
+  border: none;
+
+  width: fit-content;
+  max-width: 100%;
+
+  transition: background 0.18s ease, backdrop-filter 0.18s ease,
+    padding 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+@media (max-width: 1649px) {
+  .category-content-title--stuck {
+    background: var(--white-opacity-10);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--white-opacity-20);
+    padding: 8px 16px;
+    height: 50px;
+  }
+
+  .explorer-header-row--stuck .category-content-title {
+    gap: 4px;
+  }
+}
+
+/* левая стрелка (назад) */
+.category-back-btn {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: 0.1s ease-in-out, width 0.18s ease, height 0.18s ease;
+}
+.category-back-btn:hover {
+  transform: scale(1.2);
+}
+
+/* заголовок по умолчанию */
+.row-header-title {
+  /* font-size: 24px;
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+  transition: font-size 0.18s ease, transform 0.18s ease; */
+
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: 800;
+  /* letter-spacing: -2px; */
+  margin: 0;
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* уменьшение шрифта когда прилипло */
+@media (max-width: 1649px) {
+  .category-content-title--stuck .row-header-title {
+    font-size: 18px;
+    transform: translateY(1px);
+  }
+
+  .category-content-title--stuck .category-back-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* круглая кнопка "вверх" справа, отдельный элемент */
+.category-scroll-top-circle {
+  height: 50px;
+  width: 50px;
+  border-radius: 999px;
+  border: 1px solid var(--white-opacity-20);
+  background: var(--white-opacity-10);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--white-opacity-20);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+/* тот же BackIcon, но смотрит вверх */
+.category-scroll-top-icon {
+  width: 18px;
+  height: 18px;
+  transform: rotate(90deg); /* был влево → стал вверх */
+  transition: transform 0.18s ease;
+}
+
+.category-scroll-top-circle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(0) scale(1.03);
+}
+
+.category-scroll-top-circle:hover .category-scroll-top-icon {
+  transform: rotate(90deg) translateY(-1px);
+}
+
+/* показываем кнопку только когда прилипло и только на малых экранах */
+@media (max-width: 1649px) {
+  .category-scroll-top-circle--visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}

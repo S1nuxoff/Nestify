@@ -1,0 +1,621 @@
+.player-container {
+  position: relative;
+  max-width: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  margin-top: 24px;
+  height: 400px;
+}
+.continue-container {
+  position: relative;
+  max-width: 100%;
+  /* border-radius: 32px; */
+  overflow: hidden;
+  display: flex;
+  height: 80vh;
+  padding-left: 16px;
+  padding-right: 16px;
+  transition: 0.4s ease-in-out;
+  justify-content: center;
+}
+.continue-content {
+  /* padding: 0px 16px; */
+  width: 90%;
+  position: relative;
+  z-index: 4;
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  opacity: 1;
+  visibility: visible; /* Сначала элемент видимый */
+  transition: opacity 0.1s ease-out, visibility 0s 0.5s; /* Плавный переход для opacity, задержка для visibility */
+}
+
+.continue-content.hidden {
+  opacity: 0; /* Плавное исчезновение */
+  visibility: hidden; /* Элемент скрывается, но не исчезает сразу */
+  pointer-events: none; /* Отключение взаимодействия с элементом */
+  transition: opacity 0.1s ease-out, visibility 0s 0.5s; /* Плавное исчезновение */
+}
+.themoviedb-logo {
+  /* width: 100px;
+    height: 30px; */
+  color: var(--white);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 16px;
+  border: 1px solid var(--white);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+.player-content {
+  padding: 0px 16px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.player-content-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.continue-content-top {
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+.continue-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.continue-content-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 64px;
+}
+.player-preview-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* .continue-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  backdrop-filter: blur(70px);
+  -webkit-backdrop-filter: blur(70px);
+
+ 
+  -webkit-mask-image: linear-gradient(to right, black 10%, transparent 100%);
+  mask-image: linear-gradient(to right, black 10%, transparent 100%);
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.303) 10%,
+    transparent 100%
+  );
+  opacity: 1;
+} */
+
+.continue-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  background:
+    /* ⬅️ слева — СМЯГЧИЛИ */ linear-gradient(
+      to right,
+      rgba(13, 13, 13, 0.45) 0%,
+      /* было var(--bg) */ rgba(13, 13, 13, 0.32) 25%,
+      /* было 0.85 */ rgba(13, 13, 13, 0.18) 45%,
+      /* было 0.55 */ rgba(13, 13, 13, 0.08) 60%,
+      /* было 0.25 */ rgba(13, 13, 13, 0) 78%
+    ),
+    /* ⬇️ снизу — ОСТАВЛЯЕМ КАК ЕСТЬ */
+      linear-gradient(
+        to top,
+        var(--bg) 0%,
+        rgba(13, 13, 13, 0.8) 30%,
+        rgba(13, 13, 13, 0.5) 55%,
+        rgba(13, 13, 13, 0.4) 70%,
+        rgba(13, 13, 13, 0) 85%
+      );
+
+  opacity: 1;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+
+  /* Маска: от 100% непрозрачности слева до 0% на 30% ширины */
+  -webkit-mask-image: linear-gradient(to top, black 10%, transparent 100%);
+  mask-image: linear-gradient(to top, black 10%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.471) 20%,
+    transparent 100%
+  );
+  opacity: 1;
+}
+
+.player-status-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--white);
+  background: var(--white-opacity-5);
+  backdrop-filter: blur(30px);
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--white-opacity-10);
+}
+.continue-status-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--white);
+
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 18px;
+}
+.player-meta {
+  display: flex;
+  justify-content: space-between;
+}
+.player-title {
+  font-size: 26px;
+  font-weight: bold;
+  max-width: 520px;
+  color: var(--white);
+}
+.continue-title {
+  font-size: 64px;
+  font-weight: 800;
+  color: var(--white);
+  word-break: keep-all; /* 👈 не разрывает слова */
+  white-space: normal; /* 👈 позволяет перенос целиком */
+}
+
+.player-sub_title {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--white);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.continue-sub_title {
+  font-size: 20px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--white);
+}
+.player-sub_title-episodes {
+  opacity: 0.8;
+}
+.continue_description {
+  color: var(--white);
+  max-width: 500px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Максимум 4 строки */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+.player-play-button-wrapper {
+  width: 96px;
+  height: 96px;
+  border-radius: 32px;
+  background-color: rgba(238, 238, 238, 30%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+
+.continue__play-button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  color: var(--dark);
+  width: 250px;
+  height: 50px;
+  justify-content: center;
+  border-radius: 16px;
+  gap: 8px;
+
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 16px;
+  transition: 0.3 ease-in;
+}
+.continue__play-button:hover {
+  background: var(--main_gradient);
+  transition: 0.3 ease-in;
+}
+
+.continue-sub_age {
+  color: var(--white);
+  border: 1.7px solid var(--white-opacity-40);
+  padding: 4px 8px 4px 8px;
+  max-width: max-content;
+  border-radius: 8px;
+  background-color: var(--white-opacity-20);
+  font-size: 14px;
+}
+
+/* .continue-sub_title > span:not(:last-child)::after {
+  content: "•";
+  margin: 0 6px;
+  color: var(--white);
+} */
+
+.continue-sub_title > span {
+  background-color: var(--white-opacity-10);
+  backdrop-filter: blur(40px);
+  padding: 4px 12px;
+  border-radius: 32px;
+  font-weight: 400;
+  color: var(--white);
+}
+
+.continue-origin_name {
+  color: var(--white);
+  max-width: 500px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1; /* Максимум 4 строки */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 500px;
+  opacity: 0.8;
+  font-size: 24px;
+}
+.continue-titles {
+  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  /* align-items: center;
+  justify-content: center; */
+}
+
+.player-swiper {
+}
+
+.continue-trailer {
+  width: 100;
+}
+.youtube-player-container {
+  /* position: relative; */
+  width: 100%;
+  /* padding-top: 220 0.25%; */
+  pointer-events: none;
+}
+.youtube-player {
+  position: absolute;
+  /* top: -250px; */
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scale(2.4);
+  transition: 0.4s ease-in-out;
+}
+
+.youtube-player-overlay {
+  position: absolute;
+  /* background: linear-gradient(to right, var(--dark) 49%, transparent 100%); */
+  /* background-color: var(--red); */
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  /* backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px); */
+
+  /* Маска: от 100% непрозрачности слева до 0% на 30% ширины */
+  /* -webkit-mask-image: linear-gradient(to right, black 30%, transparent 100%);
+  mask-image: linear-gradient(to right, black 30%, transparent 100%); */
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.461) 30%,
+    transparent 100%
+  );
+}
+.youtube-player-overlay.hidden {
+  display: none;
+}
+
+.continue-volume-btn {
+  position: absolute;
+  /* background-color: var(--white); */
+  bottom: 32px;
+  right: 32px;
+  z-index: 10;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.continue-volume-btn:hover {
+  /* background-color: var(--white-opacity-40);
+  backdrop-filter: blur(10px); */
+}
+
+.continue-volume-icon {
+  width: 32px;
+  height: 32px;
+  display: block;
+  color: var(--white);
+}
+
+.fade-in {
+  transition: opacity 1s ease-in-out;
+}
+
+.continue-container.unmuted .youtube-player {
+  transform: scale(1.5);
+}
+
+/* Основной контейнер */
+.web-player-container {
+  width: 100%;
+
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.web-player-top {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  z-index: 10000;
+  gap: 16px;
+  display: flex;
+  align-items: center;
+  /* background-color: var(--white-opacity-10); */
+  /* backdrop-filter: blur(20px); */
+
+  border-radius: 16px;
+  overflow: hidden;
+}
+.player-back_icon {
+}
+.web-player_title {
+  color: var(--white);
+  font-weight: 500;
+  font-size: 32px;
+}
+
+/* Стилизация Video.js плеера */
+.video-js.custom-theme {
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  overflow: hidden;
+  font-size: 16px;
+}
+
+/* Панель управления */
+.video-js.custom-theme .vjs-control-bar {
+  background: none;
+
+  height: 80px;
+  padding: 0 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  position: fixed;
+  width: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 32px;
+  border-radius: 64px;
+}
+
+/* Иконки управления */
+.video-js.custom-theme .vjs-button {
+  color: var(--white);
+  transition: 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.video-js.custom-theme .vjs-control {
+  width: 40px;
+}
+.video-js.custom-theme .vjs-volume-panel.vjs-volume-panel-horizontal.vjs-hover {
+  width: 64px;
+}
+.video-js.custom-theme .vjs-button:hover {
+  color: var(--blue);
+}
+.vjs-icon-placeholder:before {
+  content: "\f103";
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+/* Ползунок прогресса */
+.video-js.custom-theme .vjs-progress-control {
+}
+
+.video-js.custom-theme .vjs-play-progress {
+  border-radius: 20px;
+  height: 14px;
+  background-color: var(--white);
+}
+.video-js.custom-theme .vjs-load-progress {
+  /* background-color: var(--white-opacity-10); */
+}
+.video-js.custom-theme .vjs-progress-holder {
+  background-color: var(--white-opacity-10);
+  border-radius: 4px;
+}
+/* Кнопки (play, volume, etc.) */
+.video-js.custom-theme .vjs-button {
+  font-size: 22px; /* Размер иконок */
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+/* Таймлайн */
+.video-js.custom-theme .vjs-time-control {
+  color: #ffffff;
+  font-weight: 500;
+  padding: 0;
+}
+.video-js.custom-theme .vjs-remaining-time {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.video-js.custom-theme .vjs-picture-in-picture-control {
+  display: none;
+}
+.video-js.custom-theme .vjs-volume-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* width: 32px; */
+}
+
+/* Громкость */
+.video-js.custom-theme .vjs-volume-control {
+  width: 0px;
+}
+.video-js.custom-theme .vjs-volume-level {
+  background-color: var(--red);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.video-js.custom-theme .vjs-volume-bar {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+.video-js.custom-theme .vjs-volume-panel {
+}
+/* Текст субтитров (если используешь) */
+.video-js.custom-theme .vjs-text-track-display {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  /* Панель управления */
+  .video-js.custom-theme .vjs-control-bar {
+    height: 80px;
+    padding: 0 16px;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: absolute;
+    width: 100%;
+
+    border-radius: 0;
+  }
+  .video-js.custom-theme .vjs-button {
+    font-size: 16px; /* Размер иконок */
+  }
+  .web-player-top {
+    left: 16px;
+  }
+  .web-player_title {
+    font-size: 24px;
+  }
+  .web-player-top svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+.web-player-container_error {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.web-player-container_error-content {
+  padding: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+}
+.web-player-container_error h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff4a4a;
+  margin-bottom: 8px;
+}
+.web-player-container_error p {
+  line-height: 1.5;
+  color: #8d8d8d;
+  max-width: 400px;
+  margin-bottom: 32px;
+}
+.web-player-container_error-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background-color: var(--white-opacity-10);
+  color: var(--white);
+  outline: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 100;
+  cursor: pointer;
+  border-radius: 16px;
+}

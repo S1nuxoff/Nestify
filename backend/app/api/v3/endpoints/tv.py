@@ -19,6 +19,18 @@ router = APIRouter()
 QR_TOKEN_TTL_MINUTES = 5
 
 
+# ── TMDB config (no auth required — key is public-safe read-only) ─────────────
+
+@router.get("/tmdb-config", summary="Return TMDB API key for TV app")
+async def tmdb_config(authorization: str | None = Header(default=None)):
+    await _get_account_by_token(authorization)
+    return {
+        "tmdb_key": settings.TMDB_KEY,
+        "tmdb_base": settings.TMDB_BASE,
+        "tmdb_img": settings.TMDB_IMG,
+    }
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 async def _get_account_by_token(authorization: str | None) -> Account:

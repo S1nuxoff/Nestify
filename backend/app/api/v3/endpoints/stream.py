@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
 
@@ -7,7 +9,7 @@ from app.schemas.torrent import (
     SearchResponse,
     TorrentStatus,
 )
-from app.services import jackett, torrserve
+from app.services import domem, jackett, torrserve
 
 router = APIRouter()
 
@@ -25,15 +27,19 @@ async def search(
     media_type: str = Query("movie"),
 ):
     print(f"[SEARCH] q={q!r} title={title!r} title_en={title_en!r} title_pl={title_pl!r} year={year}", flush=True)
-    result = await jackett.search_multilang(
-        title=title,
-        title_original=title_original,
-        title_en=title_en,
-        title_pl=title_pl,
-        year=year,
-        media_type=media_type,
+    result, embed = await asyncio.gather(
+        jackett.search_multilang(
+            title=title,
+            title_original=title_original,
+            title_en=title_en,
+            title_pl=title_pl,
+            year=year,
+            media_type=media_type,
+        ),
+        domem.fetch_embed_by_imdb(imdb_id),
     )
     print(f"[SEARCH] done uk={len(result['uk'])} ru={len(result['ru'])} en={len(result['en'])}", flush=True)
+    result["embed"] = embed
     return result
 
 

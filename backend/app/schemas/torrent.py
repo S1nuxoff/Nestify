@@ -19,6 +19,7 @@ class SearchResponse(BaseModel):
     ru: list[TorrentResult] = []
     en: list[TorrentResult] = []
     pl: list[TorrentResult] = []
+    embed: dict | None = None
 
 
 class AddTorrentRequest(BaseModel):

@@ -1,0 +1,65 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.nestify.tvshell"
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.nestify.tvshell"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 2
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField "String", "START_URL", "\"https://tv.nestify.club/\""
+            buildConfigField "String", "BACKEND_BASE_URL", "\"https://nestify.club\""
+            buildConfigField "String", "WS_BASE_URL", "\"wss://nestify.club\""
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "START_URL", "\"https://tv.nestify.club/\""
+            buildConfigField "String", "BACKEND_BASE_URL", "\"https://nestify.club\""
+            buildConfigField "String", "WS_BASE_URL", "\"wss://nestify.club\""
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            outputFileName = "NestifyTV-${variant.name}.apk"
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation "androidx.media3:media3-exoplayer:$androidxMedia3Version"
+    implementation "androidx.media3:media3-exoplayer-hls:$androidxMedia3Version"
+    implementation "androidx.media3:media3-ui:$androidxMedia3Version"
+    implementation "androidx.media3:media3-common:$androidxMedia3Version"
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    implementation "com.google.zxing:core:3.5.3"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+}

@@ -333,6 +333,82 @@ object TvApiClient {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    // ── TMDB config ───────────────────────────────────────────────────────────
+
+    suspend fun fetchTmdbKey(baseUrl: String, authToken: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = http.newCall(
+                    Request.Builder()
+                        .url("$baseUrl/api/v3/tv/tmdb-config")
+                        .header("Authorization", "Bearer $authToken")
+                        .get()
+                        .build()
+                ).execute()
+                if (!resp.isSuccessful) return@withContext null
+                JSONObject(resp.body!!.string()).optString("tmdb_key", null)
+            } catch (e: Exception) {
+                Log.e(TAG, "fetchTmdbKey error", e)
+                null
+            }
+        }
+
+    // ── Watch history for home screen ─────────────────────────────────────────
+
+    suspend fun fetchWatchHistory(baseUrl: String, authToken: String, profileId: Int): List<HistoryItem> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = http.newCall(
+                    Request.Builder()
+                        .url("$baseUrl/api/v3/watch/history?user_id=$profileId&limit=20")
+                        .header("Authorization", "Bearer $authToken")
+                        .get()
+                        .build()
+                ).execute()
+                if (!resp.isSuccessful) return@withContext emptyList()
+                val arr = JSONArray(resp.body!!.string())
+                val raw = mutableListOf<Triple<String, Int, Int>>() // movieId, positionSec, duration
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val movieId = o.optString("movie_id", "")
+                    if (movieId.isBlank()) continue
+                    val pos = o.optInt("position_seconds", 0)
+                    val dur = o.optInt("duration", 0)
+                    val season = if (o.has("season") && !o.isNull("season")) o.optInt("season") else null
+                    val episode = if (o.has("episode") && !o.isNull("episode")) o.optInt("episode") else null
+                    raw.add(Triple(movieId, pos, dur))
+                }
+                // Enrich with TMDB details
+                raw.mapNotNull { (movieId, pos, dur) ->
+                    val match = Regex("^tmdb_(movie|tv)_(\\d+)$").matchEntire(movieId) ?: return@mapNotNull null
+                    val type = match.groupValues[1]
+                    val tmdbId = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                    if (pos < 30 || dur <= 0 || pos.toFloat() / dur >= 0.95f) return@mapNotNull null
+                    try {
+                        val details = if (type == "tv") TmdbClient.tvDetails(tmdbId) else TmdbClient.movieDetails(tmdbId)
+                        val title = details?.optString("title", "")?.ifBlank { details.optString("name", "") } ?: ""
+                        val poster = TmdbClient.posterUrl(details?.optString("poster_path"))
+                        val backdrop = TmdbClient.backdropUrl(details?.optString("backdrop_path"))
+                        HistoryItem(
+                            movieId = movieId,
+                            tmdbId = tmdbId,
+                            mediaType = type,
+                            title = title,
+                            posterUrl = poster,
+                            backdropUrl = backdrop,
+                            positionSeconds = pos,
+                            duration = dur,
+                            season = null,
+                            episode = null,
+                        )
+                    } catch (e: Exception) { null }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "fetchWatchHistory error", e)
+                emptyList()
+            }
+        }
+
     private fun parseProfiles(arr: JSONArray?): List<ProfileInfo> {
         if (arr == null) return emptyList()
         return (0 until arr.length()).map {

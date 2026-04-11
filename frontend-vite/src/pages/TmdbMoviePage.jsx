@@ -484,6 +484,16 @@ export default function TmdbMoviePage() {
     });
   };
 
+  const handlePlayEmbed = (embed) => {
+    const imdb = rawDetails?.imdb_id || rawDetails?.external_ids?.imdb_id;
+    if (!imdb || !embed?.embed_url) return;
+    navigate(`/player/domem/${imdb}`, {
+      state: {
+        embed,
+      },
+    });
+  };
+
   const handleSendToTv = async (file) => {
     if (!tvDevice || !movieDetails) return;
     let streamUrl = file.stream_url;
@@ -825,6 +835,7 @@ export default function TmdbMoviePage() {
           watchedMagnet={null}
           onClose={() => setTorrentOpen(false)}
           onPlayInBrowser={handlePlayInBrowser}
+          onPlayEmbed={handlePlayEmbed}
           onSendToTv={playerOnline ? handleSendToTv : null}
         />
       )}

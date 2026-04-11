@@ -72,7 +72,8 @@ class PlayerWsClient(
             override fun onClose(code: Int, reason: String?, remote: Boolean) {
                 Log.d(TAG, "WS closed code=$code reason=$reason remote=$remote")
                 client = null
-                if (shouldReconnect) {
+                // 4403 = device logged out, 4404 = device unavailable — don't reconnect
+                if (shouldReconnect && code != 4403 && code != 4404) {
                     scheduleReconnect()
                 }
             }

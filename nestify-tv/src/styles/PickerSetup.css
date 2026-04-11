@@ -1,0 +1,238 @@
+﻿.ps-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 18px 40px;
+  background: #070708;
+}
+
+.ps-inner {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ps-hero,
+.ps-section {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ps-hero {
+  border-radius: 30px;
+  padding: 18px 18px 20px;
+}
+
+.ps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ps-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-eyebrow {
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ps-title {
+  margin: 0;
+  font-size: 38px;
+  line-height: 0.98;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.ps-sub {
+  max-width: 420px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ps-icon-btn {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.ps-icon-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ps-icon-btn--placeholder {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ps-section {
+  border-radius: 24px;
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ps-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.ps-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ps-chip {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+  white-space: nowrap;
+}
+
+.ps-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.ps-chip--active {
+  background: rgba(229, 9, 20, 0.16);
+  border-color: rgba(255, 66, 66, 0.8);
+  color: #fff;
+}
+
+.ps-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.ps-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.ps-btn:active {
+  transform: scale(0.97);
+}
+
+.ps-btn--ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.ps-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ps-btn--random {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.ps-btn--random:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ps-btn--start {
+  grid-column: 1 / -1;
+  background: #e50914;
+  color: #fff;
+  border-color: #e50914;
+}
+
+.ps-btn--start:hover {
+  transform: translateY(-1px);
+  background: #f0131f;
+}
+
+@media (max-width: 540px) {
+  .ps-page {
+    padding: 18px 14px 32px;
+  }
+
+  .ps-title {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ps-hero,
+  .ps-section {
+    border-radius: 22px;
+  }
+
+  .ps-title {
+    font-size: 28px;
+  }
+
+  .ps-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ps-btn--start {
+    grid-column: auto;
+  }
+}

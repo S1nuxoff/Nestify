@@ -1,0 +1,208 @@
+/* TvKeyboard — full-screen virtual keyboard overlay */
+
+.tvkb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30000000;
+  background: rgba(0, 0, 0, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px 32px;
+  gap: 20px;
+}
+
+/* ── Display bar ── */
+.tvkb-display {
+  width: 100%;
+  max-width: 820px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 14px 20px;
+  min-height: 58px;
+}
+
+.tvkb-display__text {
+  flex: 1;
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tvkb-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 22px;
+  background: #fff;
+  border-radius: 1px;
+  margin-left: 1px;
+  animation: tvkb-blink 0.9s step-end infinite;
+}
+
+@keyframes tvkb-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.tvkb-placeholder {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 20px;
+}
+
+.tvkb-display__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tvkb-lang,
+.tvkb-mic,
+.tvkb-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  pointer-events: auto !important;
+}
+
+.tvkb-lang {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.6);
+}
+
+.tvkb-mic--active {
+  background: rgba(220, 60, 60, 0.85);
+  color: #fff;
+}
+
+/* ── Listening indicator ── */
+.tvkb-listening {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tvkb-listening__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e74c3c;
+  animation: tvkb-pulse 1.2s ease-in-out infinite;
+}
+
+.tvkb-listening__dot:nth-child(2) { animation-delay: 0.2s; }
+.tvkb-listening__dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes tvkb-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.5; }
+  50%       { transform: scale(1.4); opacity: 1;   }
+}
+
+.tvkb-listening__label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 4px;
+}
+
+/* ── Key grid ── */
+.tvkb-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 820px;
+}
+
+.tvkb-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* Base key */
+.tvkb-key {
+  height: 52px;
+  min-width: 52px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+  flex: 1;
+  max-width: 64px;
+  pointer-events: auto !important;
+}
+
+/* Wide keys — Backspace, Space, OK */
+.tvkb-key--wide {
+  max-width: none;
+  font-size: 14px;
+  flex: 2;
+  min-width: 80px;
+}
+
+.tvkb-key--ok {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Shift key */
+.tvkb-key--shift {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: none;
+  flex: 1.2;
+}
+
+/* Shift active — uppercase mode on */
+.tvkb-key--shift-on {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Focused key — highlighted ring */
+.tvkb-key--focused {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+/* Responsive: smaller keys on narrow screens */
+@media (max-width: 600px) {
+  .tvkb-key {
+    height: 44px;
+    font-size: 15px;
+    border-radius: 8px;
+    max-width: 52px;
+  }
+  .tvkb-display__text {
+    font-size: 18px;
+  }
+}

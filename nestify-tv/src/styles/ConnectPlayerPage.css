@@ -1,0 +1,137 @@
+.hbo-container {
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--bg, #07090d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 80px;
+  color: #fff;
+}
+
+.hbo-aura-1, .hbo-aura-2 { display: none; }
+
+.hbo-content {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  animation: hboFadeUp 0.4s ease-out both;
+}
+
+@keyframes hboFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hbo-header {
+  margin-bottom: 44px;
+}
+
+.hbo-title {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+}
+
+.hbo-description {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.6;
+}
+
+/* OTP */
+.hbo-otp-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+
+.hbo-otp-box {
+  position: relative;
+}
+
+.hbo-otp-input {
+  width: 40px;
+  height: 52px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+  caret-color: transparent;
+}
+
+.hbo-otp-underline { display: none; }
+
+.hbo-otp-input:focus {
+  border-color: rgba(255,255,255,0.35);
+}
+
+.hbo-otp-input.has-value {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.09);
+}
+
+/* Статус */
+.hbo-status {
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+.hbo-status--error   { color: #ff8b8b; }
+.hbo-status--success { color: #4cd964; }
+
+/* Кнопки */
+.hbo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.hbo-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.hbo-btn-primary {
+  background: #fff;
+  color: #000;
+}
+
+.hbo-btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+.hbo-btn-link {
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  font-size: 14px;
+}
+
+.hbo-btn-link:hover { color: rgba(255,255,255,0.6); }
+
+.hbo-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 400px) {
+  .hbo-otp-input {
+    width: 34px;
+    height: 46px;
+    font-size: 18px;
+  }
+  .hbo-otp-group { gap: 7px; }
+}

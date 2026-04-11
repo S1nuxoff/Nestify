@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Poster card: narrow, vertical -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="120dp"
+    android:layout_height="180dp"
+    android:layout_marginEnd="10dp"
+    android:focusable="true"
+    android:clickable="true"
+    android:background="@drawable/bg_card_base"
+    android:foreground="@drawable/fg_card_focus">
+
+    <!-- Image container with rounded corners -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="0dp"
+        android:background="@drawable/bg_card_image"
+        android:clipToOutline="true">
+
+        <ImageView
+            android:id="@+id/card_poster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="Poster" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/gradient_bottom_dark" />
+
+        <TextView
+            android:id="@+id/card_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:padding="6dp"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+    </FrameLayout>
+
+</FrameLayout>

@@ -1,0 +1,153 @@
+.create-user__container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 96px;
+}
+.create-user__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 96px;
+  margin-top: 64px;
+}
+.create-user-text {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.create-user-text span {
+  color: var(--white);
+  opacity: 0.8;
+  font-size: 18px;
+  font-weight: 300;
+}
+.create-user__title {
+  font-size: 40px;
+  color: var(--white);
+}
+.create-user__input-container {
+  max-width: 670px;
+}
+.create-user__input {
+  max-width: 100%;
+  background-color: transparent;
+  border: none;
+  font-size: 32px;
+  font-weight: 600;
+  outline: none;
+  color: var(--white);
+
+  border-bottom: 1px solid var(--white-opacity-30);
+  padding-bottom: 8px;
+}
+
+.create-user__input:focus {
+  border-bottom: 1px solid var(--white-opacity-40);
+}
+
+.create-user__input::placeholder {
+  color: var(--white-opacity-10); /* или любой другой */
+  opacity: 1; /* иногда нужно явно указать */
+}
+
+.create-user__next-btn {
+  cursor: pointer;
+  width: 100px;
+  height: 48px;
+  background-color: var(--white-opacity-10);
+  color: var(--white-opacity-40);
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  border-radius: 24px;
+  transition: 0.1s ease-in-out;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.create-user__next-btn.active {
+  color: var(--white);
+  transition: 0.1s ease-in-out;
+}
+
+.create-user__next-btn.active:hover {
+  background-color: var(--white-opacity-40);
+  transition: 0.1s ease-in-out;
+}
+
+.create-user__error {
+  margin-top: 12px;
+  color: #ff5c5c;
+  font-size: 16px;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* (опционально) стили при ошибке */
+.create-user__input.error {
+  border-bottom: 2px solid #ff5c5c;
+}
+
+.avatar-selection-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+}
+.avatar-option {
+  border-radius: 100%;
+}
+
+.avatar-option.selected {
+  border: 4px var(--white) solid;
+}
+.crete-user__avatar-selector {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.avatar-pagination-controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center; /* 👈 выравнивание всех кнопок вправо */
+}
+
+.avatar-pagination-controls button {
+  background-color: transparent;
+  border: 1px solid var(--white-opacity-30);
+  color: var(--white);
+  font-size: 18px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.avatar-pagination-controls button:hover:not(:disabled) {
+  background-color: var(--white-opacity-40);
+}
+
+.avatar-pagination-controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

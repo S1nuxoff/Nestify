@@ -144,7 +144,7 @@
 
     </FrameLayout>
 
-    <!-- ===== СТАН 2: ПІДКЛЮЧЕНИЙ — IDLE (Featured Slider) ===== -->
+    <!-- ===== СТАН 2: ПІДКЛЮЧЕНИЙ — HOME ===== -->
     <FrameLayout
         android:id="@+id/screen_connected"
         android:layout_width="match_parent"
@@ -152,15 +152,186 @@
         android:background="#0d0d0d"
         android:visibility="gone">
 
-        <!-- Full-screen slider -->
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/featured_pager"
+        <!-- Main scrollable content -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/home_scroll"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:scrollbars="none"
+            android:overScrollMode="never"
+            android:focusable="false"
+            android:descendantFocusability="afterDescendants">
 
-        <!-- Loading placeholder (shown while fetching) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Featured slider (480dp tall) -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="480dp">
+
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/featured_pager"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false" />
+
+                    <!-- Dot indicators -->
+                    <LinearLayout
+                        android:id="@+id/slide_dots"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|center_horizontal"
+                        android:layout_marginBottom="14dp"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:visibility="gone" />
+
+                </FrameLayout>
+
+                <!-- Continue Watching row -->
+                <LinearLayout
+                    android:id="@+id/continue_row_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="28dp"
+                    android:layout_marginBottom="0dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Продовжити перегляд"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:paddingStart="48dp"
+                        android:paddingEnd="48dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/continue_recycler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="48dp"
+                        android:paddingEnd="48dp"
+                        android:clipToPadding="false"
+                        android:focusable="false"
+                        android:descendantFocusability="afterDescendants"
+                        android:orientation="horizontal" />
+
+                </LinearLayout>
+
+                <!-- Category selector -->
+                <LinearLayout
+                    android:id="@+id/category_selector"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="48dp"
+                    android:paddingEnd="48dp"
+                    android:layout_marginTop="28dp"
+                    android:layout_marginBottom="20dp"
+                    android:gravity="start"
+                    android:visibility="gone">
+
+                    <Button
+                        android:id="@+id/cat_all"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Все"
+                        android:textSize="13sp"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/bg_cat_btn_selected"
+                        android:layout_marginEnd="8dp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false" />
+
+                    <Button
+                        android:id="@+id/cat_movies"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Фільми"
+                        android:textSize="13sp"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/bg_cat_btn"
+                        android:layout_marginEnd="8dp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false" />
+
+                    <Button
+                        android:id="@+id/cat_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Серіали"
+                        android:textSize="13sp"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/bg_cat_btn"
+                        android:layout_marginEnd="8dp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false" />
+
+                    <Button
+                        android:id="@+id/cat_animation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Анімація"
+                        android:textSize="13sp"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:background="@drawable/bg_cat_btn"
+                        android:focusable="true"
+                        android:focusableInTouchMode="false" />
+
+                </LinearLayout>
+
+                <!-- Content sections (vertical RecyclerView) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/sections_recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:descendantFocusability="afterDescendants"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone" />
+
+                <!-- Content loading spinner -->
+                <LinearLayout
+                    android:id="@+id/content_loading"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:gravity="center"
+                    android:visibility="gone">
+
+                    <ProgressBar
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:indeterminateTint="#FFFFFF" />
+
+                </LinearLayout>
+
+                <!-- Bottom padding -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Initial full-screen loading (before any data) -->
         <LinearLayout
-            android:id="@+id/slider_loading"
+            android:id="@+id/initial_loading"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
@@ -192,17 +363,6 @@
                 android:textSize="15sp"
                 android:textColor="#88FFFFFF" />
         </LinearLayout>
-
-        <!-- Dot indicators -->
-        <LinearLayout
-            android:id="@+id/slide_dots"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="28dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:visibility="gone" />
 
         <!-- Profile pill: top-left (click to expand) -->
         <LinearLayout

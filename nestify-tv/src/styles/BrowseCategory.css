@@ -1,0 +1,253 @@
+/* src/styles/BrowseCategory.css */
+
+/* -----------------------------
+   Page motion
+------------------------------ */
+.browse-main {
+  animation: appleFade 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes appleFade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .browse-main {
+    animation: none;
+  }
+  .featured-card {
+    transition: none !important;
+  }
+}
+
+/* -----------------------------
+   Header
+------------------------------ */
+.category-header {
+  margin-bottom: 16px;
+}
+
+.category-header h1 {
+  font-size: clamp(28px, 7vw, 56px);
+  font-weight: 900;
+  letter-spacing: -1.6px;
+  margin: 0;
+  line-height: 1.02;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.section-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* -----------------------------
+   Subcategories block + slider
+------------------------------ */
+.subcat-block {
+  margin-bottom: 10px;
+}
+
+.subcat-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.subcat-slider {
+  display: flex;
+  gap: 10px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 6px 2px 12px;
+
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* firefox */
+  scroll-padding-left: 2px;
+
+  /* subtle fade edges (optional)
+     works only if container has background behind */
+  position: relative;
+}
+
+.subcat-slider::-webkit-scrollbar {
+  height: 0px;
+}
+
+.subcat-slider > * {
+  scroll-snap-align: start;
+}
+
+/* -----------------------------
+   Card (base)
+------------------------------ */
+.featured-card {
+  position: relative;
+  flex: 0 0 auto;
+
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  display: flex;
+  align-items: flex-end;
+
+  transition: transform 0.32s cubic-bezier(0.2, 1, 0.2, 1),
+    border-color 0.32s ease, background 0.32s ease, box-shadow 0.32s ease;
+
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.featured-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      900px 240px at 18% 0%,
+      rgba(255, 255, 255, 0.14),
+      transparent 45%
+    ),
+    radial-gradient(
+      700px 220px at 85% 120%,
+      rgba(255, 255, 255, 0.1),
+      transparent 55%
+    );
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.featured-card::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s ease;
+}
+
+.featured-card span {
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.12;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 16px;
+
+  /* stop ugly wrap jumps */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Hover / active */
+.featured-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+.featured-card:hover::after {
+  opacity: 1;
+}
+
+.featured-card.is-active {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  box-shadow: 0 16px 52px rgba(0, 0, 0, 0.55);
+}
+.featured-card.is-active span {
+  color: #fff;
+}
+
+/* Focus visible */
+.featured-card:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 3px;
+}
+
+/* -----------------------------
+   ✅ Smaller cards (your request)
+   All subcats use this modifier
+------------------------------ */
+.featured-card--sm {
+  width: min(56vw, 260px);
+  height: 100px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.featured-card--sm span {
+  font-size: 14px;
+}
+
+/* -----------------------------
+   Phones
+------------------------------ */
+@media (max-width: 860px) {
+  .category-header {
+    margin-bottom: 14px;
+  }
+
+  .featured-card:hover {
+    transform: none; /* no hover bounce on touch */
+  }
+
+  .subcat-slider {
+    gap: 9px;
+    padding: 6px 2px 12px;
+  }
+
+  .featured-card--sm {
+    width: 50%;
+    height: 92px;
+    padding: 12px;
+  }
+
+  .featured-card--sm span {
+    font-size: 14px;
+  }
+}

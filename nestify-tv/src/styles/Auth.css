@@ -1,0 +1,210 @@
+/* ============================================================
+   Auth pages — TV-optimised (no real inputs, all buttons)
+   ============================================================ */
+
+.auth-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 32px 60px;
+  background: var(--bg, #07090d);
+}
+
+.auth-logo {
+  width: 96px;
+  height: auto;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.auth-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 32px;
+  letter-spacing: -0.3px;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-qr-panel {
+  width: 100%;
+  max-width: 460px;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 12px 0;
+}
+
+.auth-qr-image {
+  width: 320px;
+  height: 320px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
+}
+
+.auth-qr-copy {
+  max-width: 380px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+/* Re-enable all interactions on the auth page — tv-mode disables pointer-events globally */
+body.tv-mode .auth-page,
+body.tv-mode .auth-page * {
+  pointer-events: auto !important;
+  cursor: default !important;
+}
+
+/* ── Field button ─────────────────────────────────────────── */
+
+.auth-field-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  outline: none;
+}
+
+.auth-field-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.auth-field-btn:focus-visible,
+body.tv-mode .auth-field-btn:focus-visible {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-field-btn__label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+  min-width: 82px;
+  flex-shrink: 0;
+}
+
+.auth-field-btn__value {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 400;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-field-btn__value--empty {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 14px;
+}
+
+.auth-field-btn__chevron {
+  color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+/* ── Error ────────────────────────────────────────────────── */
+
+.auth-error {
+  font-size: 13px;
+  color: #ff8b8b;
+  text-align: center;
+  padding: 4px 0;
+}
+
+/* ── Submit button ────────────────────────────────────────── */
+
+.auth-btn {
+  width: 100%;
+  padding: 16px;
+  margin-top: 8px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.auth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-btn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+/* White button — double ring for visibility */
+.auth-btn:focus-visible,
+body.tv-mode .auth-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #07090d, 0 0 0 5px #fff;
+}
+
+/* ── Switch page button ───────────────────────────────────── */
+
+.auth-switch-btn {
+  margin-top: auto;
+  padding-top: 24px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  outline: none;
+}
+
+.auth-switch-btn strong {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.auth-switch-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.auth-switch-btn:focus-visible,
+body.tv-mode .auth-switch-btn:focus-visible {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.75);
+}

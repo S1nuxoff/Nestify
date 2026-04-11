@@ -1,0 +1,54 @@
+/* Featured.css — native scroll slider */
+
+.ft-root {
+  position: relative;
+  width: 100%;
+}
+
+.ft-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ft-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ft-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+}
+
+/* Pagination bullets */
+.ft-bullets {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ft-bullet {
+  width: 6px;
+  height: 2px;
+  border-radius: 0;
+  border: none;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.ft-bullet--active {
+  width: 24px;
+  background: rgba(255, 255, 255, 0.9);
+}
