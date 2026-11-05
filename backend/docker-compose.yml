@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
     environment:
-      - DATABASE_URL=postgresql+asyncpg://nestify:Afynjv228@188.137.249.105:5432/nestify-db
+      - DATABASE_URL=${DATABASE_URL}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nestify-back.rule=Host(`api.opencine.cloud`)"

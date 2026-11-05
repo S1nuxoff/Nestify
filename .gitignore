@@ -32,6 +32,9 @@ web/node_modules/
 tv/node_modules/
 
 
+__pycache__/
+*.pyc
+
 # deps / билды / кеши
 node_modules/
 frontend/node_modules/

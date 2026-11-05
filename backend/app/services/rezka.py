@@ -5,7 +5,8 @@ import re
 import base64
 import datetime
 import urllib.parse
-from app.utils.utils import check_video_exists, get_imdb_id
+from app.core.config import settings
+from app.utils.utils import check_video_exists, get_imdb_id, parse_cookie_header
 from app.services.themoviedb import tmdb_by_imdb
 from app.services.movie_mapper import build_movie_payload
 
@@ -50,18 +51,7 @@ HEADERS = {
 }
 
 
-COOKIES = {
-    "dle_user_taken": "1",
-    "dle_user_id": "2845490",
-    "dle_password": "a14b50a72bf0e906f244c849b848d8a4",
-    "dle_user_token": "aa8daa7b85f26deb0463fed69fd2d451",
-    "_ym_uid": "1767384762395958986",
-    "_ym_d": "1767384762",
-    "PHPSESSID": "ako14crpcr3k841k9co5spb6vn",
-    "_ym_isad": "1",
-    "_clck": "19tdp4p%5E2%5Eg2d%5E0%5E2193",
-    "_clsk": "1rqznfn%5E1767384817260%5E2%5E0%5Eo.clarity.ms%2Fcollect",
-}
+COOKIES = parse_cookie_header(settings.REZKA_COOKIES)
 
 COLLECTIONS_JSON_PATH = os.path.join("app", "data", "collections.json")
 

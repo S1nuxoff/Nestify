@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     REZKA_MIRROR: str = "hdrezka-home.tv"
     REZKA_REPLACE_FROM: str = "rezka.ag,hdrezka.ag,rezka.fi,rezka.me,rezka.uno"
     REZKA_PROXY: str = ""
+    # "name=value; name=value", as copied from a browser request
+    REZKA_COOKIES: str = ""
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # TMDB

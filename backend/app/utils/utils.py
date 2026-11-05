@@ -4,6 +4,12 @@ import base64
 import urllib.parse
 
 
+def parse_cookie_header(value):
+    """Turn "a=1; b=2" into {"a": "1", "b": "2"}."""
+    pairs = (part.strip().split("=", 1) for part in (value or "").split(";") if "=" in part)
+    return {name.strip(): val.strip() for name, val in pairs}
+
+
 def get_video_id_from_embed(url):
     # Используем регулярное выражение для извлечения ID видео из ссылки вида embed
     match = re.search(r"youtube\.com/embed/([a-zA-Z0-9_-]+)", url)
