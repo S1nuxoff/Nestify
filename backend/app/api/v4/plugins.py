@@ -12,6 +12,7 @@ from app.api.v1.endpoints.auth import get_current_account
 from app.core.config import settings
 from app.models.accounts import Account
 from app.models.source_plugin import SourcePlugin
+from app.plugins.account_plugins import AccountPluginStore
 from app.plugins.client import PluginClient, PluginError, base_url_of
 from app.plugins.play import PlaySessions
 from app.plugins.schemas import Resolved, SourcesRequest
@@ -24,6 +25,7 @@ _store = PluginStore()
 _plugin_http = httpx.AsyncClient(follow_redirects=False, timeout=httpx.Timeout(15, read=30))
 _media_http = httpx.AsyncClient(follow_redirects=True, timeout=httpx.Timeout(15, read=60))
 _sessions = PlaySessions()
+_account_plugins = AccountPluginStore()
 
 
 def get_store() -> PluginStore:
@@ -40,6 +42,10 @@ def get_media_http() -> httpx.AsyncClient:
 
 def get_sessions() -> PlaySessions:
     return _sessions
+
+
+def get_account_plugins() -> AccountPluginStore:
+    return _account_plugins
 
 
 def _public(plugin: SourcePlugin) -> dict:
@@ -159,12 +165,14 @@ async def delete_plugin(
 @router.post("/sources")
 async def find_sources(
     body: SourcesRequest,
-    _: Account = Depends(get_current_account),
+    account: Account = Depends(get_current_account),
     store: PluginStore = Depends(get_store),
     client: PluginClient = Depends(get_plugin_client),
+    choices: AccountPluginStore = Depends(get_account_plugins),
 ):
-    """Ask every enabled plugin at once. A failing plugin never hides the others' results."""
-    plugins = await store.list(enabled_only=True)
+    """Ask every plugin this account has at once. A failing plugin never hides the others' results."""
+    removed = await choices.removed(account.id)
+    plugins = [p for p in await store.list(enabled_only=True) if p.id not in removed]
     results = await asyncio.gather(
         *(client.sources(p.base_url, p.token, body) for p in plugins),
         return_exceptions=True,
@@ -209,13 +217,14 @@ def _for_client(resolved: Resolved, sessions: PlaySessions) -> dict:
 @router.post("/resolve")
 async def resolve_source(
     body: ResolveRequest,
-    _: Account = Depends(get_current_account),
+    account: Account = Depends(get_current_account),
     store: PluginStore = Depends(get_store),
     client: PluginClient = Depends(get_plugin_client),
     sessions: PlaySessions = Depends(get_sessions),
+    choices: AccountPluginStore = Depends(get_account_plugins),
 ):
     plugin = await store.get(body.plugin_id)
-    if plugin is None or not plugin.enabled:
+    if plugin is None or not plugin.enabled or plugin.id in await choices.removed(account.id):
         raise HTTPException(404, "plugin not found")
     try:
         resolved = await client.resolve(plugin.base_url, plugin.token, body.source_id)

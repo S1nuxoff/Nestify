@@ -33,3 +33,14 @@ export const getPlaybackState = async (userId, movieId) => {
 };
 
 export const savePlaybackVoice = (body) => v4.put("/playback/voice", body);
+
+// Сторінка «Розширення».
+export const getExtensions = async () => {
+  const res = await v4.get("/extensions");
+  return res.data;
+};
+
+export const setExtensionInstalled = (id, installed) => v4.put(`/extensions/${id}`, { installed });
+
+export const addExtensionByLink = (manifestUrl, token) =>
+  v4.post("/plugins", { manifest_url: manifestUrl, token: token || undefined });

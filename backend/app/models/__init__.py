@@ -10,3 +10,4 @@ from app.models.app_settings import AppSettings
 from app.models.tv_device import TvDevice, TvLoginToken
 from app.models.source_plugin import SourcePlugin
 from app.models.playback_preference import PlaybackPreference
+from app.models.account_plugin import AccountPlugin

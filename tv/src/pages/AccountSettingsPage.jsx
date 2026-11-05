@@ -4,6 +4,7 @@ import {
   User, Tv, SlidersHorizontal, Smartphone, Info,
   LogOut, Plus, Pencil, Link,
 } from "lucide-react";
+import { Puzzle } from "lucide-react";
 import { getMe } from "../api/auth";
 import { clearAuthSession, getCurrentProfile, setCurrentProfile, getProfilesCache, setProfilesCache } from "../core/session";
 import Header from "../components/layout/Header";
@@ -15,6 +16,7 @@ const MENU_ITEMS = [
   { icon: Tv,                label: "Підключити ТВ", path: "/connect" },
   { icon: SlidersHorizontal, label: "Налаштування", path: "/account/prefs"   },
   { icon: Smartphone,        label: "Пристрої",     path: "/account/devices" },
+  { icon: Puzzle,            label: "Розширення",   path: "/account/extensions", full: true },
   { icon: Info,              label: "Про сервіс",   path: "/account/about",  full: true },
 ];
 

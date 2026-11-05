@@ -56,6 +56,11 @@ class FakeStore:
         return self.items.pop(plugin_id, None) is not None
 
 
+class NoChoices:
+    async def removed(self, account_id):
+        return set()
+
+
 class World:
     """Fake plugin hosts and a fake CDN."""
 
@@ -125,6 +130,7 @@ def client(world, store, sessions, monkeypatch):
         api.get_plugin_client: lambda: PluginClient(plugin_http),
         api.get_media_http: lambda: media_http,
         api.get_sessions: lambda: sessions,
+        api.get_account_plugins: lambda: NoChoices(),
     })
     return TestClient(app)
 

@@ -40,6 +40,7 @@ import AccountPrefsPage from "./pages/AccountPrefsPage";
 import AccountPage from "./pages/AccountPage";
 import AccountDevicesPage from "./pages/AccountDevicesPage";
 import AccountAboutPage from "./pages/AccountAboutPage";
+import AccountExtensionsPage from "./pages/AccountExtensionsPage";
 import TvLoginPage from "./pages/TvLoginPage";
 import { useTvDevice } from "./hooks/useTvDevice";
 import "./styles/App.css";
@@ -293,6 +294,7 @@ function App() {
             <Route path="/account/account" element={<AccountPage />} />
             <Route path="/account/devices" element={<AccountDevicesPage />} />
             <Route path="/account/about" element={<AccountAboutPage />} />
+            <Route path="/account/extensions" element={<AccountExtensionsPage />} />
             <Route path="/account/prefs" element={<AccountPrefsPage />} />
             <Route
               path="/tv-login"

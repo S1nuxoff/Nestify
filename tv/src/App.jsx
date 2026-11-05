@@ -19,6 +19,7 @@ import AccountSettingsPage from "./pages/AccountSettingsPage";
 import AccountPage from "./pages/AccountPage";
 import AccountDevicesPage from "./pages/AccountDevicesPage";
 import AccountAboutPage from "./pages/AccountAboutPage";
+import AccountExtensionsPage from "./pages/AccountExtensionsPage";
 import AccountPrefsPage from "./pages/AccountPrefsPage";
 import MoviePage from "./pages/MoviePage";
 import TmdbMoviePage from "./pages/TmdbMoviePage";
@@ -296,6 +297,7 @@ function App() {
             <Route path="/account/account" element={<AccountPage />} />
             <Route path="/account/devices" element={<AccountDevicesPage />} />
             <Route path="/account/about" element={<AccountAboutPage />} />
+            <Route path="/account/extensions" element={<AccountExtensionsPage />} />
             <Route path="/account/prefs" element={<AccountPrefsPage />} />
 
             <Route
