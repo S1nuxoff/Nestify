@@ -367,6 +367,94 @@ def test_play_streams_from_a_real_http_server(client, sessions):
         server.shutdown()
 
 
+class RedirectingCdn:
+    def __init__(self):
+        self.paths = []
+        self.final_status = 206
+        self.final_down = False
+
+    def __call__(self, request):
+        self.paths.append(request.url.path)
+        if request.url.path == "/link.mp4":
+            return httpx.Response(302, headers={"location": "https://edge.test/final.mp4"})
+        if self.final_down:
+            raise httpx.ConnectError("boom")
+        if self.final_status != 206:
+            return httpx.Response(self.final_status)
+        return httpx.Response(206, stream=httpx.ByteStream(b"xy"), headers={"content-range": "bytes 0-1/2"})
+
+
+@pytest.fixture
+def cdn(client):
+    cdn = RedirectingCdn()
+    http = httpx.AsyncClient(transport=httpx.MockTransport(cdn), follow_redirects=True)
+    client.app.dependency_overrides[api.get_media_http] = lambda: http
+    return cdn
+
+
+def seek(client, token, position=0):
+    return client.get(f"/api/v4/play/{token}", headers={"Range": f"bytes={position}-"})
+
+
+def test_seeks_skip_the_redirect(client, sessions, cdn):
+    token = sessions.create("https://cdn.test/link.mp4")
+    assert seek(client, token).status_code == 206
+    assert cdn.paths == ["/link.mp4", "/final.mp4"]
+    assert seek(client, token, 500).status_code == 206
+    assert seek(client, token, 900).status_code == 206
+    assert cdn.paths == ["/link.mp4", "/final.mp4", "/final.mp4", "/final.mp4"]
+
+
+@pytest.mark.parametrize("status", [403, 404, 500])
+def test_expired_final_link_goes_through_the_original_again(client, sessions, cdn, status):
+    token = sessions.create("https://cdn.test/link.mp4")
+    seek(client, token)
+    cdn.final_status = status
+    cdn.paths.clear()
+    assert seek(client, token, 500).status_code == 502
+    assert cdn.paths == ["/final.mp4", "/link.mp4", "/final.mp4"]
+    assert sessions.get(token).final_url is None
+    cdn.final_status = 206
+    cdn.paths.clear()
+    assert seek(client, token, 500).status_code == 206
+    assert cdn.paths == ["/link.mp4", "/final.mp4"]
+    assert sessions.get(token).final_url == "https://edge.test/final.mp4"
+
+
+def test_unreachable_final_link_goes_through_the_original_again(client, sessions, cdn):
+    token = sessions.create("https://cdn.test/link.mp4")
+    seek(client, token)
+    cdn.final_down = True
+    cdn.paths.clear()
+    assert seek(client, token, 500).status_code == 502
+    assert cdn.paths == ["/final.mp4", "/link.mp4", "/final.mp4"]
+    assert sessions.get(token).final_url is None
+
+
+def test_seek_past_the_end_does_not_forget_the_final_link(client, sessions, cdn):
+    token = sessions.create("https://cdn.test/link.mp4")
+    seek(client, token)
+    cdn.final_status = 416
+    cdn.paths.clear()
+    assert seek(client, token, 10**9).status_code == 416
+    assert cdn.paths == ["/final.mp4"]
+    assert sessions.get(token).final_url == "https://edge.test/final.mp4"
+
+
+def test_link_without_redirect_keeps_working(client, sessions, world):
+    token = sessions.create("https://cdn.test/v.mp4")
+    assert seek(client, token).status_code == 206
+    assert seek(client, token, 5).status_code == 206
+    assert sessions.get(token).final_url is None
+
+
+def test_final_link_stays_out_of_responses(client, sessions, cdn):
+    token = sessions.create("https://cdn.test/link.mp4")
+    response = seek(client, token)
+    assert "edge.test" not in response.text
+    assert "edge.test" not in str(response.headers)
+
+
 # --- plugin client --------------------------------------------------------------------------
 
 def test_base_url_of():

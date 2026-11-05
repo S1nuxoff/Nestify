@@ -21,6 +21,8 @@ class PlayTarget:
     headers: dict[str, str] = field(default_factory=dict)
     media_type: str | None = None
     expires_at: float = 0.0
+    # Where url redirected to. Every seek is a new request, and skipping the redirect halves its delay.
+    final_url: str | None = None
 
 
 class PlaySessions:

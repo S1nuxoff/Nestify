@@ -237,10 +237,24 @@ async def play(
     headers = {**target.headers, "Accept-Encoding": "identity"}
     if request.headers.get("range"):
         headers["Range"] = request.headers["range"]
-    try:
-        upstream = await http.send(http.build_request("GET", target.url, headers=headers), stream=True)
-    except httpx.HTTPError as exc:
-        raise HTTPException(502, f"media source is unreachable: {type(exc).__name__}") from exc
+    upstream = None
+    if target.final_url:
+        try:
+            upstream = await http.send(http.build_request("GET", target.final_url, headers=headers), stream=True)
+        except httpx.HTTPError:
+            upstream = None
+        if upstream is not None and upstream.status_code >= 400 and upstream.status_code != 416:
+            await upstream.aclose()
+            upstream = None
+        if upstream is None:
+            target.final_url = None  # it has expired, so go through the original link again
+    if upstream is None:
+        try:
+            upstream = await http.send(http.build_request("GET", target.url, headers=headers), stream=True)
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, f"media source is unreachable: {type(exc).__name__}") from exc
+        if upstream.status_code < 400 and str(upstream.url) != target.url:
+            target.final_url = str(upstream.url)
     if upstream.status_code >= 400:
         status = upstream.status_code
         await upstream.aclose()
