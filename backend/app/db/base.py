@@ -9,6 +9,7 @@ from app.models.accounts import Account
 from app.models.users import User
 from app.models.liked_movies import LikedMovie
 from app.models.app_settings import AppSettings
+from app.models.source_plugin import SourcePlugin
 
 
 async def create_all_tables():

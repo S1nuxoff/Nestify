@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 import uuid
 import uvicorn
@@ -12,13 +13,12 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.api.v2.api import api_router_v2
 from app.api.v3.api import api_router_v3
+from app.api.v4.api import api_router_v4
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.base import create_all_tables
 from app.websockets import live_session
 from app.websockets import player_hub
 
-from fastapi.responses import StreamingResponse
-import httpx
 
 logger = logging.getLogger("nestify.backend")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -32,6 +32,7 @@ app = FastAPI(
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(api_router_v2, prefix="/api/v2")
 app.include_router(api_router_v3, prefix="/api/v3")
+app.include_router(api_router_v4, prefix="/api/v4")
 app.include_router(live_session.router)
 app.include_router(player_hub.router)
 app.add_middleware(
@@ -66,7 +67,7 @@ async def request_logging_middleware(request: Request, call_next):
             "event": "http_request",
             "request_id": request_id,
             "method": request.method,
-            "path": request.url.path,
+            "path": re.sub(r"(/api/v4/play/).+", r"\1***", request.url.path),
             "query": str(request.url.query or ""),
             "status_code": response.status_code if response is not None else 500,
             "duration_ms": duration_ms,
@@ -86,65 +87,6 @@ async def health():
         "service": "backend",
         "version": settings.VERSION,
     }
-
-
-@app.get("/proxy")
-async def proxy_video(request: Request, url: str):
-    """
-    Проксируем MP4/HLS-поток, пробрасывая Range-заголовок и Referer.
-    Работает с ReactPlayer / <video>, поддерживает перемотку.
-    """
-    # какие-то ссылки с voidboost не отдают видео без правильного Referer + UA
-    base_headers = {
-        "Referer": "https://voidboost.net",
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/123.0.0.0 Safari/537.36"
-        ),
-    }
-    # если браузер прислал Range — пробрасываем
-    if rng := request.headers.get("range"):
-        base_headers["Range"] = rng
-
-    async def stream_generator():
-        # держим клиент и соединение открытыми, пока генерируем чанки
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            async with client.stream("GET", url, headers=base_headers) as resp:
-                if resp.status_code >= 400:
-                    # voidboost может вернуть 403/404
-                    raise HTTPException(resp.status_code, "upstream error")
-
-                # копируем важные заголовки для кеша/перемотки
-                response_headers = {
-                    k: v
-                    for k, v in resp.headers.items()
-                    if k.lower()
-                    in {
-                        "content-length",
-                        "content-range",
-                        "accept-ranges",
-                        "content-type",
-                    }
-                }
-                # отправляем их единственный раз – через yield None
-                yield response_headers
-
-                async for chunk in resp.aiter_bytes():
-                    yield chunk
-
-    gen = stream_generator()
-
-    # «слово-хак»: берём первые yield-данные (заголовки) перед тем,
-    # как StreamingResponse начнёт итерацию
-    first = await gen.__anext__()  # dict c заголовками
-    status = 206 if "Range" in base_headers else 200
-    return StreamingResponse(
-        gen,  # дальше пойдут сами чанки
-        status_code=status,
-        headers=first,
-        media_type=first.get("Content-Type", "video/mp4"),
-    )
 
 
 @app.on_event("startup")

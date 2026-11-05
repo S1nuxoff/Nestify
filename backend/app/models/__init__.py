@@ -8,3 +8,4 @@ from app.models.featured import Featured
 from app.models.sessions import Session
 from app.models.app_settings import AppSettings
 from app.models.tv_device import TvDevice, TvLoginToken
+from app.models.source_plugin import SourcePlugin

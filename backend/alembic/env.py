@@ -18,6 +18,7 @@ from app.models.users import User
 from app.models.featured import Featured
 from app.models.sessions import Session
 from app.models.app_settings import AppSettings
+from app.models.source_plugin import SourcePlugin
 
 # це конфіг Alembic’а
 config = context.config
