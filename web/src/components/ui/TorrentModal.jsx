@@ -3,6 +3,7 @@ import { searchTorrents, addTorrent, getTorrentStatus, removeTorrent, preloadTor
 import { X, Play, Tv, Loader2, Zap, ChevronRight } from "lucide-react";
 import { getCurrentProfile } from "../../core/session";
 import { getCachedTorrents, setCachedTorrents, makeTorrentCacheKey } from "../../core/torrentCache";
+import usePluginSources from "../../hooks/usePluginSources";
 
 /* ─── helpers ──────────────────────────────────────────────── */
 function formatSize(b) {
@@ -123,7 +124,8 @@ function shouldStartPlayback(status, elapsed, file, durationSeconds, mode = "bro
 export default function TorrentModal({
   title, titleOriginal, titleEnglish = null, titlePolish = null, year, imdbId, tmdbId, mediaType, poster, runtimeMinutes,
   watchedMagnet = null,
-  onClose, onSendToTv, onPlayInBrowser, onPlayEmbed,
+  tmdbSeasons = null, initialSeason = null, initialEpisode = null,
+  onClose, onSendToTv, onPlayInBrowser, onPlayEmbed, onPlayPlugin,
 }) {
   const watchedBtih = extractBtih(watchedMagnet);
   const [results, setResults]         = useState({ uk: [], ru: [], en: [], pl: [] });
@@ -141,6 +143,12 @@ export default function TorrentModal({
   const [focusedIdx, setFocusedIdx]   = useState(0);
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
+
+  const online = usePluginSources({
+    title, titleOriginal, year, imdbId, tmdbId, mediaType, seasons: tmdbSeasons, initialSeason, initialEpisode,
+  });
+  const onlineTab = langTab === "online";
+  const [onlineError, setOnlineError] = useState(null);
 
   const pollRef          = useRef(null);
   const playingRef       = useRef(false);
@@ -222,6 +230,42 @@ export default function TorrentModal({
     finally { setLoading(false); setAddingIdx(null); }
   }, [title, titleOriginal, poster]);
 
+  /* ── plugin sources ── */
+  const torrentsFound = results.uk.length + results.ru.length + results.en.length + results.pl.length;
+
+  // Якщо торентів немає, одразу показуємо те, що знайшли плагіни.
+  useEffect(() => {
+    if (!loading && !torrentsFound && online.available && step === "search") setLangTab("online");
+  }, [loading, torrentsFound, online.available, step]);
+
+  const playOnline = useCallback(async (source, target = "browser") => {
+    setOnlineError(null);
+    const resolved = await online.resolve(source);
+    if (!resolved) return;
+    if (resolved.kind === "torrent") {
+      setLangTab("best");
+      handleSelectTorrent({ magnet: resolved.magnet, title: source.title }, null);
+      return;
+    }
+    if (resolved.kind === "embed" || !resolved.streams?.length) {
+      setOnlineError("Цей тип джерела поки не підтримується");
+      return;
+    }
+    playingRef.current = true;
+    const best = resolved.streams[resolved.streams.length - 1].url;
+    if (target === "tv") {
+      onSendToTv?.({ stream_url: best });
+    } else {
+      onPlayPlugin?.({
+        sources: resolved.streams,
+        subtitles: (resolved.subtitles || []).map(s => ({ lang: s.label || s.lang, url: s.url })),
+        season: online.isTv ? online.season : null,
+        episode: online.isTv ? online.episode : null,
+      });
+    }
+    onClose();
+  }, [online.resolve, online.isTv, online.season, online.episode, handleSelectTorrent, onSendToTv, onPlayPlugin, onClose]);
+
   /* ── preload ── */
   const startPreload = useCallback((type, file) => {
     setPendingAction({ type, file });
@@ -298,7 +342,7 @@ export default function TorrentModal({
 
   /* ── tab results ── */
   const availableQualities = useMemo(() => {
-    if (langTab === "direct") return [];
+    if (langTab === "direct" || langTab === "online") return [];
     const base = langTab === "best"
       ? [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])]
       : (results[langTab] || []);
@@ -307,7 +351,7 @@ export default function TorrentModal({
   }, [results, langTab]);
 
   const tabResults = useMemo(() => {
-    if (langTab === "direct") return [];
+    if (langTab === "direct" || langTab === "online") return [];
     let items;
     if (langTab === "best") {
       const all = [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])];
@@ -323,7 +367,7 @@ export default function TorrentModal({
     return items;
   }, [results, langTab, qualityFilter]);
 
-  const activeList = step === "files" ? (isSeries ? episodesInSeason : files) : tabResults;
+  const activeList = step === "files" ? (isSeries ? episodesInSeason : files) : onlineTab ? online.sources : tabResults;
 
   /* ── keyboard navigation ── */
   useEffect(() => {
@@ -344,6 +388,10 @@ export default function TorrentModal({
             onPlayEmbed(embed);
             break;
           }
+          if (step === "search" && onlineTab) {
+            if (online.sources[focusedIdx]) playOnline(online.sources[focusedIdx]);
+            break;
+          }
           if (step === "search" && tabResults[focusedIdx]) handleSelectTorrent(tabResults[focusedIdx], focusedIdx);
           if (step === "files") {
             const f = isSeries ? episodesInSeason[focusedIdx] : files[focusedIdx];
@@ -361,7 +409,7 @@ export default function TorrentModal({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [step, focusedIdx, tabResults, files, activeList, isSeries, episodesInSeason, handleSelectTorrent, startPreload, onClose]);
+  }, [step, focusedIdx, tabResults, files, activeList, isSeries, episodesInSeason, handleSelectTorrent, startPreload, onClose, onlineTab, online.sources, playOnline]);
 
   useEffect(() => {
     const el = itemRefs.current[focusedIdx];
@@ -410,7 +458,8 @@ export default function TorrentModal({
                   { key: "en",   label: null,  icon: "/images/us.svg", text: "Eng", count: results.en.length },
                   { key: "pl",   label: null,  icon: "/images/pl.svg", text: "Pol", count: results.pl.length },
                   { key: "direct", label: null, icon: null, text: "Direct", count: embed ? 1 : 0 },
-                ].map(({ key, icon, emoji, text, count }) => count > 0 && (
+                  { key: "online", label: null, icon: null, text: "Онлайн", count: online.available ? Math.max(online.sources.length, 1) : 0, shown: online.sources.length },
+                ].map(({ key, icon, emoji, text, count, shown }) => count > 0 && (
                   <button
                     key={key}
                     className={`tv-lang${langTab === key ? " tv-lang--on" : ""}`}
@@ -420,7 +469,7 @@ export default function TorrentModal({
                       ? <img src={icon} alt={text} className="tv-lang__flag" />
                       : <Zap size={13} />
                     }
-                    {text}<span className="tv-lang__n">{key === "best" ? "30" : count}</span>
+                    {text}<span className="tv-lang__n">{key === "best" ? "30" : key === "online" ? shown : count}</span>
                   </button>
                 ))}
               </div>
@@ -449,7 +498,81 @@ export default function TorrentModal({
                 <span>{addingIdx !== null ? "Додаємо торент…" : "Шукаємо…"}</span>
               </div>
             )}
-            {error && <div className="tv-error">{error}</div>}
+            {error && !onlineTab && <div className="tv-error">{error}</div>}
+
+            {onlineTab && (
+              <>
+                {online.isTv && online.seasonList.length > 1 && (
+                  <div className="tv-seasons">
+                    {online.seasonList.map(s => (
+                      <button
+                        key={s.season_number}
+                        className={`tv-season-tab${online.season === s.season_number ? " tv-season-tab--on" : ""}`}
+                        onClick={() => { online.setSeason(s.season_number); setFocusedIdx(0); }}
+                      >Сезон {s.season_number}</button>
+                    ))}
+                  </div>
+                )}
+                {online.isTv && (
+                  <div className="tv-episodes tv-online-eps">
+                    {online.episodes.map(n => (
+                      <div
+                        key={n}
+                        className={`tv-episode${online.episode === n ? " tv-episode--on" : ""}`}
+                        onClick={() => { online.setEpisode(n); setFocusedIdx(0); }}
+                      >
+                        <div className="tv-episode__num">E{String(n).padStart(2, "0")}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {online.loading && (
+                  <div className="tv-status"><Loader2 size={18} className="tv-spin" /><span>Шукаємо…</span></div>
+                )}
+                {online.errors.map(e => <div key={e.plugin_id} className="tv-error">{e.plugin_name}: {e.message}</div>)}
+                {online.resolveError && <div className="tv-error">{online.resolveError}</div>}
+                {onlineError && <div className="tv-error">{onlineError}</div>}
+                {!online.loading && !online.sources.length && !online.errors.length && (
+                  <div className="tv-error">Для цієї серії нічого не знайдено</div>
+                )}
+                {!online.loading && online.sources.length > 0 && (
+                  <ul className="tv-list" ref={listRef}>
+                    {online.sources.map((s, i) => (
+                      <li
+                        key={`${s.plugin_id}:${s.id}`}
+                        ref={el => itemRefs.current[i] = el}
+                        className={`tv-item${focusedIdx === i ? " tv-item--focused" : ""}${online.resolvingId === s.id ? " tv-item--loading" : ""}`}
+                        onMouseEnter={() => setFocusedIdx(i)}
+                      >
+                        <div className="tv-item__body">
+                          <div className="tv-item__title">{s.title}</div>
+                          <div className="tv-item__row">
+                            <span className="tv-pill tv-pill--src">{s.plugin_name}</span>
+                            {s.quality && <span className="tv-pill">{s.quality}</span>}
+                          </div>
+                        </div>
+                        <div className="tv-file-btns">
+                          {online.resolvingId === s.id
+                            ? <Loader2 size={18} className="tv-spin" />
+                            : (
+                              <>
+                                <button className="tv-file-btn tv-file-btn--play" onClick={() => playOnline(s)}>
+                                  <Play size={14} /> Дивитись
+                                </button>
+                                {onSendToTv && (
+                                  <button className="tv-file-btn tv-file-btn--tv" onClick={() => playOnline(s, "tv")}>
+                                    <Tv size={14} /> На TV
+                                  </button>
+                                )}
+                              </>
+                            )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
 
             {!loading && embed && langTab === "direct" && (
               <div className="tv-embed-card">
@@ -480,7 +603,7 @@ export default function TorrentModal({
               </div>
             )}
 
-            {!loading && langTab !== "direct" && tabResults.length > 0 && (
+            {!loading && langTab !== "direct" && !onlineTab && tabResults.length > 0 && (
               <ul className="tv-list" ref={listRef}>
                 {tabResults.map((t, i) => {
                   const meta = parseMeta(t.title, t.quality, t.videotype);
@@ -522,7 +645,7 @@ export default function TorrentModal({
               </ul>
             )}
 
-            {!loading && langTab !== "direct" && tabResults.length > 0 && (
+            {!loading && langTab !== "direct" && !onlineTab && tabResults.length > 0 && (
               <div className="tv-action-bar">
                 <button
                   className={`tv-action-btn${selectedIdx === null ? " tv-action-btn--disabled" : ""}`}

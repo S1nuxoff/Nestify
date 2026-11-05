@@ -483,6 +483,19 @@ export default function TmdbMoviePage() {
     });
   };
 
+  const handlePlayPlugin = ({ sources, subtitles, season, episode }) => {
+    navigate(`/player/tmdb_${mediaType}_${tmdbId}`, {
+      state: {
+        movieDetails,
+        sources,
+        movie_url: sources[sources.length - 1].url,
+        subtitles,
+        selectedSeason: season,
+        selectedEpisode: episode,
+      },
+    });
+  };
+
   const handlePlayEmbed = (embed) => {
     const imdb = rawDetails?.imdb_id || rawDetails?.external_ids?.imdb_id;
     if (!imdb || !embed?.embed_url) return;
@@ -832,6 +845,10 @@ export default function TmdbMoviePage() {
           titleEnglish={titleEnglish}
           titlePolish={titlePolish}
           watchedMagnet={null}
+          tmdbSeasons={rawDetails?.seasons || null}
+          initialSeason={selectedSeason}
+          initialEpisode={selectedEpisode}
+          onPlayPlugin={handlePlayPlugin}
           onClose={() => setTorrentOpen(false)}
           onPlayInBrowser={handlePlayInBrowser}
           onPlayEmbed={handlePlayEmbed}

@@ -534,7 +534,10 @@ export default function PlayerPage() {
 
   useEffect(() => {
     if (!currentSubtitle) { subtitleCuesRef.current = []; setSubtitleCues([]); setCurrentCueText(""); return; }
-    const url = `${config.backend_url}/api/v1/rezka/subtitle_proxy?url=${encodeURIComponent(currentSubtitle.url)}`;
+    // Субтитри з плагінів уже йдуть через наш сервер.
+    const url = currentSubtitle.url.includes("/api/v4/play/")
+      ? currentSubtitle.url
+      : `${config.backend_url}/api/v1/rezka/subtitle_proxy?url=${encodeURIComponent(currentSubtitle.url)}`;
     fetch(url).then(r => r.text()).then(text => {
       const cues = parseSubtitles(text);
       subtitleCuesRef.current = cues; setSubtitleCues(cues);

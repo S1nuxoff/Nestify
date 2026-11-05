@@ -598,6 +598,34 @@ export default function TmdbMoviePage() {
     });
   };
 
+  // Нативний плеєр приймає одне посилання без субтитрів, вбудований плеєр показує все.
+  const handlePlayPlugin = ({ sources, subtitles, season, episode }) => {
+    const currentProfile = getCurrentProfile();
+    playWithAndroidBridgeOrFallback({
+      url: sources[sources.length - 1].url,
+      title: movieDetails?.title || "",
+      posterUrl: movieDetails?.poster_tmdb || "",
+      mediaType,
+      tmdbId,
+      movieId: `tmdb_${mediaType}_${tmdbId}`,
+      userId: currentProfile?.id || "",
+      season,
+      episode,
+      fallback: () => {
+        navigate(`/player/tmdb_${mediaType}_${tmdbId}`, {
+          state: {
+            movieDetails,
+            sources,
+            movie_url: sources[sources.length - 1].url,
+            subtitles,
+            selectedSeason: season,
+            selectedEpisode: episode,
+          },
+        });
+      },
+    });
+  };
+
   const handleSendToTv = async (file) => {
     if (!tvDevice || !movieDetails) return;
     let streamUrl = file.stream_url;
@@ -900,6 +928,10 @@ export default function TmdbMoviePage() {
           titleEnglish={titleEnglish}
           titlePolish={titlePolish}
           watchedMagnet={null}
+          tmdbSeasons={rawDetails?.seasons || null}
+          initialSeason={selectedSeason}
+          initialEpisode={selectedEpisode}
+          onPlayPlugin={handlePlayPlugin}
           onClose={() => setTorrentOpen(false)}
           onPlayInBrowser={handlePlayInBrowser}
           onSendToTv={playerOnline ? handleSendToTv : null}

@@ -1,0 +1,27 @@
+import axios from "axios";
+import config from "../core/config";
+import { getAuthToken } from "../core/session";
+
+const v4 = axios.create({
+  baseURL: `${config.backend_url}/api/v4`,
+  timeout: 60000,
+  headers: { "Content-Type": "application/json" },
+});
+
+v4.interceptors.request.use((request) => {
+  const token = getAuthToken();
+  if (token) request.headers.Authorization = `Bearer ${token}`;
+  return request;
+});
+
+// Запитує всі увімкнені плагіни. Повертає { sources, errors }.
+export const findPluginSources = async (query) => {
+  const res = await v4.post("/sources", query);
+  return res.data;
+};
+
+// Отримує посилання на відео прямо перед запуском.
+export const resolvePluginSource = async (pluginId, sourceId) => {
+  const res = await v4.post("/resolve", { plugin_id: pluginId, source_id: sourceId });
+  return res.data;
+};

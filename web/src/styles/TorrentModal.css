@@ -614,3 +614,8 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* plugin sources */
+.tv-episode--on { background: #fff; color: #000; }
+.tv-episode--on .tv-episode__num { color: #000; }
+.tv-online-eps { padding-top: 0; flex: none; max-height: 132px; overflow-y: auto; }

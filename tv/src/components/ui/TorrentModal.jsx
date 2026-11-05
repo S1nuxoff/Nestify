@@ -4,6 +4,7 @@ import { searchTorrents, addTorrent, getTorrentStatus, removeTorrent, preloadTor
 import { X, PlayCircle, Loader2, Zap } from "lucide-react";
 import { getCurrentProfile } from "../../core/session";
 import { getCachedTorrents, setCachedTorrents, makeTorrentCacheKey } from "../../core/torrentCache";
+import usePluginSources from "../../hooks/usePluginSources";
 
 /* ─── helpers ──────────────────────────────────────────────── */
 function formatSize(b) {
@@ -111,7 +112,8 @@ const RIGHT_CODES = new Set([39, 5]);
 export default function TorrentModal({
   title, titleOriginal, titleEnglish = null, titlePolish = null, year, imdbId, tmdbId, mediaType, poster, runtimeMinutes,
   watchedMagnet = null,
-  onClose, onSendToTv, onPlayInBrowser,
+  tmdbSeasons = null, initialSeason = null, initialEpisode = null,
+  onClose, onSendToTv, onPlayInBrowser, onPlayPlugin,
 }) {
   const watchedBtih = extractBtih(watchedMagnet);
   const [results, setResults]         = useState({ uk: [], ru: [], en: [], pl: [] });
@@ -129,6 +131,12 @@ export default function TorrentModal({
   const [focusZone, setFocusZone]     = useState("list");
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
+
+  const online = usePluginSources({
+    title, titleOriginal, year, imdbId, tmdbId, mediaType, seasons: tmdbSeasons, initialSeason, initialEpisode,
+  });
+  const onlineTab = langTab === "online";
+  const [onlineError, setOnlineError] = useState(null);
   const [visible, setVisible]         = useState(false);
   const panelRef                      = useRef(null);
 
@@ -139,6 +147,8 @@ export default function TorrentModal({
   const langRefs          = useRef([]);
   const qualityRefs       = useRef([]);
   const seasonRefs        = useRef([]);
+  const onlineSeasonRefs  = useRef([]);
+  const onlineEpisodeRefs = useRef([]);
   const selectedMagnetRef = useRef(null);
 
   /* ── slide-in animation ── */
@@ -223,6 +233,42 @@ export default function TorrentModal({
     finally { setLoading(false); setAddingIdx(null); }
   }, [title, titleOriginal, poster]);
 
+  /* ── plugin sources ── */
+  const torrentsFound = results.uk.length + results.ru.length + results.en.length + results.pl.length;
+
+  // Якщо торентів немає, одразу показуємо те, що знайшли плагіни.
+  useEffect(() => {
+    if (!loading && !torrentsFound && online.available && step === "search") setLangTab("online");
+  }, [loading, torrentsFound, online.available, step]);
+
+  const playOnline = useCallback(async (source, target = "browser") => {
+    setOnlineError(null);
+    const resolved = await online.resolve(source);
+    if (!resolved) return;
+    if (resolved.kind === "torrent") {
+      setLangTab("best");
+      handleSelectTorrent({ magnet: resolved.magnet, title: source.title }, null);
+      return;
+    }
+    if (resolved.kind === "embed" || !resolved.streams?.length) {
+      setOnlineError("Цей тип джерела поки не підтримується");
+      return;
+    }
+    playingRef.current = true;
+    const best = resolved.streams[resolved.streams.length - 1].url;
+    if (target === "tv") {
+      onSendToTv?.({ stream_url: best });
+    } else {
+      onPlayPlugin?.({
+        sources: resolved.streams,
+        subtitles: (resolved.subtitles || []).map(s => ({ lang: s.label || s.lang, url: s.url })),
+        season: online.isTv ? online.season : null,
+        episode: online.isTv ? online.episode : null,
+      });
+    }
+    onClose();
+  }, [online.resolve, online.isTv, online.season, online.episode, handleSelectTorrent, onSendToTv, onPlayPlugin, onClose]);
+
   /* ── preload ── */
   const startPreload = useCallback((type, file) => {
     setPendingAction({ type, file });
@@ -292,6 +338,7 @@ export default function TorrentModal({
 
   /* ── tab/filter results ── */
   const availableQualities = useMemo(() => {
+    if (langTab === "online") return [];
     const base = langTab === "best"
       ? [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])]
       : (results[langTab] || []);
@@ -300,6 +347,7 @@ export default function TorrentModal({
   }, [results, langTab]);
 
   const tabResults = useMemo(() => {
+    if (langTab === "online") return [];
     let items;
     if (langTab === "best") {
       const all = [...(results.uk || []), ...(results.ru || []), ...(results.en || []), ...(results.pl || [])];
@@ -313,7 +361,7 @@ export default function TorrentModal({
     return items;
   }, [results, langTab, qualityFilter]);
 
-  const activeList = step === "files" ? (isSeries ? episodesInSeason : files) : tabResults;
+  const activeList = step === "files" ? (isSeries ? episodesInSeason : files) : onlineTab ? online.sources : tabResults;
 
   /* ── scroll focused item into view ── */
   useEffect(() => {
@@ -322,6 +370,8 @@ export default function TorrentModal({
       langs: langRefs.current,
       qualities: qualityRefs.current,
       seasons: seasonRefs.current,
+      onlineSeasons: onlineSeasonRefs.current,
+      onlineEpisodes: onlineEpisodeRefs.current,
     };
     const el = refMap[focusZone]?.[focusedIdx];
     if (el) {
@@ -339,7 +389,24 @@ export default function TorrentModal({
       { key: "ru",   count: results.ru.length },
       { key: "en",   count: results.en.length },
       { key: "pl",   count: results.pl.length },
+      { key: "online", count: online.available ? 1 : 0 },
     ].filter(({ count }) => count > 0);
+
+    // Верхні зони вкладки «Онлайн»: сезони (якщо їх кілька), потім серії.
+    const hasOnlineSeasons = onlineTab && online.isTv && online.seasonList.length > 1;
+    const hasOnlineEpisodes = onlineTab && online.isTv && online.episodes.length > 0;
+    const goOnlineSeasons = () => {
+      setFocusZone("onlineSeasons");
+      setFocusedIdx(Math.max(0, online.seasonList.findIndex(s => s.season_number === online.season)));
+    };
+    const goOnlineEpisodes = () => {
+      setFocusZone("onlineEpisodes");
+      setFocusedIdx(Math.max(0, online.episodes.indexOf(online.episode)));
+    };
+    const goLangs = () => {
+      setFocusZone("langs");
+      setFocusedIdx(Math.max(0, langOptions.findIndex(l => l.key === langTab)));
+    };
 
     // Quality options including "Всі"
     const qualityOptions = [null, ...availableQualities]; // null = "Всі"
@@ -348,6 +415,8 @@ export default function TorrentModal({
       langs:     langOptions.length,
       qualities: qualityOptions.length,
       seasons:   seasons.length,
+      onlineSeasons:  online.seasonList.length,
+      onlineEpisodes: online.episodes.length,
       list:      activeList.length,
     };
 
@@ -404,7 +473,11 @@ export default function TorrentModal({
             setFocusedIdx(i => i - 1);
           } else {
             // at top of list → go to top zone
-            if (step === "search" && availableQualities.length > 0) {
+            if (step === "search" && hasOnlineEpisodes) {
+              goOnlineEpisodes();
+            } else if (step === "search" && hasOnlineSeasons) {
+              goOnlineSeasons();
+            } else if (step === "search" && availableQualities.length > 0) {
               setFocusZone("qualities");
               setFocusedIdx(qualityOptions.indexOf(qualityFilter) >= 0 ? qualityOptions.indexOf(qualityFilter) : 0);
             } else if (step === "search" && langOptions.length > 0) {
@@ -415,6 +488,11 @@ export default function TorrentModal({
               setFocusedIdx(Math.max(0, seasons.indexOf(selectedSeason)));
             }
           }
+        } else if (focusZone === "onlineEpisodes") {
+          if (hasOnlineSeasons) goOnlineSeasons();
+          else goLangs();
+        } else if (focusZone === "onlineSeasons") {
+          goLangs();
         } else if (focusZone === "qualities") {
           // UP from quality → go to langs
           if (langOptions.length > 0) {
@@ -429,9 +507,18 @@ export default function TorrentModal({
 
       // ── DOWN: move down in list, or descend from top zone ──
       if (DOWN_CODES.has(code)) {
-        if (focusZone === "langs") {
+        if (focusZone === "onlineSeasons") {
+          if (hasOnlineEpisodes) goOnlineEpisodes();
+          else { setFocusZone("list"); setFocusedIdx(0); }
+        } else if (focusZone === "onlineEpisodes") {
+          setFocusZone("list"); setFocusedIdx(0);
+        } else if (focusZone === "langs") {
           // DOWN from langs → quality (if any), else list
-          if (availableQualities.length > 0) {
+          if (hasOnlineSeasons) {
+            goOnlineSeasons();
+          } else if (hasOnlineEpisodes) {
+            goOnlineEpisodes();
+          } else if (availableQualities.length > 0) {
             setFocusZone("qualities");
             setFocusedIdx(qualityOptions.indexOf(qualityFilter) >= 0 ? qualityOptions.indexOf(qualityFilter) : 0);
           } else {
@@ -456,6 +543,16 @@ export default function TorrentModal({
           }
           return;
         }
+        if (focusZone === "onlineSeasons") {
+          const s = online.seasonList[focusedIdx];
+          if (s) { online.setSeason(s.season_number); setFocusZone("onlineEpisodes"); setFocusedIdx(0); }
+          return;
+        }
+        if (focusZone === "onlineEpisodes") {
+          const n = online.episodes[focusedIdx];
+          if (n) { online.setEpisode(n); setFocusZone("list"); setFocusedIdx(0); }
+          return;
+        }
         if (focusZone === "qualities") {
           setQualityFilter(qualityOptions[focusedIdx] ?? null);
           setSelectedIdx(null);
@@ -468,7 +565,9 @@ export default function TorrentModal({
           return;
         }
         // list zone
-        if (step === "search") {
+        if (step === "search" && onlineTab) {
+          if (online.sources[focusedIdx]) playOnline(online.sources[focusedIdx]);
+        } else if (step === "search") {
           const t = tabResults[focusedIdx];
           if (t) { setSelectedIdx(focusedIdx); handleSelectTorrent(t, focusedIdx); }
         }
@@ -483,7 +582,9 @@ export default function TorrentModal({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [step, focusZone, focusedIdx, tabResults, files, activeList, isSeries, episodesInSeason,
       availableQualities, seasons, selectedSeason, langTab, qualityFilter, results,
-      handleSelectTorrent, startPreload, handleClose, pendingAction, executeAction]);
+      handleSelectTorrent, startPreload, handleClose, pendingAction, executeAction,
+      onlineTab, online.available, online.isTv, online.seasonList, online.episodes, online.season, online.episode,
+      online.sources, online.setSeason, online.setEpisode, playOnline]);
 
   /* ─── render ─────────────────────────────────────────────── */
   const panel = (
@@ -523,7 +624,8 @@ export default function TorrentModal({
                   { key: "ru",   icon: "/images/ru.svg", text: "Рус", count: results.ru.length },
                   { key: "en",   icon: "/images/us.svg", text: "Eng", count: results.en.length },
                   { key: "pl",   icon: "/images/pl.svg", text: "Pol", count: results.pl.length },
-                ].map(({ key, icon, text, count }, i) => count > 0 && (
+                  { key: "online", icon: null, text: "Онлайн", count: online.available ? Math.max(online.sources.length, 1) : 0 },
+                ].filter(({ count }) => count > 0).map(({ key, icon, text, count }, i) => (
                   <button
                     key={key}
                     ref={el => (langRefs.current[i] = el)}
@@ -533,7 +635,7 @@ export default function TorrentModal({
                     onClick={() => { setLangTab(key); setFocusedIdx(0); setQualityFilter(null); setSelectedIdx(null); }}
                   >
                     {icon ? <img src={icon} alt={text} className="tv-lang__flag" /> : <Zap size={13} />}
-                    {text}<span className="tv-lang__n">{key === "best" ? "30" : count}</span>
+                    {text}<span className="tv-lang__n">{key === "best" ? "30" : key === "online" ? online.sources.length : count}</span>
                   </button>
                 ))}
               </div>
@@ -566,7 +668,84 @@ export default function TorrentModal({
                 <span>{addingIdx !== null ? "Додаємо торент…" : "Шукаємо…"}</span>
               </div>
             )}
-            {error && <div className="tv-error">{error}</div>}
+            {error && !onlineTab && <div className="tv-error">{error}</div>}
+
+            {onlineTab && (
+              <>
+                {online.isTv && online.seasonList.length > 1 && (
+                  <div className="tv-seasons">
+                    {online.seasonList.map((s, i) => (
+                      <button
+                        key={s.season_number}
+                        ref={el => (onlineSeasonRefs.current[i] = el)}
+                        tabIndex={focusZone === "onlineSeasons" && focusedIdx === i ? 0 : -1}
+                        data-focused={focusZone === "onlineSeasons" && focusedIdx === i ? "true" : "false"}
+                        className={`tv-season-tab${online.season === s.season_number ? " tv-season-tab--on" : ""}`}
+                        onClick={() => online.setSeason(s.season_number)}
+                      >Сезон {s.season_number}</button>
+                    ))}
+                  </div>
+                )}
+                {online.isTv && (
+                  <div className="tv-episodes tv-online-eps">
+                    {online.episodes.map((n, i) => (
+                      <div
+                        key={n}
+                        ref={el => (onlineEpisodeRefs.current[i] = el)}
+                        tabIndex={focusZone === "onlineEpisodes" && focusedIdx === i ? 0 : -1}
+                        className={[
+                          "tv-episode",
+                          focusZone === "onlineEpisodes" && focusedIdx === i ? "tv-episode--focused" : "",
+                          online.episode === n ? "tv-episode--on" : "",
+                        ].filter(Boolean).join(" ")}
+                        onClick={() => online.setEpisode(n)}
+                      >
+                        <div className="tv-episode__num">E{String(n).padStart(2, "0")}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {online.loading && (
+                  <div className="tv-status"><Loader2 size={18} className="tv-spin" /><span>Шукаємо…</span></div>
+                )}
+                {online.errors.map(e => <div key={e.plugin_id} className="tv-error">{e.plugin_name}: {e.message}</div>)}
+                {online.resolveError && <div className="tv-error">{online.resolveError}</div>}
+                {onlineError && <div className="tv-error">{onlineError}</div>}
+                {!online.loading && !online.sources.length && !online.errors.length && (
+                  <div className="tv-error">Для цієї серії нічого не знайдено</div>
+                )}
+                {!online.loading && online.sources.length > 0 && (
+                  <ul className="tv-list" ref={listRef}>
+                    {online.sources.map((s, i) => {
+                      const isFocused = focusZone === "list" && focusedIdx === i;
+                      return (
+                        <li
+                          key={`${s.plugin_id}:${s.id}`}
+                          ref={el => (itemRefs.current[i] = el)}
+                          tabIndex={isFocused ? 0 : -1}
+                          className={`tv-item${isFocused ? " tv-item--focused" : ""}${online.resolvingId === s.id ? " tv-item--loading" : ""}`}
+                          onClick={() => { setFocusedIdx(i); playOnline(s); }}
+                          onMouseEnter={() => setFocusedIdx(i)}
+                        >
+                          <div className="tv-item__body">
+                            <div className="tv-item__title">{s.title}</div>
+                            <div className="tv-item__row">
+                              <span className="tv-pill tv-pill--src">{s.plugin_name}</span>
+                              {s.quality && <span className="tv-pill">{s.quality}</span>}
+                            </div>
+                          </div>
+                          <div className="tv-item__right">
+                            {online.resolvingId === s.id
+                              ? <Loader2 size={18} className="tv-spin" />
+                              : <PlayCircle size={20} />}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
+            )}
 
             {!loading && tabResults.length > 0 && (
               <ul className="tv-list" ref={listRef}>
