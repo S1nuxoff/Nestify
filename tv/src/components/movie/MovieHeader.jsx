@@ -1,6 +1,6 @@
 // src/components/movie/MovieHeader.jsx
 import React, { useMemo, useRef, useEffect } from "react";
-import { Play, Plus, Check } from "lucide-react";
+import { Play, Plus, Check, ListVideo } from "lucide-react";
 
 import "../../styles/MovieHeaderHero.css";
 
@@ -208,13 +208,20 @@ export default function MovieHeader({
                 >
                   {mainPlayLoading ? <span className="mh-resume__spinner" /> : <Play fill="black" />} Дивитися
                 </button>
-                {onOtherSources && (
-                  <button className="mh-play mh-play--secondary" type="button" tabIndex={0} onClick={onOtherSources}>
-                    Інші джерела
-                  </button>
-                )}
               </div>
               <div className="mh-icon-actions">
+                {onOtherSources && (
+                  <button
+                    className="mh-icon-btn"
+                    type="button"
+                    tabIndex={0}
+                    onClick={onOtherSources}
+                    title="Інші джерела"
+                    aria-label="Інші джерела"
+                  >
+                    <ListVideo size={22} strokeWidth={2} />
+                  </button>
+                )}
                 <button
                   className={`mh-icon-btn${isLiked ? " is-active" : ""}`}
                   type="button"
