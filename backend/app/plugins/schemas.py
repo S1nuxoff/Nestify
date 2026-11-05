@@ -43,6 +43,10 @@ class SourcesRequest(BaseModel):
     imdb_id: Optional[str] = Field(default=None, max_length=32)
     season: Optional[int] = Field(default=None, ge=0)
     episode: Optional[int] = Field(default=None, ge=0)
+    # Names in other languages, for example {"en": "...", "pl": "..."}.
+    titles: Optional[dict[str, str]] = None
+    # Only ask plugins that offer these kinds, so a fast start does not wait for a slow search.
+    kinds: Optional[list[Kind]] = None
 
 
 class Source(BaseModel):
@@ -55,6 +59,8 @@ class Source(BaseModel):
     language: Optional[str] = Field(default=None, max_length=16)
     size_bytes: Optional[int] = Field(default=None, ge=0)
     seeders: Optional[int] = Field(default=None, ge=0)
+    # Data for the client that depends on the kind, see docs/plugins.md.
+    extra: dict = Field(default_factory=dict)
 
 
 class SourcesResponse(BaseModel):

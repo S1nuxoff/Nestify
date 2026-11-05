@@ -31,7 +31,9 @@ relative to the same directory.
 
 ### `POST /sources`
 
-Request. Only `media_type` and `title` are always present:
+Request. Only `media_type` and `title` are always present. `season` and `episode` are sent only if
+the plugin's results depend on them. `titles` holds names in other languages, for example
+`{"en": "...", "pl": "..."}`:
 
 ```json
 {
@@ -66,7 +68,16 @@ plugin needs to find the source again, including season and episode:
 }
 ```
 
-Only `id`, `title` and `kind` are required. At most 500 sources per plugin are used.
+Only `id`, `title` and `kind` are required. At most 1000 sources per plugin are used, and a response
+may be up to 4 MB.
+
+`extra` is an optional object passed to the client as is. For `torrent` it holds `magnet` and may hold
+`voices`, `videotype`, `peers`, `pub_date` and `tracker`. For `embed` it holds `embed`, the player data.
+`language` for torrents is `uk`, `ru`, `en` or `pl`, which are the tabs of the source picker.
+
+Nestify asks only the plugins whose manifest lists a kind it needs at that moment. The main Play button
+asks for `direct` and `hls` and must be fast. The source picker asks for `torrent` and `embed`, which
+may take up to 70 seconds, so `kinds` in the manifest must be accurate.
 
 ### `POST /resolve`
 
@@ -112,7 +123,7 @@ All under `/api/v4`.
 | `PATCH` | `/plugins/{id}` | admin | `{"enabled"}` and/or `{"token"}`. An empty token removes it |
 | `POST` | `/plugins/{id}/refresh` | admin | Re-read the manifest |
 | `DELETE` | `/plugins/{id}` | admin | Remove |
-| `POST` | `/sources` | account | Ask all enabled plugins. Returns `{"sources", "errors"}` |
+| `POST` | `/sources` | account | Ask this account's plugins, optionally only for some `kinds`. Returns `{"sources", "errors", "providers"}` |
 | `POST` | `/resolve` | account | `{"plugin_id", "source_id"}`. Returns `{"kind", "streams", "subtitles", "magnet", "embed_url"}` |
 | `GET` | `/play/{token}` | the link | Streams proxied media with `Range` support |
 

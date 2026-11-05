@@ -7,8 +7,8 @@ from pydantic import BaseModel, ValidationError
 
 from app.plugins.schemas import Manifest, Resolved, Source, SourcesRequest, SourcesResponse
 
-MAX_RESPONSE_BYTES = 2 * 1024 * 1024
-MAX_SOURCES = 500
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+MAX_SOURCES = 1000
 MANIFEST_NAME = "manifest.json"
 
 
@@ -62,7 +62,7 @@ class PluginClient:
         return self._parse(Manifest, await self._call("GET", manifest_url, token))
 
     async def sources(self, base_url: str, token: str | None, request: SourcesRequest) -> list[Source]:
-        data = await self._call("POST", f"{base_url}/sources", token, request.model_dump(exclude_none=True))
+        data = await self._call("POST", f"{base_url}/sources", token, request.model_dump(exclude_none=True, exclude={"kinds"}))
         return self._parse(SourcesResponse, data).sources[:MAX_SOURCES]
 
     async def resolve(self, base_url: str, token: str | None, source_id: str) -> Resolved:

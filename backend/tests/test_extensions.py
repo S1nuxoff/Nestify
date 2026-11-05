@@ -124,6 +124,75 @@ def test_only_running_plugins_can_be_changed(client, plugin_id):
     assert client.put(f"/api/v4/extensions/{plugin_id}", json={"installed": False}).status_code == 404
 
 
+def add_plugin(client, plugin_id, kinds):
+    store = client.app.dependency_overrides[api.get_store]()
+    store.items[plugin_id] = plugin(plugin_id)
+    store.items[plugin_id].manifest = {"kinds": kinds}
+    return store
+
+
+def test_torrents_plugin_replaces_the_built_in_row(client):
+    add_plugin(client, "torrents", ["torrent"])
+    items = client.get("/api/v4/extensions").json()["items"]
+    row = [i for i in items if i["id"] == "torrents"]
+    assert len(row) == 1 and row[0]["state"] == "installed" and "торрент" in row[0]["description"]
+
+
+def kinds_plugins(client):
+    store = client.app.dependency_overrides[api.get_store]()
+    store.items.clear()
+    add_plugin(client, "fast", ["direct"])
+    add_plugin(client, "slow", ["torrent", "embed"])
+
+
+def asked(client, kinds):
+    data = client.post("/api/v4/sources", json={**QUERY, "kinds": kinds}).json()
+    return {s["plugin_id"] for s in data["sources"]}, data["providers"]
+
+
+def test_a_fast_start_does_not_ask_slow_plugins(client):
+    kinds_plugins(client)
+    # The fake plugin answers with kind "direct" whatever it is asked.
+    assert asked(client, ["direct", "hls"]) == ({"fast"}, 1)
+
+
+def test_results_of_other_kinds_are_dropped(client):
+    kinds_plugins(client)
+    assert asked(client, ["torrent", "embed"]) == (set(), 1)
+
+
+def test_kinds_are_not_sent_to_plugins(client):
+    seen = []
+
+    def spy(request):
+        seen.append(request.content)
+        return source_host(request)
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(spy))
+    client.app.dependency_overrides[api.get_plugin_client] = lambda: PluginClient(http)
+    kinds_plugins(client)
+    client.post("/api/v4/sources", json={**QUERY, "kinds": ["direct"], "titles": {"en": "E"}})
+    assert seen and b"kinds" not in seen[0] and b'"titles"' in seen[0]
+
+
+def test_providers_counts_plugins_this_account_removed(client):
+    kinds_plugins(client)
+    client.put("/api/v4/extensions/slow", json={"installed": False})
+    data = client.post("/api/v4/sources", json={**QUERY, "kinds": ["torrent"]}).json()
+    assert (data["providers"], data["sources"], data["errors"]) == (1, [], [])
+
+
+def test_extra_reaches_the_client(client):
+    def with_extra(request):
+        return httpx.Response(200, json={"sources": [{"id": "m", "title": "t", "kind": "torrent", "extra": {"magnet": "magnet:x"}}]})
+
+    kinds_plugins(client)
+    http = httpx.AsyncClient(transport=httpx.MockTransport(with_extra))
+    client.app.dependency_overrides[api.get_plugin_client] = lambda: PluginClient(http)
+    source = client.post("/api/v4/sources", json={**QUERY, "kinds": ["torrent"]}).json()["sources"][0]
+    assert source["extra"] == {"magnet": "magnet:x"}
+
+
 def test_admin_flag(client, choices):
     assert client.get("/api/v4/extensions").json()["is_admin"] is False
     choices.admin = True

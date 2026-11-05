@@ -22,7 +22,7 @@ logger = logging.getLogger("nestify.plugins")
 router = APIRouter()
 
 _store = PluginStore()
-_plugin_http = httpx.AsyncClient(follow_redirects=False, timeout=httpx.Timeout(15, read=30))
+_plugin_http = httpx.AsyncClient(follow_redirects=False, timeout=httpx.Timeout(15, read=70))
 _media_http = httpx.AsyncClient(follow_redirects=True, timeout=httpx.Timeout(15, read=60))
 _sessions = PlaySessions()
 _account_plugins = AccountPluginStore()
@@ -171,8 +171,13 @@ async def find_sources(
     choices: AccountPluginStore = Depends(get_account_plugins),
 ):
     """Ask every plugin this account has at once. A failing plugin never hides the others' results."""
+    wanted = set(body.kinds) if body.kinds else None
+    suitable = [
+        p for p in await store.list(enabled_only=True)
+        if wanted is None or wanted & set(p.manifest.get("kinds", []))
+    ]
     removed = await choices.removed(account.id)
-    plugins = [p for p in await store.list(enabled_only=True) if p.id not in removed]
+    plugins = [p for p in suitable if p.id not in removed]
     results = await asyncio.gather(
         *(client.sources(p.base_url, p.token, body) for p in plugins),
         return_exceptions=True,
@@ -186,9 +191,11 @@ async def find_sources(
             errors.append({"plugin_id": plugin.id, "plugin_name": plugin.name, "message": "internal error"})
         else:
             sources += [
-                {**s.model_dump(), "plugin_id": plugin.id, "plugin_name": plugin.name} for s in result
+                {**s.model_dump(), "plugin_id": plugin.id, "plugin_name": plugin.name}
+                for s in result if wanted is None or s.kind in wanted
             ]
-    return {"sources": sources, "errors": errors}
+    # "providers" counts plugins on the server, including ones this account removed.
+    return {"sources": sources, "errors": errors, "providers": len(suitable)}
 
 
 def _play_url(token: str) -> str:

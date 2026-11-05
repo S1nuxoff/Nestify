@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { searchTorrents, addTorrent, getTorrentStatus, removeTorrent, preloadTorrent, getFileInfo } from "../../api/v3";
+import { addTorrent, getTorrentStatus, removeTorrent, preloadTorrent, getFileInfo } from "../../api/v3";
 import { X, Play, Tv, Loader2, Zap, ChevronRight } from "lucide-react";
 import { getCurrentProfile } from "../../core/session";
 import { getCachedTorrents, setCachedTorrents, makeTorrentCacheKey } from "../../core/torrentCache";
 import usePluginSources from "../../hooks/usePluginSources";
+import { searchTorrentSources } from "../../core/torrentSearch";
 
 /* ─── helpers ──────────────────────────────────────────────── */
 function formatSize(b) {
@@ -192,15 +193,7 @@ export default function TorrentModal({
 
     setError(null); setLoading(true); setResults({ uk: [], ru: [], en: [], pl: [] }); setEmbed(null); setFocusedIdx(0);
     try {
-      const data = await searchTorrents({
-        q: title || titleOriginal || "",
-        title,
-        title_original: titleOriginal || title,
-        title_en: titleEnglish || undefined,
-        title_pl: titlePolish || undefined,
-        year: year ? parseInt(year) : undefined,
-        imdb_id: imdbId, tmdb_id: tmdbId, media_type: mediaType || "movie",
-      });
+      const data = await searchTorrentSources({ title, titleOriginal, titleEnglish, titlePolish, year, imdbId, tmdbId, mediaType });
       const grouped = { uk: data.uk || [], ru: data.ru || [], en: data.en || [], pl: data.pl || [] };
       const embedSource = data.embed || null;
       setCachedTorrents(cacheKey, { results: grouped, embed: embedSource });

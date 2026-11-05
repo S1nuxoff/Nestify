@@ -22,6 +22,7 @@ export async function preparePlayback({
 
   const { sources = [] } = await findPluginSources({
     ...query,
+    kinds: ["direct", "hls"],
     season: isTv ? season : undefined,
     episode: isTv ? episode : undefined,
   });

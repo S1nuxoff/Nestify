@@ -216,13 +216,13 @@ def test_sources_tags_results_and_forwards_query(client, world):
     assert data["errors"] == []
     assert data["sources"] == [{
         **SOURCE, "plugin_id": "rezka", "plugin_name": "HDRezka",
-        "quality": None, "language": None, "size_bytes": None, "seeders": None,
+        "quality": None, "language": None, "size_bytes": None, "seeders": None, "extra": {},
     }]
     assert json.loads(world.seen[-1].content) == QUERY
 
 
 def test_sources_with_no_plugins(client):
-    assert client.post("/api/v4/sources", json=QUERY).json() == {"sources": [], "errors": []}
+    assert client.post("/api/v4/sources", json=QUERY).json() == {"sources": [], "errors": [], "providers": 0}
 
 
 def test_failing_plugins_do_not_hide_working_one(client, store, world):
@@ -485,7 +485,7 @@ async def test_client_does_not_follow_redirects_with_token():
 
 @pytest.mark.anyio
 async def test_client_rejects_oversized_and_invalid_responses():
-    big = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, content=b"x" * (3 * 1024 * 1024))))
+    big = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, content=b"x" * (5 * 1024 * 1024))))
     with pytest.raises(PluginError, match="too large"):
         await PluginClient(big).manifest("https://p.test/manifest.json", None)
     junk = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, content=b"<html>")))

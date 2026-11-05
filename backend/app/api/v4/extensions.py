@@ -14,6 +14,7 @@ router = APIRouter()
 # Text for the page. Anything installed on the server that is not listed here uses its manifest.
 DESCRIPTIONS = {
     "rezka": "Фільми та серіали з HDRezka: озвучки й субтитри.",
+    "torrents": "Пошук торрентів українською, російською, англійською й польською.",
 }
 # Not plugins yet, shown so people see what exists and what is coming.
 BUILT_IN = [
@@ -42,7 +43,9 @@ async def list_extensions(
         }
         for plugin in await plugins.list(enabled_only=True)
     ]
-    return {"items": items + BUILT_IN, "is_admin": await choices.is_admin(account.id)}
+    running = {item["id"] for item in items}
+    built_in = [item for item in BUILT_IN if item["id"] not in running]
+    return {"items": items + built_in, "is_admin": await choices.is_admin(account.id)}
 
 
 @router.put("/extensions/{plugin_id}", status_code=204)

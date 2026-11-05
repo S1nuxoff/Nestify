@@ -38,6 +38,7 @@ export default function usePluginSources({
     setLoading(true);
     setResolveError(null);
     findPluginSources({
+      kinds: ["direct", "hls"],
       media_type: isTv ? "tv" : "movie",
       title: title || titleOriginal,
       original_title: titleOriginal || undefined,
