@@ -19,6 +19,7 @@ from app.models.featured import Featured
 from app.models.sessions import Session
 from app.models.app_settings import AppSettings
 from app.models.source_plugin import SourcePlugin
+from app.models.playback_preference import PlaybackPreference
 
 # це конфіг Alembic’а
 config = context.config
