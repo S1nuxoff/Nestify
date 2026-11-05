@@ -25,3 +25,11 @@ export const resolvePluginSource = async (pluginId, sourceId) => {
   const res = await v4.post("/resolve", { plugin_id: pluginId, source_id: sourceId });
   return res.data;
 };
+
+// Озвучки профілю й останній перегляд цього тайтлу.
+export const getPlaybackState = async (userId, movieId) => {
+  const res = await v4.get("/playback", { params: { user_id: userId, movie_id: movieId } });
+  return res.data;
+};
+
+export const savePlaybackVoice = (body) => v4.put("/playback/voice", body);

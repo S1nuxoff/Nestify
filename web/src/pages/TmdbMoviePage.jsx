@@ -8,6 +8,7 @@ import MovieHeader from "../components/movie/MovieHeader";
 import MovieCast from "../components/movie/MovieCast";
 import MovieEpisodes from "../components/movie/MovieEpisodes";
 import TorrentModal from "../components/ui/TorrentModal";
+import { preparePlayback } from "../core/playback";
 import nestifyPlayerClient from "../api/ws/nestifyPlayerClient";
 import config from "../core/config";
 import { addLikedMovie, removeLikedMovie, getLikedMovieStatus } from "../api/user";
@@ -246,6 +247,7 @@ export default function TmdbMoviePage() {
   const [rawDetails, setRawDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [torrentOpen, setTorrentOpen] = useState(false);
+  const [startingPlayback, setStartingPlayback] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likePending, setLikePending] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(null);
@@ -483,18 +485,43 @@ export default function TmdbMoviePage() {
     });
   };
 
-  const handlePlayPlugin = ({ sources, subtitles, season, episode }) => {
-    navigate(`/player/tmdb_${mediaType}_${tmdbId}`, {
-      state: {
-        movieDetails,
-        sources,
-        movie_url: sources[sources.length - 1].url,
-        subtitles,
-        selectedSeason: season,
-        selectedEpisode: episode,
-      },
-    });
+  const launchPlugin = async (options) => {
+    const state = await preparePluginPlayback(options);
+    if (!state) return false;
+    navigate(`/player/${movieDetails.id}`, { state: { movieDetails, ...state } });
+    return true;
   };
+
+  const preparePluginPlayback = (options) => preparePlayback({
+    query: {
+      media_type: mediaType === "tv" ? "tv" : "movie",
+      title: title || titleOriginal,
+      original_title: titleOriginal || undefined,
+      year: parseInt(year, 10) || undefined,
+      tmdb_id: String(tmdbId),
+      imdb_id: rawDetails?.imdb_id || rawDetails?.external_ids?.imdb_id || undefined,
+    },
+    movieId: movieDetails.id,
+    userId: getCurrentProfile()?.id,
+    seasons: rawDetails?.seasons,
+    ...options,
+  });
+
+  // Одна кнопка: якщо плагіни знайшли фільм, одразу вмикаємо його. Інакше звичайний вибір джерела.
+  const startPlayback = async (options = {}) => {
+    if (startingPlayback) return;
+    setStartingPlayback(true);
+    try {
+      if (!(await launchPlugin(options))) setTorrentOpen(true);
+    } catch {
+      setTorrentOpen(true);
+    } finally {
+      setStartingPlayback(false);
+    }
+  };
+
+  const handlePlayPlugin = ({ voice, season, episode }) =>
+    launchPlugin({ voice, explicitVoice: true, season, episode }).catch(() => false);
 
   const handlePlayEmbed = (embed) => {
     const imdb = rawDetails?.imdb_id || rawDetails?.external_ids?.imdb_id;
@@ -593,7 +620,9 @@ export default function TmdbMoviePage() {
                 isLiked={isLiked}
                 likePending={likePending}
                 onToggleLike={toggleLike}
-                onMainPlayClick={() => setTorrentOpen(true)}
+                onMainPlayClick={() => startPlayback()}
+                mainPlayLoading={startingPlayback}
+                onOtherSources={() => setTorrentOpen(true)}
                 onCastClick={tvDevice ? () => setTorrentOpen(true) : null}
               />
 
@@ -645,7 +674,7 @@ export default function TmdbMoviePage() {
                       selectedSeason={selectedSeason}
                       onSelectSeason={(s) => { setSelectedSeason(s); setSelectedEpisode(null); }}
                       selectedEpisode={selectedEpisode}
-                      onSelectEpisode={(e) => { setSelectedEpisode(e); setTorrentOpen(true); }}
+                      onSelectEpisode={(e) => { setSelectedEpisode(e); startPlayback({ season: Number(selectedSeason), episode: Number(e) }); }}
                       seasonEpisodes={seasonEpisodes}
                       seasonLoading={seasonLoading}
                     />

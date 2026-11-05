@@ -259,12 +259,16 @@ export default function TorrentModal({
     if (target === "tv") {
       onSendToTv?.({ stream_url: best });
     } else {
-      onPlayPlugin?.({
-        sources: resolved.streams,
-        subtitles: (resolved.subtitles || []).map(s => ({ lang: s.label || s.lang, url: s.url })),
+      const started = await onPlayPlugin?.({
+        voice: source.voice || source.title,
         season: online.isTv ? online.season : null,
         episode: online.isTv ? online.episode : null,
       });
+      if (!started) {
+        playingRef.current = false;
+        setOnlineError("Не вдалося запустити це джерело");
+        return;
+      }
     }
     onClose();
   }, [online.resolve, online.isTv, online.season, online.episode, handleSelectTorrent, onSendToTv, onPlayPlugin, onClose]);

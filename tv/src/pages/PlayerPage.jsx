@@ -10,6 +10,9 @@ import {
 
 import "../styles/VideoPlayer.css";
 import { getProgress, saveProgress } from "../api/hdrezka/progressApi";
+import { Mic, List, SkipForward } from "lucide-react";
+import { preparePlayback } from "../core/playback";
+import { DONE_RATIO, nextEpisode } from "../core/playbackPlan";
 
 /* ─── subtitle helpers ─────────────────────────────────────── */
 function parseSubtitleTime(str) {
@@ -48,9 +51,10 @@ function formatTime(sec) {
 }
 
 /* ─── component ────────────────────────────────────────────── */
-export default function PlayerPage() {
-  const { state } = useLocation();
-  const { selectedEpisode, selectedSeason, movieDetails, movie_url, sources, subtitles = [], fileDuration = null, hlsInfo = null } = state ?? {};
+function PlayerView() {
+  const location = useLocation();
+  const { state } = location;
+  const { selectedEpisode, selectedSeason, movieDetails, movie_url, sources, subtitles = [], fileDuration = null, hlsInfo = null, plugin = null, startAt = null } = state ?? {};
   const navigate = useNavigate();
 
   const normalizedSources = Array.isArray(sources) && sources.length
@@ -96,11 +100,19 @@ export default function PlayerPage() {
   const [subtitleCues, setSubtitleCues]   = useState([]);
   const [currentCueText, setCurrentCueText] = useState("");
   const [hoverTime, setHoverTime]         = useState(null);
+  const [isVoiceMenuOpen, setIsVoiceMenuOpen]     = useState(false);
+  const [isEpisodeMenuOpen, setIsEpisodeMenuOpen] = useState(false);
+  const [menuSeason, setMenuSeason]       = useState(selectedSeason);
+  const [switchError, setSwitchError]     = useState(null);
+  const switchingRef   = useRef(false);
+  const voiceMenuRef   = useRef(null);
+  const episodeMenuRef = useRef(null);
 
   /* ── derived ── */
   useEffect(() => {
     if (!normalizedSources.length || currentQuality) return;
-    setCurrentQuality(normalizedSources[normalizedSources.length - 1].quality);
+    const kept = normalizedSources.find(s => s.quality === plugin?.quality);
+    setCurrentQuality((kept || normalizedSources[normalizedSources.length - 1]).quality);
   }, [normalizedSources, currentQuality]);
 
   const currentSource = normalizedSources.find(s => s.quality === currentQuality)
@@ -229,6 +241,7 @@ export default function PlayerPage() {
 
   /* ── getProgress ── */
   useEffect(() => {
+    if (startAt != null) { setStartPos(startAt); return; }
     if (!movieDetails || !userId) return;
     let cancelled = false;
     (async () => {
@@ -241,7 +254,7 @@ export default function PlayerPage() {
       } catch {}
     })();
     return () => { cancelled = true; };
-  }, [userId, movieDetails, selectedSeason, selectedEpisode]);
+  }, [userId, movieDetails, selectedSeason, selectedEpisode, startAt]);
 
   /* ── apply startPos + autoplay ── */
   useEffect(() => {
@@ -250,7 +263,9 @@ export default function PlayerPage() {
     if (!video || startPos === null || !currentSource || isHls) return;
     const apply = () => {
       try {
-        if (startPos > 0) video.currentTime = startPos;
+        // Досмотрене вмикаємо спочатку, а не за хвилину до кінця.
+        const finished = video.duration > 0 && startPos / video.duration >= DONE_RATIO;
+        if (startPos > 0 && !finished) video.currentTime = startPos;
         setIsBuffering(true);
         video.play().then(() => setIsPlaying(true)).catch(() => { setIsPlaying(false); setIsBuffering(false); });
       } catch {}
@@ -497,14 +512,16 @@ export default function PlayerPage() {
 
   /* ── outside click menus ── */
   useEffect(() => {
-    if (!isQualityMenuOpen && !isSubtitleMenuOpen) return;
+    if (!isQualityMenuOpen && !isSubtitleMenuOpen && !isVoiceMenuOpen && !isEpisodeMenuOpen) return;
     const handler = (e) => {
+      if (voiceMenuRef.current && !voiceMenuRef.current.contains(e.target)) setIsVoiceMenuOpen(false);
+      if (episodeMenuRef.current && !episodeMenuRef.current.contains(e.target)) setIsEpisodeMenuOpen(false);
       if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target)) setIsQualityMenuOpen(false);
       if (subtitleMenuRef.current && !subtitleMenuRef.current.contains(e.target)) setIsSubtitleMenuOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isQualityMenuOpen, isSubtitleMenuOpen]);
+  }, [isQualityMenuOpen, isSubtitleMenuOpen, isVoiceMenuOpen, isEpisodeMenuOpen]);
 
   /* ── autosave ── */
   useEffect(() => {
@@ -584,7 +601,9 @@ export default function PlayerPage() {
           toggleFullscreen(); break;
         case "Escape":
           e.preventDefault();
-          if (isQualityMenuOpen) setIsQualityMenuOpen(false);
+          if (isVoiceMenuOpen) setIsVoiceMenuOpen(false);
+          else if (isEpisodeMenuOpen) setIsEpisodeMenuOpen(false);
+          else if (isQualityMenuOpen) setIsQualityMenuOpen(false);
           else if (isSubtitleMenuOpen) setIsSubtitleMenuOpen(false);
           else navigate(-1);
           break;
@@ -593,7 +612,66 @@ export default function PlayerPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isQualityMenuOpen, isSubtitleMenuOpen, togglePlay, seekBy, toggleFullscreen, showAndScheduleHide, navigate]);
+  }, [isQualityMenuOpen, isSubtitleMenuOpen, isVoiceMenuOpen, isEpisodeMenuOpen, togglePlay, seekBy, toggleFullscreen, showAndScheduleHide, navigate]);
+
+  /* ── plugin playback: voices, episodes, next episode ── */
+  const upNext = plugin && selectedSeason != null
+    ? nextEpisode(plugin.seasons, selectedSeason, selectedEpisode)
+    : null;
+  const menuEpisodes = plugin?.seasons?.find(s => s.season_number === Number(menuSeason))?.episode_count || 0;
+
+  const switchTo = useCallback(async ({ season = selectedSeason, episode = selectedEpisode, voice = plugin?.voice, explicitVoice = false, at = null }) => {
+    if (!plugin || switchingRef.current) return;
+    switchingRef.current = true;
+    setSwitchError(null);
+    setIsVoiceMenuOpen(false);
+    setIsEpisodeMenuOpen(false);
+    setIsBuffering(true);
+    try {
+      const next = await preparePlayback({
+        query: plugin.query, movieId: plugin.movieId, userId, seasons: plugin.seasons,
+        season, episode, voice, explicitVoice, startAt: at,
+        quality: currentQuality, subtitleLang: currentSubtitle?.lang || null,
+      });
+      if (next) {
+        navigate(location.pathname, { replace: true, state: { movieDetails, ...next } });
+        return;
+      }
+      setSwitchError("Цю серію зараз не вдалося відкрити");
+    } catch {
+      setSwitchError("Цю серію зараз не вдалося відкрити");
+    }
+    switchingRef.current = false;
+    setIsBuffering(false);
+  }, [plugin, selectedSeason, selectedEpisode, userId, currentQuality, currentSubtitle, movieDetails, location.pathname, navigate]);
+
+  const saveCurrentPosition = (position) => {
+    const video = videoRef.current;
+    if (!video || !movieDetails || !userId) return;
+    saveProgress({
+      user_id: userId, movie_id: movieDetails.id,
+      position_seconds: Math.floor(position),
+      season: selectedSeason ?? null, episode: selectedEpisode ?? null,
+      duration: Math.floor(video.duration || 0),
+    });
+  };
+
+  const goToEpisode = (target) => {
+    saveCurrentPosition(videoRef.current?.currentTime || 0);
+    switchTo(target);
+  };
+
+  const handleEnded = () => {
+    if (!plugin) return;
+    saveCurrentPosition(videoRef.current?.duration || 0);
+    if (upNext) switchTo(upNext);
+  };
+
+  useEffect(() => {
+    if (!plugin?.subtitleLang) return;
+    const kept = subtitles.find(s => s.lang === plugin.subtitleLang);
+    if (kept) setCurrentSubtitle(kept);
+  }, []);
 
   /* ── fallback ── */
   if (!movieDetails || !normalizedSources.length) {
@@ -630,6 +708,7 @@ export default function PlayerPage() {
         onPlaying={() => setIsBuffering(false)}
         onTimeUpdate={handleTimeUpdate}
         onPause={handlePause}
+        onEnded={handleEnded}
         playsInline
       />
 
@@ -664,6 +743,7 @@ export default function PlayerPage() {
             {currentQuality && (
               <div className="cp-top__quality">{String(currentQuality).replace("_Ultra", "")}</div>
             )}
+            {switchError && <div className="cp-top__quality">{switchError}</div>}
           </div>
         </div>
 
@@ -733,6 +813,60 @@ export default function PlayerPage() {
 
             {/* right */}
             <div className="cp-controls__right">
+              {upNext && (
+                <button className="cp-btn" onClick={() => goToEpisode(upNext)} aria-label="Наступна серія" title="Наступна серія">
+                  <SkipForward size={18} strokeWidth={2} />
+                </button>
+              )}
+
+              {plugin?.seasons?.length > 0 && selectedSeason != null && (
+                <div ref={episodeMenuRef} className="cp-menu-wrap">
+                  <button className="cp-btn" onClick={() => setIsEpisodeMenuOpen(p => !p)} aria-label="Серії" title="Серії">
+                    <List size={18} strokeWidth={2} />
+                  </button>
+                  {isEpisodeMenuOpen && (
+                    <div className="cp-menu" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                      <div className="cp-menu__title">Сезон</div>
+                      {plugin.seasons.map(s => (
+                        <button
+                          key={s.season_number}
+                          className={`cp-menu__item${s.season_number === Number(menuSeason) ? " cp-menu__item--on" : ""}`}
+                          onClick={() => setMenuSeason(s.season_number)}
+                        >Сезон {s.season_number}</button>
+                      ))}
+                      <div className="cp-menu__title">Серія</div>
+                      {Array.from({ length: menuEpisodes }, (_, i) => i + 1).map(n => (
+                        <button
+                          key={n}
+                          className={`cp-menu__item${Number(menuSeason) === Number(selectedSeason) && n === Number(selectedEpisode) ? " cp-menu__item--on" : ""}`}
+                          onClick={() => goToEpisode({ season: Number(menuSeason), episode: n })}
+                        >Серія {n}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {plugin?.voices?.length > 1 && (
+                <div ref={voiceMenuRef} className="cp-menu-wrap">
+                  <button className="cp-btn" onClick={() => setIsVoiceMenuOpen(p => !p)} aria-label="Озвучка" title="Озвучка">
+                    <Mic size={18} strokeWidth={2} />
+                  </button>
+                  {isVoiceMenuOpen && (
+                    <div className="cp-menu" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                      <div className="cp-menu__title">Озвучка</div>
+                      {plugin.voices.map(name => (
+                        <button
+                          key={name}
+                          className={`cp-menu__item${name === plugin.voice ? " cp-menu__item--on" : ""}`}
+                          onClick={() => name !== plugin.voice && switchTo({ voice: name, explicitVoice: true, at: videoRef.current?.currentTime || 0 })}
+                        >{name}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {subtitles.length > 0 && (
                 <div ref={subtitleMenuRef} className="cp-menu-wrap">
                   <button
@@ -795,4 +929,10 @@ export default function PlayerPage() {
       </div>
     </div>
   );
+}
+
+// Новий запуск (серія чи озвучка) починається з чистого стану плеєра.
+export default function PlayerPage() {
+  const location = useLocation();
+  return <PlayerView key={location.key} />;
 }

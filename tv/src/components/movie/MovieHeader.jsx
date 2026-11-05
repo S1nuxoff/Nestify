@@ -22,6 +22,8 @@ export default function MovieHeader({
   likePending,
   onToggleLike,
   onMainPlayClick,
+  mainPlayLoading = false,
+  onOtherSources = null,
   onCastClick,
 }) {
   const computed = useMemo(() => {
@@ -201,11 +203,16 @@ export default function MovieHeader({
                   className="mh-play"
                   type="button"
                   tabIndex={0}
-                  onClick={onMainPlayClick}
+                  onClick={mainPlayLoading ? undefined : onMainPlayClick}
                   aria-label="Дивитися"
                 >
-                  <Play fill="black" /> Дивитися
+                  {mainPlayLoading ? <span className="mh-resume__spinner" /> : <Play fill="black" />} Дивитися
                 </button>
+                {onOtherSources && (
+                  <button className="mh-play mh-play--secondary" type="button" tabIndex={0} onClick={onOtherSources}>
+                    Інші джерела
+                  </button>
+                )}
               </div>
               <div className="mh-icon-actions">
                 <button
