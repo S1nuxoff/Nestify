@@ -1,7 +1,7 @@
 // node --test src/core/playbackPlan.test.js
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isDone, nextEpisode, orderVoices, planEpisode, seasonListOf } from "./playbackPlan.js";
+import { isDone, latestPerTitle, nextEpisode, orderVoices, planEpisode, seasonListOf } from "./playbackPlan.js";
 
 const seasons = seasonListOf([
   { season_number: 2, episode_count: 3 },
@@ -10,6 +10,14 @@ const seasons = seasonListOf([
   { season_number: 3, episode_count: 0 },
 ]);
 const voice = (name) => ({ id: name, voice: name, title: name });
+
+test("history keeps only the newest entry of each title", () => {
+  const rows = [
+    { movie_id: "tv_1", episode: 7 }, { movie_id: "movie_2" }, { movie_id: "tv_1", episode: 6 }, { movie_id: "tv_1", episode: 5 },
+  ];
+  assert.deepEqual(latestPerTitle(rows), [{ movie_id: "tv_1", episode: 7 }, { movie_id: "movie_2" }]);
+  assert.deepEqual(latestPerTitle(null), []);
+});
 
 test("specials and empty seasons are skipped, seasons are sorted", () => {
   assert.deepEqual(seasons.map((s) => s.season_number), [1, 2]);

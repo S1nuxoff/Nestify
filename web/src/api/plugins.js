@@ -44,3 +44,13 @@ export const setExtensionInstalled = (id, installed) => v4.put(`/extensions/${id
 
 export const addExtensionByLink = (manifestUrl, token) =>
   v4.post("/plugins", { manifest_url: manifestUrl, token: token || undefined });
+
+export const getExtensionSettings = async (id) => {
+  const res = await v4.get(`/extensions/${id}/settings`);
+  return res.data;
+};
+
+export const saveExtensionSettings = async (id, values) => {
+  const res = await v4.put(`/extensions/${id}/settings`, { values });
+  return res.data;
+};

@@ -4,13 +4,13 @@ import Hls from "hls.js";
 import config from "../core/config";
 import { stopHlsSession, restartHlsSession } from "../api/v3";
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize,
-  RotateCcw, RotateCw, Captions, ChevronLeft, Settings,
-} from "lucide-react";
+  BackIcon, PlayIcon, PauseIcon, Replay10Icon, Forward10Icon, VolumeIcon, MutedIcon, NextIcon,
+  EpisodesIcon, AudioSubtitlesIcon, QualityIcon, FullscreenIcon, ExitFullscreenIcon, CloseIcon, CheckIcon,
+} from "../components/ui/PlayerIcons";
 
 import "../styles/VideoPlayer.css";
 import { getProgress, saveProgress } from "../api/hdrezka/progressApi";
-import { Mic, List, SkipForward } from "lucide-react";
+import { getTvSeason, tmdbImg } from "../api/tmdb";
 import { preparePlayback } from "../core/playback";
 import { DONE_RATIO, nextEpisode } from "../core/playbackPlan";
 
@@ -50,6 +50,8 @@ function formatTime(sec) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
 }
 
+const UP_NEXT_SECONDS = 30;
+
 /* ─── component ────────────────────────────────────────────── */
 function PlayerView() {
   const location = useLocation();
@@ -69,8 +71,6 @@ function PlayerView() {
   const hideTimerRef      = useRef(null);
   const saveIntervalRef   = useRef(null);
   const qualitySwitchRef  = useRef(null);
-  const qualityMenuRef    = useRef(null);
-  const subtitleMenuRef   = useRef(null);
   const progressWrapRef   = useRef(null);
   const subtitleCuesRef   = useRef([]);
   const scrubAbsRef       = useRef(null);
@@ -94,19 +94,21 @@ function PlayerView() {
   const [isScrubbing, setIsScrubbing]     = useState(false);
   const [isBuffering, setIsBuffering]     = useState(true);
   const [currentQuality, setCurrentQuality]       = useState(null);
-  const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
   const [currentSubtitle, setCurrentSubtitle]     = useState(null);
-  const [isSubtitleMenuOpen, setIsSubtitleMenuOpen] = useState(false);
   const [subtitleCues, setSubtitleCues]   = useState([]);
   const [currentCueText, setCurrentCueText] = useState("");
   const [hoverTime, setHoverTime]         = useState(null);
-  const [isVoiceMenuOpen, setIsVoiceMenuOpen]     = useState(false);
-  const [isEpisodeMenuOpen, setIsEpisodeMenuOpen] = useState(false);
+  const [panel, setPanel]                 = useState(null); // audio | episodes | quality
+  const [upNextDismissed, setUpNextDismissed] = useState(false);
+  const [seasonDetails, setSeasonDetails] = useState({}); // номер сезону → серії з TMDB
+  const [isSeasonListOpen, setIsSeasonListOpen] = useState(false);
+  const [expandedEpisode, setExpandedEpisode] = useState(null);
+  const currentEpisodeRef = useRef(null);
+  const [bufferedEnd, setBufferedEnd]     = useState(0);
+  const [isTouch] = useState(() => window.matchMedia?.("(hover: none)").matches ?? false);
   const [menuSeason, setMenuSeason]       = useState(selectedSeason);
   const [switchError, setSwitchError]     = useState(null);
   const switchingRef   = useRef(false);
-  const voiceMenuRef   = useRef(null);
-  const episodeMenuRef = useRef(null);
 
   /* ── derived ── */
   useEffect(() => {
@@ -218,8 +220,15 @@ function PlayerView() {
   }, [hlsInfo?.sessionId]);
 
   /* ── controls auto-hide ── */
+  const panelOpenRef = useRef(false);
+  useEffect(() => {
+    panelOpenRef.current = Boolean(panel);
+    if (panel) { clearTimeout(hideTimerRef.current); setShowControls(true); }
+  }, [panel]);
+
   const scheduleHide = useCallback(() => {
     clearTimeout(hideTimerRef.current);
+    if (panelOpenRef.current) return;
     hideTimerRef.current = setTimeout(() => setShowControls(false), 3000);
   }, []);
 
@@ -237,7 +246,7 @@ function PlayerView() {
       scheduleHide();
     }
     return () => clearTimeout(hideTimerRef.current);
-  }, [isPlaying, scheduleHide]);
+  }, [isPlaying, panel, scheduleHide]);
 
   /* ── getProgress ── */
   useEffect(() => {
@@ -304,6 +313,18 @@ function PlayerView() {
       const cue = cues.find(c => t >= c.start && t <= c.end);
       setCurrentCueText(cue ? cue.text : "");
     } else setCurrentCueText("");
+  };
+
+  const handleBufferProgress = () => {
+    const video = videoRef.current;
+    if (!video?.buffered?.length) return;
+    const offset = isHls ? hlsTimeOffsetRef.current : (isTranscoded ? transcodedOffset : 0);
+    for (let i = video.buffered.length - 1; i >= 0; i--) {
+      if (video.buffered.start(i) <= video.currentTime) {
+        setBufferedEnd(offset + video.buffered.end(i));
+        return;
+      }
+    }
   };
 
   const handlePause = () => {
@@ -472,7 +493,7 @@ function PlayerView() {
     const video = videoRef.current;
     if (!video) return;
     qualitySwitchRef.current = { time: video.currentTime, wasPlaying: !video.paused };
-    setIsBuffering(true); setCurrentQuality(quality); setIsQualityMenuOpen(false);
+    setIsBuffering(true); setCurrentQuality(quality); setPanel(null);
   };
 
   useEffect(() => {
@@ -509,19 +530,6 @@ function PlayerView() {
     document.addEventListener("webkitfullscreenchange", handler);
     return () => { document.removeEventListener("fullscreenchange", handler); document.removeEventListener("webkitfullscreenchange", handler); };
   }, []);
-
-  /* ── outside click menus ── */
-  useEffect(() => {
-    if (!isQualityMenuOpen && !isSubtitleMenuOpen && !isVoiceMenuOpen && !isEpisodeMenuOpen) return;
-    const handler = (e) => {
-      if (voiceMenuRef.current && !voiceMenuRef.current.contains(e.target)) setIsVoiceMenuOpen(false);
-      if (episodeMenuRef.current && !episodeMenuRef.current.contains(e.target)) setIsEpisodeMenuOpen(false);
-      if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target)) setIsQualityMenuOpen(false);
-      if (subtitleMenuRef.current && !subtitleMenuRef.current.contains(e.target)) setIsSubtitleMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [isQualityMenuOpen, isSubtitleMenuOpen, isVoiceMenuOpen, isEpisodeMenuOpen]);
 
   /* ── autosave ── */
   useEffect(() => {
@@ -601,10 +609,7 @@ function PlayerView() {
           toggleFullscreen(); break;
         case "Escape":
           e.preventDefault();
-          if (isVoiceMenuOpen) setIsVoiceMenuOpen(false);
-          else if (isEpisodeMenuOpen) setIsEpisodeMenuOpen(false);
-          else if (isQualityMenuOpen) setIsQualityMenuOpen(false);
-          else if (isSubtitleMenuOpen) setIsSubtitleMenuOpen(false);
+          if (panel) setPanel(null);
           else navigate(-1);
           break;
         default: break;
@@ -612,7 +617,7 @@ function PlayerView() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isQualityMenuOpen, isSubtitleMenuOpen, isVoiceMenuOpen, isEpisodeMenuOpen, togglePlay, seekBy, toggleFullscreen, showAndScheduleHide, navigate]);
+  }, [panel, togglePlay, seekBy, toggleFullscreen, showAndScheduleHide, navigate]);
 
   /* ── plugin playback: voices, episodes, next episode ── */
   const upNext = plugin && selectedSeason != null
@@ -624,8 +629,7 @@ function PlayerView() {
     if (!plugin || switchingRef.current) return;
     switchingRef.current = true;
     setSwitchError(null);
-    setIsVoiceMenuOpen(false);
-    setIsEpisodeMenuOpen(false);
+    setPanel(null);
     setIsBuffering(true);
     try {
       const next = await preparePlayback({
@@ -644,6 +648,28 @@ function PlayerView() {
     switchingRef.current = false;
     setIsBuffering(false);
   }, [plugin, selectedSeason, selectedEpisode, userId, currentQuality, currentSubtitle, movieDetails, location.pathname, navigate]);
+
+  /* ── episode list ── */
+  const tmdbId = plugin?.query?.tmdb_id;
+  const shownEpisodes = seasonDetails[Number(menuSeason)];
+
+  useEffect(() => {
+    if (panel !== "episodes" || !tmdbId || !menuSeason || shownEpisodes) return;
+    let cancelled = false;
+    getTvSeason(tmdbId, menuSeason)
+      .then((data) => {
+        if (!cancelled) setSeasonDetails(prev => ({ ...prev, [Number(menuSeason)]: data.episodes || [] }));
+      })
+      // Без TMDB залишається список із номерами.
+      .catch(() => {
+        if (!cancelled) setSeasonDetails(prev => ({ ...prev, [Number(menuSeason)]: [] }));
+      });
+    return () => { cancelled = true; };
+  }, [panel, tmdbId, menuSeason, shownEpisodes]);
+
+  useEffect(() => {
+    if (panel === "episodes" && !isSeasonListOpen) currentEpisodeRef.current?.scrollIntoView({ block: "center" });
+  }, [panel, shownEpisodes, isSeasonListOpen]);
 
   const saveCurrentPosition = (position) => {
     const video = videoRef.current;
@@ -686,17 +712,27 @@ function PlayerView() {
   }
 
   const episodeLabel = selectedSeason != null && selectedEpisode != null
-    ? ` · S${String(selectedSeason).padStart(2,"0")}E${String(selectedEpisode).padStart(2,"0")}` : "";
+    ? `Сезон ${selectedSeason}, Серія ${selectedEpisode}` : "";
+  const subtitleLine = [episodeLabel, plugin?.voice].filter(Boolean).join(" · ");
+  const hasAudioPanel = plugin?.voices?.length > 1 || subtitles.length > 0;
+  const hasEpisodes = plugin?.seasons?.length > 0 && selectedSeason != null;
+  const remaining = Math.max(0, displayedDuration - displayedCurrentTime);
+  const showUpNext = upNext && !upNextDismissed && displayedDuration > 0 && remaining <= UP_NEXT_SECONDS;
+  const bufferedPercent = displayedDuration > 0 ? Math.min(100, (bufferedEnd / displayedDuration) * 100) : 0;
+  const closePanel = () => setPanel(null);
 
   return (
     <div
       className={`cp-root${showControls ? " cp-root--ui" : ""}`}
       ref={rootRef}
       onMouseMove={showAndScheduleHide}
-      onTouchStart={showAndScheduleHide}
-      onClick={(e) => { if (e.target === videoRef.current) togglePlay(); }}
+      onClick={(e) => {
+        if (e.target !== videoRef.current) return;
+        // На сенсорному екрані дотик лише показує чи ховає кнопки, а не ставить на паузу.
+        if (isTouch) setShowControls(v => !v);
+        else togglePlay();
+      }}
     >
-      {/* video */}
       <video
         ref={videoRef}
         className="cp-video"
@@ -707,226 +743,275 @@ function PlayerView() {
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
         onTimeUpdate={handleTimeUpdate}
+        onProgress={handleBufferProgress}
         onPause={handlePause}
         onEnded={handleEnded}
         playsInline
       />
 
-      {/* scrims */}
       <div className="cp-scrim cp-scrim--top" />
       <div className="cp-scrim cp-scrim--bottom" />
 
-      {/* buffering */}
       {isBuffering && (
-        <div className="cp-spinner-wrap">
+        <div className="cp-spinner-wrap cp-spinner-wrap--over-play">
           <div className="cp-spinner" />
         </div>
       )}
 
-      {/* subtitles */}
       {currentCueText && (
         <div className={`cp-subs${showControls ? " cp-subs--up" : ""}`}>
           {currentCueText.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}
         </div>
       )}
 
-      {/* ── UI overlay ── */}
       <div className={`cp-ui${showControls ? " cp-ui--visible" : ""}`}>
-
-        {/* TOP BAR */}
         <div className="cp-top">
-          <button className="cp-back" onClick={() => navigate(-1)} aria-label="Back">
-            <ChevronLeft size={22} strokeWidth={2.5} />
+          <button className="cp-back" onClick={() => navigate(-1)} aria-label="Назад">
+            <BackIcon size={28} />
           </button>
           <div className="cp-top__meta">
-            <div className="cp-top__title">{movieDetails.title}{episodeLabel}</div>
-            {currentQuality && (
-              <div className="cp-top__quality">{String(currentQuality).replace("_Ultra", "")}</div>
-            )}
-            {switchError && <div className="cp-top__quality">{switchError}</div>}
+            <div className="cp-top__title">{movieDetails.title}</div>
+            {subtitleLine && <div className="cp-top__sub">{subtitleLine}</div>}
+            {switchError && <div className="cp-top__error">{switchError}</div>}
           </div>
+          <span />
         </div>
 
-        {/* BOTTOM */}
-        <div className="cp-bottom">
+        <div className="cp-center">
+          <button className="cp-center__btn" onClick={() => seekBy(-10)} aria-label="Назад на 10 секунд">
+            <Replay10Icon />
+          </button>
+          <button className={`cp-center__btn cp-center__play${isBuffering ? " cp-center__play--loading" : ""}`} onClick={togglePlay} aria-label={isPlaying ? "Пауза" : "Відтворити"}>
+            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+          </button>
+          <button className="cp-center__btn" onClick={() => seekBy(10)} aria-label="Вперед на 10 секунд">
+            <Forward10Icon />
+          </button>
+        </div>
 
-          {/* progress */}
-          <div
-            className="cp-progress-wrap"
-            ref={progressWrapRef}
-            onMouseMove={handleProgressMouseMove}
-            onMouseLeave={() => setHoverTime(null)}
-          >
-            {hoverTime !== null && (
-              <div className="cp-hover-time">{formatTime(hoverTime)}</div>
-            )}
-            <div className="cp-track">
-              <div className="cp-track__fill" style={{ width: `${progressPercent}%` }} />
+        <div className="cp-bottom">
+          <div className="cp-progress-row">
+            <span className="cp-time">{formatTime(displayedCurrentTime)}</span>
+            <div
+              className="cp-progress-wrap"
+              ref={progressWrapRef}
+              onMouseMove={handleProgressMouseMove}
+              onMouseLeave={() => setHoverTime(null)}
+            >
+              {hoverTime !== null && <div className="cp-hover-time">{formatTime(hoverTime)}</div>}
+              <div className="cp-track">
+                <div className="cp-track__buffer" style={{ width: `${bufferedPercent}%` }} />
+                <div className="cp-track__fill" style={{ width: `${progressPercent}%` }} />
+              </div>
+              <div className="cp-thumb" style={{ left: `${progressPercent}%` }} />
+              <input
+                type="range"
+                className="cp-scrubber"
+                aria-label="Перемотка"
+                min={0}
+                max={displayedDuration || 0}
+                step={1}
+                value={displayedCurrentTime}
+                onMouseDown={handleScrubStart}
+                onTouchStart={handleScrubStart}
+                onChange={handleScrubChange}
+                onMouseUp={handleScrubEnd}
+                onTouchEnd={handleScrubEnd}
+              />
             </div>
-            <input
-              type="range"
-              className="cp-scrubber"
-              min={0}
-              max={displayedDuration || 0}
-              step={1}
-              value={displayedCurrentTime}
-              onMouseDown={handleScrubStart}
-              onTouchStart={handleScrubStart}
-              onChange={handleScrubChange}
-              onMouseUp={handleScrubEnd}
-              onTouchEnd={handleScrubEnd}
-            />
+            <span className="cp-time cp-time--end">-{formatTime(remaining)}</span>
           </div>
 
-          {/* controls */}
           <div className="cp-controls">
-            {/* left */}
             <div className="cp-controls__left">
-              <button className="cp-btn" onClick={togglePlay} aria-label="Play/Pause">
-                {isPlaying ? <Pause size={20} strokeWidth={2} /> : <Play size={20} strokeWidth={2} />}
-              </button>
-              <button className="cp-btn" onClick={() => seekBy(-10)} aria-label="-10s">
-                <RotateCcw size={18} strokeWidth={2} />
-                <span className="cp-btn__label">10</span>
-              </button>
-              <button className="cp-btn" onClick={() => seekBy(10)} aria-label="+10s">
-                <RotateCw size={18} strokeWidth={2} />
-                <span className="cp-btn__label">10</span>
-              </button>
-              <button className="cp-btn" onClick={toggleMute} aria-label="Mute">
-                {isMuted ? <VolumeX size={18} strokeWidth={2} /> : <Volume2 size={18} strokeWidth={2} />}
-              </button>
-              <div className="cp-volume">
-                <input
-                  type="range"
-                  min={0} max={1} step={0.02}
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="cp-volume__slider"
-                  style={{ "--vol": `${volumePercent}%` }}
-                />
+              <div className="cp-volume-group">
+                <button className="cp-btn" onClick={toggleMute} aria-label={isMuted ? "Увімкнути звук" : "Вимкнути звук"}>
+                  {isMuted ? <MutedIcon /> : <VolumeIcon />}
+                </button>
+                <div className="cp-volume">
+                  <input
+                    type="range"
+                    aria-label="Гучність"
+                    min={0} max={1} step={0.02}
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="cp-volume__slider"
+                    style={{ "--vol": `${volumePercent}%` }}
+                  />
+                </div>
               </div>
-              <span className="cp-time">
-                {formatTime(displayedCurrentTime)} / {formatTime(displayedDuration)}
-              </span>
             </div>
 
-            {/* right */}
             <div className="cp-controls__right">
               {upNext && (
-                <button className="cp-btn" onClick={() => goToEpisode(upNext)} aria-label="Наступна серія" title="Наступна серія">
-                  <SkipForward size={18} strokeWidth={2} />
+                <button className="cp-btn" onClick={() => goToEpisode(upNext)} aria-label="Наступна серія">
+                  <NextIcon size={22} />
+                  <span className="cp-btn__text">Наступна серія</span>
                 </button>
               )}
-
-              {plugin?.seasons?.length > 0 && selectedSeason != null && (
-                <div ref={episodeMenuRef} className="cp-menu-wrap">
-                  <button className="cp-btn" onClick={() => setIsEpisodeMenuOpen(p => !p)} aria-label="Серії" title="Серії">
-                    <List size={18} strokeWidth={2} />
-                  </button>
-                  {isEpisodeMenuOpen && (
-                    <div className="cp-menu" style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                      <div className="cp-menu__title">Сезон</div>
-                      {plugin.seasons.map(s => (
-                        <button
-                          key={s.season_number}
-                          className={`cp-menu__item${s.season_number === Number(menuSeason) ? " cp-menu__item--on" : ""}`}
-                          onClick={() => setMenuSeason(s.season_number)}
-                        >Сезон {s.season_number}</button>
-                      ))}
-                      <div className="cp-menu__title">Серія</div>
-                      {Array.from({ length: menuEpisodes }, (_, i) => i + 1).map(n => (
-                        <button
-                          key={n}
-                          className={`cp-menu__item${Number(menuSeason) === Number(selectedSeason) && n === Number(selectedEpisode) ? " cp-menu__item--on" : ""}`}
-                          onClick={() => goToEpisode({ season: Number(menuSeason), episode: n })}
-                        >Серія {n}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {hasEpisodes && (
+                <button className={`cp-btn${panel === "episodes" ? " cp-btn--on" : ""}`} onClick={() => setPanel(p => (p === "episodes" ? null : "episodes"))} aria-label="Серії">
+                  <EpisodesIcon />
+                  <span className="cp-btn__text">Серії</span>
+                </button>
               )}
-
-              {plugin?.voices?.length > 1 && (
-                <div ref={voiceMenuRef} className="cp-menu-wrap">
-                  <button className="cp-btn" onClick={() => setIsVoiceMenuOpen(p => !p)} aria-label="Озвучка" title="Озвучка">
-                    <Mic size={18} strokeWidth={2} />
-                  </button>
-                  {isVoiceMenuOpen && (
-                    <div className="cp-menu" style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                      <div className="cp-menu__title">Озвучка</div>
-                      {plugin.voices.map(name => (
-                        <button
-                          key={name}
-                          className={`cp-menu__item${name === plugin.voice ? " cp-menu__item--on" : ""}`}
-                          onClick={() => name !== plugin.voice && switchTo({ voice: name, explicitVoice: true, at: videoRef.current?.currentTime || 0 })}
-                        >{name}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {hasAudioPanel && (
+                <button className={`cp-btn${panel === "audio" ? " cp-btn--on" : ""}`} onClick={() => setPanel(p => (p === "audio" ? null : "audio"))} aria-label="Озвучка й субтитри">
+                  <AudioSubtitlesIcon />
+                  <span className="cp-btn__text">Озвучка й субтитри</span>
+                </button>
               )}
-
-              {subtitles.length > 0 && (
-                <div ref={subtitleMenuRef} className="cp-menu-wrap">
-                  <button
-                    className={`cp-btn${currentSubtitle ? " cp-btn--active" : ""}`}
-                    onClick={() => setIsSubtitleMenuOpen(p => !p)}
-                    aria-label="Subtitles"
-                  >
-                    <Captions size={18} strokeWidth={2} />
-                  </button>
-                  {isSubtitleMenuOpen && (
-                    <div className="cp-menu">
-                      <div className="cp-menu__title">Субтитри</div>
-                      <button
-                        className={`cp-menu__item${!currentSubtitle ? " cp-menu__item--on" : ""}`}
-                        onClick={() => { setCurrentSubtitle(null); setIsSubtitleMenuOpen(false); }}
-                      >Вимкнено</button>
-                      {subtitles.map(sub => (
-                        <button
-                          key={sub.lang}
-                          className={`cp-menu__item${currentSubtitle?.lang === sub.lang ? " cp-menu__item--on" : ""}`}
-                          onClick={() => { setCurrentSubtitle(sub); setIsSubtitleMenuOpen(false); }}
-                        >{sub.lang}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
               {normalizedSources.length > 1 && (
-                <div ref={qualityMenuRef} className="cp-menu-wrap">
-                  <button
-                    className="cp-btn cp-btn--text"
-                    onClick={() => setIsQualityMenuOpen(p => !p)}
-                    aria-label="Quality"
-                  >
-                    <Settings size={16} strokeWidth={2} />
-                    <span>{String(currentQuality || "").replace("_Ultra", "")}</span>
-                  </button>
-                  {isQualityMenuOpen && (
-                    <div className="cp-menu">
-                      <div className="cp-menu__title">Якість</div>
-                      {normalizedSources.slice().reverse().map(s => (
-                        <button
-                          key={s.quality}
-                          className={`cp-menu__item${s.quality === currentQuality ? " cp-menu__item--on" : ""}`}
-                          onClick={() => handleChangeQuality(s.quality)}
-                        >{s.quality.replace("_Ultra", "")}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button className={`cp-btn${panel === "quality" ? " cp-btn--on" : ""}`} onClick={() => setPanel(p => (p === "quality" ? null : "quality"))} aria-label="Якість">
+                  <QualityIcon />
+                  <span className="cp-btn__text">{String(currentQuality || "").replace("_Ultra", "")}</span>
+                </button>
               )}
-
-              <button className="cp-btn" onClick={toggleFullscreen} aria-label="Fullscreen">
-                {isFullscreen ? <Minimize size={18} strokeWidth={2} /> : <Maximize size={18} strokeWidth={2} />}
+              <button className="cp-btn" onClick={toggleFullscreen} aria-label={isFullscreen ? "Вийти з повного екрана" : "На весь екран"}>
+                {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {showUpNext && !panel && (
+        <div className="cp-upnext">
+          <div>
+            <div className="cp-upnext__label">Наступна серія</div>
+            <div className="cp-upnext__title">Сезон {upNext.season}, Серія {upNext.episode}</div>
+          </div>
+          <div className="cp-upnext__actions">
+            <button className="cp-upnext__play" onClick={() => goToEpisode(upNext)}>
+              <PlayIcon size={16} /> Дивитися
+            </button>
+            <button className="cp-upnext__dismiss" onClick={() => setUpNextDismissed(true)}>Сховати</button>
+          </div>
+        </div>
+      )}
+
+      {panel && <div className="cp-backdrop" onClick={closePanel} />}
+
+      {panel === "audio" && (
+        <aside className="cp-panel cp-panel--audio" aria-label="Озвучка й субтитри">
+          <button className="cp-panel__close" onClick={closePanel} aria-label="Закрити"><CloseIcon size={24} /></button>
+          <div className="cp-panel__columns">
+            {plugin?.voices?.length > 1 && (
+              <div className="cp-panel__column">
+                <h3 className="cp-panel__heading">Озвучка</h3>
+                {plugin.voices.map(name => (
+                  <button
+                    key={name}
+                    className={`cp-option${name === plugin.voice ? " cp-option--on" : ""}`}
+                    onClick={() => name !== plugin.voice && switchTo({ voice: name, explicitVoice: true, at: videoRef.current?.currentTime || 0 })}
+                  >
+                    <span className="cp-option__check">{name === plugin.voice && <CheckIcon size={20} />}</span>
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="cp-panel__column">
+              <h3 className="cp-panel__heading">Субтитри</h3>
+              <button className={`cp-option${!currentSubtitle ? " cp-option--on" : ""}`} onClick={() => setCurrentSubtitle(null)}>
+                <span className="cp-option__check">{!currentSubtitle && <CheckIcon size={20} />}</span>
+                Вимкнено
+              </button>
+              {subtitles.map(sub => (
+                <button
+                  key={sub.lang}
+                  className={`cp-option${currentSubtitle?.lang === sub.lang ? " cp-option--on" : ""}`}
+                  onClick={() => setCurrentSubtitle(sub)}
+                >
+                  <span className="cp-option__check">{currentSubtitle?.lang === sub.lang && <CheckIcon size={20} />}</span>
+                  {sub.lang}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {panel === "episodes" && (
+        <aside className="cp-panel cp-panel--episodes" aria-label="Серії">
+          <button className="cp-panel__close" onClick={closePanel} aria-label="Закрити"><CloseIcon size={24} /></button>
+          {isSeasonListOpen ? (
+            <>
+              <h3 className="cp-panel__heading cp-panel__heading--bar">Сезони</h3>
+              <div className="cp-panel__body">
+                {plugin.seasons.map(s => (
+                  <button
+                    key={s.season_number}
+                    className={`cp-option${s.season_number === Number(menuSeason) ? " cp-option--on" : ""}`}
+                    onClick={() => { setMenuSeason(s.season_number); setExpandedEpisode(null); setIsSeasonListOpen(false); }}
+                  >
+                    <span className="cp-option__check">{s.season_number === Number(menuSeason) && <CheckIcon size={20} />}</span>
+                    Сезон {s.season_number}
+                    <span className="cp-option__note">{s.episode_count} сер.</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <button className="cp-panel__heading cp-panel__heading--bar cp-panel__back" onClick={() => setIsSeasonListOpen(true)}>
+                <BackIcon size={22} /> Сезон {menuSeason}
+              </button>
+              <div className="cp-panel__body">
+                {Array.from({ length: menuEpisodes }, (_, i) => i + 1).map(n => {
+                  const episode = shownEpisodes?.find(e => e.episode_number === n);
+                  const isCurrent = Number(menuSeason) === Number(selectedSeason) && n === Number(selectedEpisode);
+                  const isOpen = expandedEpisode === n || (expandedEpisode === null && isCurrent);
+                  const play = () => (isCurrent ? closePanel() : goToEpisode({ season: Number(menuSeason), episode: n }));
+                  return (
+                    <div key={n} ref={isCurrent ? currentEpisodeRef : null} className="cp-ep">
+                      {isOpen ? (
+                        <button className="cp-ep__open" onClick={play} aria-label={`Дивитися серію ${n}`}>
+                          <span className="cp-ep__number cp-ep__number--on">{n}</span>
+                          <span className="cp-ep__still">
+                            {episode?.still_path && <img src={tmdbImg(episode.still_path, "w300")} alt="" loading="lazy" />}
+                            <span className="cp-ep__play"><PlayIcon size={26} /></span>
+                          </span>
+                          <span className="cp-ep__text">
+                            <span className="cp-ep__title cp-ep__title--open">{episode?.name || `Серія ${n}`}</span>
+                            {episode?.overview && <span className="cp-ep__overview">{episode.overview}</span>}
+                            {episode?.runtime ? <span className="cp-ep__runtime">{episode.runtime} хв</span> : null}
+                          </span>
+                        </button>
+                      ) : (
+                        <button className="cp-ep__row" onClick={() => setExpandedEpisode(n)}>
+                          <span className="cp-ep__number">{n}</span>
+                          <span className="cp-ep__title">{episode?.name || `Серія ${n}`}</span>
+                          {isCurrent && <span className="cp-ep__marker" aria-label="Зараз" />}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </aside>
+      )}
+
+      {panel === "quality" && (
+        <aside className="cp-panel cp-panel--quality" aria-label="Якість">
+          <button className="cp-panel__close" onClick={closePanel} aria-label="Закрити"><CloseIcon size={24} /></button>
+          <h3 className="cp-panel__heading cp-panel__heading--bar">Якість</h3>
+          <div className="cp-panel__body">
+            {normalizedSources.slice().reverse().map(s => (
+              <button
+                key={s.quality}
+                className={`cp-option${s.quality === currentQuality ? " cp-option--on" : ""}`}
+                onClick={() => handleChangeQuality(s.quality)}
+              >
+                <span className="cp-option__check">{s.quality === currentQuality && <CheckIcon size={20} />}</span>
+                {s.quality.replace("_Ultra", "")}
+              </button>
+            ))}
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

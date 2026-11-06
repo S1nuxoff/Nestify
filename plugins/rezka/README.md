@@ -46,8 +46,9 @@ the cookies must come from a browser going through the server:
 2. Start a separate browser with `--proxy-server="socks5://127.0.0.1:1080"`
 3. Open the site, pass the check, and copy the `cookie` request header into `REZKA_COOKIES`
 
-The cookie lasts about 30 days. `GET /status` answers 503 once it stops working, and Nestify shows
-the same error for this plugin in `/api/v4/sources`.
+The cookie lasts about 30 days. Admins renew it in Nestify: Профіль, Розширення, HDRezka, Налаштувати.
+The page shows the expiry date and these steps, checks new cookies against the site and saves them in
+the plugin's database, so no redeploy is needed. Saved cookies win over `REZKA_COOKIES`.
 
 ## Quality labels
 

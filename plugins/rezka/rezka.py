@@ -1,5 +1,7 @@
 """Access to the site and matching of TMDB titles against it."""
 
+import base64
+import json
 import logging
 import re
 import time
@@ -56,8 +58,10 @@ class Site:
             raise Blocked()
         return page
 
-    def check_access(self) -> None:
-        response = requests.get(f"{self.origin}/", headers=self.headers, cookies=self.cookies, timeout=20)
+    def check_access(self, cookies: dict | None = None) -> None:
+        response = requests.get(
+            f"{self.origin}/", headers=self.headers, cookies=self.cookies if cookies is None else cookies, timeout=20,
+        )
         response.raise_for_status()
         if CHALLENGE_TITLE in response.text:
             raise Blocked()
@@ -97,11 +101,46 @@ def is_type(page, media_type: str) -> bool:
     return page.type.name == ("tv_series" if media_type == "tv" else "movie")
 
 
+def parse_cookies(value: str) -> dict[str, str]:
+    """Takes a browser's cookie header, with or without its "cookie:" name."""
+    value = re.sub(r"^\s*cookie\s*:?\s*", "", value, flags=re.I).replace("\n", " ").replace("\r", " ")
+    pairs = (part.strip().split("=", 1) for part in value.split(";") if "=" in part)
+    return {name.strip(): val.strip() for name, val in pairs}
+
+
+def token_expiry(cookies: dict[str, str]) -> int | None:
+    """When the site's bot check token runs out. It is only read here, not verified."""
+    for name, value in cookies.items():
+        if "anubis-auth" not in name:
+            continue
+        try:
+            payload = value.split(".")[1]
+            return int(json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))["exp"])
+        except (IndexError, KeyError, TypeError, ValueError):
+            return None
+    return None
+
+
 class MapStore:
-    """The rezka_map table: TMDB/IMDb ids of site pages, filled by scripts/import_mapping.py."""
+    """The plugin's database: the rezka_map table, filled by scripts/import_mapping.py, and settings."""
 
     def __init__(self, url: str):
         self.url = url
+
+    def load_cookies(self) -> dict[str, str] | None:
+        with psycopg.connect(self.url, connect_timeout=5) as db:
+            db.execute("CREATE TABLE IF NOT EXISTS plugin_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            row = db.execute("SELECT value FROM plugin_settings WHERE key = 'cookies'").fetchone()
+        return json.loads(row[0]) if row else None
+
+    def save_cookies(self, cookies: dict[str, str]) -> None:
+        with psycopg.connect(self.url, connect_timeout=5) as db:
+            db.execute("CREATE TABLE IF NOT EXISTS plugin_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            db.execute(
+                "INSERT INTO plugin_settings (key, value) VALUES ('cookies', %s) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                (json.dumps(cookies),),
+            )
 
     def lookup(self, media_type: str, tmdb_id: str | None, imdb_id: str | None) -> list[str]:
         with psycopg.connect(self.url, connect_timeout=5) as db:

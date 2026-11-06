@@ -1,45 +1,154 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ChevronLeft, Puzzle } from "lucide-react";
-import { addExtensionByLink, getExtensions, setExtensionInstalled } from "../api/plugins";
+import { Check, ChevronLeft, Copy, X } from "lucide-react";
+import { addExtensionByLink, getExtensions, getExtensionSettings, saveExtensionSettings, setExtensionInstalled } from "../api/plugins";
 import { hasAccountSession } from "../core/session";
 import "../styles/AccountSettingsPage.css";
 
-const card = { width: "100%", background: "rgba(255,255,255,0.05)", borderRadius: 16, overflow: "hidden", marginBottom: 16 };
-const muted = { fontSize: 13, color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.4 };
-const heading = { alignSelf: "flex-start", fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "0 0 8px 4px" };
-const pill = { border: "none", borderRadius: 999, padding: "9px 16px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" };
-const primary = { ...pill, background: "#fff", color: "#000" };
-const secondary = { ...pill, background: "rgba(255,255,255,0.1)", color: "#fff" };
-const input = {
-  width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 10,
-  padding: "11px 12px", color: "#fff", fontSize: 14, marginBottom: 8,
-};
-
-const STATE_LABEL = { builtin: "Вбудовано", soon: "Скоро" };
 const errorText = (e) => e?.response?.data?.detail || "Не вдалося. Спробуйте ще раз.";
 
-function ExtensionRow({ item, last, busy, onChange }) {
+const WARN_DAYS = 5;
+const DAY = 24 * 60 * 60;
+
+// Коротко про стан плагіна: для адміністратора, щоб помітити проблему раніше за інших.
+function statusLine(status) {
+  if (!status) return null;
+  if (status.ok === false) return { text: status.message || "Не працює", bad: true };
+  if (!status.expires_at) return status.ok ? { text: status.message } : null;
+  const days = Math.ceil((status.expires_at - Date.now() / 1000) / DAY);
+  if (days <= 0) return { text: "Куки закінчились", bad: true };
+  const date = new Date(status.expires_at * 1000).toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
+  return { text: days <= WARN_DAYS ? `Куки закінчуються через ${days} дн.` : `Куки дійсні до ${date}`, bad: days <= WARN_DAYS };
+}
+
+function SettingsDialog({ item, onClose, onSaved }) {
+  const [settings, setSettings] = useState(null);
+  const [values, setValues] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(null);
+
+  useEffect(() => {
+    getExtensionSettings(item.id).then(setSettings).catch((e) => setError(errorText(e)));
+  }, [item.id]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const save = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      setSettings(await saveExtensionSettings(item.id, values));
+      setValues({});
+      await onSaved();
+    } catch (e) {
+      setError(errorText(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const copy = async (command, index) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(index);
+      setTimeout(() => setCopied(null), 1500);
+    } catch {
+      setError("Не вдалося скопіювати. Виділіть команду вручну.");
+    }
+  };
+
+  const status = statusLine(settings?.status);
+  const canSave = settings?.fields?.some((f) => values[f.key]?.trim());
+
+  // У body, щоб вікно було над нижньою панеллю і поза масштабом сторінки на великих екранах.
+  return createPortal(
+    <div className="ext-dialog__backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="ext-dialog" role="dialog" aria-modal="true" aria-label={`Налаштування ${item.name}`}>
+        <header className="ext-dialog__head">
+          <h2>{item.name}</h2>
+          <button type="button" className="ext-dialog__close" onClick={onClose} aria-label="Закрити"><X size={20} /></button>
+        </header>
+
+        {status && <p className={`ext-dialog__status${status.bad ? " ext-dialog__status--bad" : ""}`}>{status.text}</p>}
+        {!settings && !error && <p className="ext-dialog__status">Завантаження…</p>}
+
+        {settings?.help?.length > 0 && (
+          <ol className="ext-dialog__steps">
+            {settings.help.map((step, i) => (
+              <li key={i}>
+                {step.text}
+                {step.command && (
+                  <span className="ext-dialog__command">
+                    <code>{step.command}</code>
+                    <button type="button" onClick={() => copy(step.command, i)} aria-label="Скопіювати команду">
+                      {copied === i ? <Check size={15} /> : <Copy size={15} />}
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {settings?.fields?.length > 0 && (
+          <form onSubmit={save} className="ext-dialog__form">
+            {settings.fields.map((field) => (
+              <textarea
+                key={field.key}
+                rows={3}
+                aria-label={field.label}
+                placeholder={field.placeholder || field.label}
+                value={values[field.key] || ""}
+                onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
+                spellCheck={false}
+                autoComplete="off"
+              />
+            ))}
+            {error && <p className="ext-error">{error}</p>}
+            <button type="submit" className="ext__install" disabled={!canSave || saving}>
+              {saving ? "Перевіряємо…" : "Перевірити й зберегти"}
+            </button>
+          </form>
+        )}
+        {!settings && error && <p className="ext-error">{error}</p>}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function Extension({ item, busy, onChange, onConfigure }) {
+  const installed = item.state === "installed";
+  const status = statusLine(item.status);
   return (
-    <div style={{
-      display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, padding: "14px 16px",
-      borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.06)",
-    }}>
-      <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Puzzle size={16} color="rgba(255,255,255,0.6)" />
+    <article className={`ext${item.state === "soon" ? " ext--soon" : ""}`}>
+      <div className="ext__tile">
+        <span className="ext__logo">{item.name}</span>
+        {installed && <span className="ext__badge" title="Встановлено"><Check size={16} strokeWidth={3} /></span>}
       </div>
-      <div style={{ flex: "1 1 160px", minWidth: 0 }}>
-        <p style={{ fontSize: 15, color: "#fff", margin: "0 0 2px" }}>{item.name}</p>
-        <p style={muted}>{item.description}</p>
+      <p className="ext__text">{item.description}</p>
+      {status && <p className={`ext__status${status.bad ? " ext__status--bad" : ""}`}>{status.text}</p>}
+      <div className="ext__action">
+        {item.state === "available" && (
+          <button type="button" className="ext__install" disabled={busy} onClick={() => onChange(item, true)}>Встановити</button>
+        )}
+        {installed && (
+          <button type="button" className="ext__remove" disabled={busy} onClick={() => onChange(item, false)}>Видалити</button>
+        )}
+        {item.configurable && (
+          <button type="button" className="ext__settings" onClick={() => onConfigure(item)}>Налаштувати</button>
+        )}
+        {item.state === "builtin" && <span className="ext__note">Вбудовано в Nestify</span>}
+        {item.state === "soon" && <span className="ext__note">Скоро</span>}
       </div>
-      {item.state === "available" && (
-        <button type="button" tabIndex={0} style={primary} disabled={busy} onClick={() => onChange(item, true)}>Встановити</button>
-      )}
-      {item.state === "installed" && (
-        <button type="button" tabIndex={0} style={secondary} disabled={busy} onClick={() => onChange(item, false)}>Видалити</button>
-      )}
-      {STATE_LABEL[item.state] && <span style={muted}>{STATE_LABEL[item.state]}</span>}
-    </div>
+    </article>
   );
 }
 
@@ -50,8 +159,10 @@ export default function AccountExtensionsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [link, setLink] = useState("");
   const [token, setToken] = useState("");
+  const [configuring, setConfiguring] = useState(null);
 
   const load = useCallback(async () => {
     const data = await getExtensions();
@@ -86,6 +197,7 @@ export default function AccountExtensionsPage() {
       await addExtensionByLink(link.trim(), token.trim());
       setLink("");
       setToken("");
+      setFormOpen(false);
       await load();
     } catch (e) {
       setError(errorText(e));
@@ -95,40 +207,39 @@ export default function AccountExtensionsPage() {
   };
 
   return (
-    <div className="acc-root" style={{ paddingBottom: 100 }}>
-      <div style={{ width: "100%", display: "flex", alignItems: "center", marginBottom: 28 }}>
-        <button className="acc-back-btn" onClick={() => navigate(-1)} aria-label="Назад">
-          <ChevronLeft size={20} />
+    <div className="acc-root acc-root--full">
+      <div className="acc-page acc-page--wide">
+        <button className="acc-back" onClick={() => navigate(-1)}>
+          <ChevronLeft size={22} /> Профіль
         </button>
-        <h1 className="acc-title" style={{ flex: 1, margin: 0, paddingRight: 36, textAlign: "center" }}>
-          Розширення
-        </h1>
-      </div>
+        <h1 className="acc-headline">Розширення</h1>
 
-      {loading && <p style={{ ...muted, textAlign: "center", marginTop: 40 }}>Завантаження…</p>}
-      {error && <p style={{ ...muted, color: "#ff8a80", alignSelf: "flex-start", marginBottom: 12 }}>{error}</p>}
+        {error && <p className="ext-error">{error}</p>}
 
-      {!loading && items.length > 0 && (
-        <>
-          <p style={heading}>Працює на всіх профілях цього акаунту</p>
-          <div style={card}>
-            {items.map((item, i) => (
-              <ExtensionRow key={item.id} item={item} last={i === items.length - 1} busy={busyId === item.id} onChange={change} />
+        {!loading && items.length > 0 && (
+          <div className="ext-grid">
+            {items.map((item) => (
+              <Extension key={item.id} item={item} busy={busyId === item.id} onChange={change} onConfigure={setConfiguring} />
             ))}
           </div>
-        </>
-      )}
+        )}
 
-      {!loading && isAdmin && (
-        <>
-          <p style={heading}>Додати за посиланням</p>
-          <form onSubmit={addByLink} style={{ ...card, padding: 16 }}>
-            <input style={input} value={link} onChange={(e) => setLink(e.target.value)} placeholder="http://…/manifest.json" aria-label="Посилання на manifest.json" />
-            <input style={input} value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен (якщо потрібен)" aria-label="Токен" type="password" autoComplete="off" />
-            <button type="submit" style={primary} disabled={!link.trim() || busyId === "link"}>Додати</button>
-          </form>
-        </>
-      )}
+        {!loading && isAdmin && (
+          formOpen ? (
+            <form onSubmit={addByLink} className="ext-form">
+              <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Посилання на manifest.json" aria-label="Посилання на manifest.json" autoFocus />
+              <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Токен, якщо потрібен" aria-label="Токен" type="password" autoComplete="off" />
+              <div className="ext-form__actions">
+                <button type="submit" className="ext__install" disabled={!link.trim() || busyId === "link"}>Додати</button>
+                <button type="button" className="ext__remove" onClick={() => setFormOpen(false)}>Скасувати</button>
+              </div>
+            </form>
+          ) : (
+            <button type="button" className="ext-add" onClick={() => setFormOpen(true)}>Додати за посиланням</button>
+          )
+        )}
+      </div>
+      {configuring && <SettingsDialog item={configuring} onClose={() => setConfiguring(null)} onSaved={load} />}
     </div>
   );
 }

@@ -23,9 +23,9 @@ function ContinueCardInner({ movie, onMovieSelect }) {
   const progress = duration > 0 ? Math.min((position / duration) * 100, 100) : 0;
   const timeLeft = duration > 0 ? formatTimeLeft(duration - position) : null;
 
-  const isSeries = movie.action === "get_stream" && movie.season != null;
+  const isSeries = movie.season != null && movie.episode != null;
   const subline = isSeries
-    ? `S${movie.season} · E${movie.episode}`
+    ? `Сезон ${movie.season}, Серія ${movie.episode}`
     : [year, genre].filter(Boolean).join(" · ");
 
   const handleKeyDown = (e) => {

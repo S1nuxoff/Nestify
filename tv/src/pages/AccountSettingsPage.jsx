@@ -1,10 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  User, Tv, SlidersHorizontal, Smartphone, Info,
-  LogOut, Plus, Pencil, Link,
-} from "lucide-react";
-import { Puzzle } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { getMe } from "../api/auth";
 import { clearAuthSession, getCurrentProfile, setCurrentProfile, getProfilesCache, setProfilesCache } from "../core/session";
 import Header from "../components/layout/Header";
@@ -12,12 +8,12 @@ import config from "../core/config";
 import "../styles/AccountSettingsPage.css";
 
 const MENU_ITEMS = [
-  { icon: User,              label: "Акаунт",       path: "/account/account" },
-  { icon: Tv,                label: "Підключити ТВ", path: "/connect" },
-  { icon: SlidersHorizontal, label: "Налаштування", path: "/account/prefs"   },
-  { icon: Smartphone,        label: "Пристрої",     path: "/account/devices" },
-  { icon: Puzzle,            label: "Розширення",   path: "/account/extensions", full: true },
-  { icon: Info,              label: "Про сервіс",   path: "/account/about",  full: true },
+  { label: "Розширення", path: "/account/extensions" },
+  { label: "Підключити ТВ", path: "/connect" },
+  { label: "Пристрої", path: "/account/devices" },
+  { label: "Налаштування", path: "/account/prefs" },
+  { label: "Акаунт", path: "/account/account" },
+  { label: "Про сервіс", path: "/account/about" },
 ];
 
 export default function AccountSettingsPage() {
@@ -25,7 +21,6 @@ export default function AccountSettingsPage() {
   const [profiles, setProfiles] = useState(() => getProfilesCache());
   const [editMode, setEditMode] = useState(false);
   const currentProfile = getCurrentProfile();
-  const sliderRef = useRef(null);
 
   useEffect(() => {
     getMe()
@@ -44,71 +39,58 @@ export default function AccountSettingsPage() {
   };
 
   return (
-    <div className="acc-root">
+    <div className="acc-root acc-root--full">
       <Header currentUser={currentProfile || {}} />
-      <h1 className="acc-title">Профіль</h1>
+      <div className="acc-page acc-page--profile">
+        <div className="acc-page__who">
+        <h1 className="acc-headline">Хто дивиться</h1>
 
-      {/* Profiles slider */}
-      <div className="acc-profiles-slider" ref={sliderRef}>
-        <div className="acc-profiles-track">
+        <div className="acc-who">
           {[...profiles].sort((a, b) => (b.id === currentProfile?.id ? 1 : 0) - (a.id === currentProfile?.id ? 1 : 0)).map((p) => {
             const isCurrent = p.id === currentProfile?.id;
             return (
-              <div key={p.id} className={`acc-profile${isCurrent ? " acc-profile--current" : ""}`}>
+              <div key={p.id} className={`acc-who__profile${isCurrent ? " acc-who__profile--current" : ""}`}>
                 <button
-                  className="acc-profile__avatar"
+                  className="acc-who__avatar"
+                  aria-label={editMode ? `Редагувати профіль ${p.name}` : `Обрати профіль ${p.name}`}
                   onClick={() => {
                     if (editMode) { navigate(`/profiles/${p.id}/edit`); return; }
                     if (!isCurrent) { setCurrentProfile(p); window.location.reload(); }
                   }}
                 >
                   {p.avatar_url ? (
-                    <img src={`${config.backend_url}${p.avatar_url}`} alt={p.name} />
+                    <img src={`${config.backend_url}${p.avatar_url}`} alt="" />
                   ) : (
                     <span>{p.name?.[0]?.toUpperCase() || "P"}</span>
                   )}
-                  {editMode && (
-                    <div className="acc-profile__edit">
-                      <Pencil size={isCurrent ? 18 : 14} />
-                    </div>
-                  )}
+                  {editMode && <span className="acc-who__edit"><Pencil size={20} /></span>}
                 </button>
-                <span className="acc-profile__name">{p.name}</span>
+                <span className="acc-who__name">{p.name}</span>
               </div>
             );
           })}
-          <div className="acc-profile">
-            <button className="acc-profile__add" onClick={() => navigate("/profiles/new")}>
-              <Plus size={22} />
+          <div className="acc-who__profile">
+            <button className="acc-who__avatar acc-who__avatar--add" onClick={() => navigate("/profiles/new")} aria-label="Додати профіль">
+              <Plus size={30} strokeWidth={1.5} />
             </button>
-            <span className="acc-profile__name">Додати</span>
+            <span className="acc-who__name">Додати</span>
           </div>
         </div>
+        <button className="acc-quiet" onClick={() => setEditMode((v) => !v)}>
+          {editMode ? "Готово" : "Змінити профілі"}
+        </button>
+        </div>
+
+        <div className="acc-page__links">
+        <nav className="acc-menu" aria-label="Налаштування">
+          {MENU_ITEMS.map(({ label, path }) => (
+            <button key={label} onClick={() => navigate(path)}>{label}</button>
+          ))}
+        </nav>
+
+        <button className="acc-quiet" onClick={handleLogout}>Вийти з акаунту</button>
+        </div>
       </div>
-
-      {/* Manage profiles */}
-      <button className="acc-manage" onClick={() => setEditMode((v) => !v)}>
-        <Link size={15} />
-        {editMode ? "Готово" : "Керувати профілями"}
-      </button>
-
-      {/* Menu grid */}
-      <div className="acc-grid">
-        {MENU_ITEMS.map(({ icon: Icon, label, path, full }) => (
-          <button key={label} className={`acc-tile${full ? " acc-tile--full" : ""}`} onClick={() => navigate(path)}>
-            <div className="acc-tile__icon">
-              <Icon size={22} />
-            </div>
-            <span className="acc-tile__label">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Sign out */}
-      <button className="acc-signout" onClick={handleLogout}>
-        <LogOut size={16} />
-        Sign Out
-      </button>
     </div>
   );
 }

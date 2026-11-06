@@ -18,6 +18,7 @@ import {
   getRecommendations,
 } from "../api/tmdb";
 import { getWatchHistory } from "../api/v3";
+import { latestPerTitle } from "../core/playbackPlan";
 
 import Featured from "../components/section/Featured";
 import Header from "../components/layout/Header";
@@ -280,7 +281,7 @@ export default function HomePage() {
     if (!currentUser?.id) { setIsHistoryLoading(false); return; }
     (async () => {
       try {
-        const raw = await getWatchHistory(currentUser.id);
+        const raw = latestPerTitle(await getWatchHistory(currentUser.id));
         const enriched = await Promise.all(raw.map(enrichHistoryItem));
         const filtered = enriched.filter(Boolean);
         setHistory(filtered);

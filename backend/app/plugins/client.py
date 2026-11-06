@@ -5,7 +5,7 @@ import json
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from app.plugins.schemas import Manifest, Resolved, Source, SourcesRequest, SourcesResponse
+from app.plugins.schemas import Manifest, PluginSettings, Resolved, Source, SourcesRequest, SourcesResponse
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_SOURCES = 1000
@@ -31,11 +31,19 @@ class PluginClient:
         # Created without redirects, so a plugin cannot forward its token to another host.
         self._http = http
 
-    async def _call(self, method: str, url: str, token: str | None, body: dict | None = None) -> dict:
+    async def _call(self, method: str, url: str, token: str | None, body: dict | None = None,
+                    plugin_message: bool = False) -> dict:
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         try:
             async with self._http.stream(method, url, headers=headers, json=body) as response:
                 if response.status_code != 200:
+                    # Only settings ask for this: the message goes to an admin and explains the problem.
+                    if plugin_message and response.status_code == 400:
+                        await response.aread()
+                        try:
+                            raise PluginError(str(response.json()["detail"])[:500])
+                        except (KeyError, TypeError, ValueError):
+                            pass
                     raise PluginError(f"plugin returned HTTP {response.status_code}")
                 raw = bytearray()
                 async for chunk in response.aiter_bytes():
@@ -64,6 +72,13 @@ class PluginClient:
     async def sources(self, base_url: str, token: str | None, request: SourcesRequest) -> list[Source]:
         data = await self._call("POST", f"{base_url}/sources", token, request.model_dump(exclude_none=True, exclude={"kinds"}))
         return self._parse(SourcesResponse, data).sources[:MAX_SOURCES]
+
+    async def settings(self, base_url: str, token: str | None) -> PluginSettings:
+        return self._parse(PluginSettings, await self._call("GET", f"{base_url}/settings", token))
+
+    async def save_settings(self, base_url: str, token: str | None, values: dict[str, str]) -> PluginSettings:
+        data = await self._call("PUT", f"{base_url}/settings", token, {"values": values}, plugin_message=True)
+        return self._parse(PluginSettings, data)
 
     async def resolve(self, base_url: str, token: str | None, source_id: str) -> Resolved:
         data = await self._call("POST", f"{base_url}/resolve", token, {"source_id": source_id})

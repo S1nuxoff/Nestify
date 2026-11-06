@@ -47,3 +47,14 @@ export function orderVoices(sources, { wanted, titleVoice, lastVoice } = {}) {
   ordered.push(...rest);
   return [...new Set(ordered)];
 }
+
+// Історія приходить від нових записів до старих. Для ряду «Продовжити перегляд» лишаємо
+// по одному запису на фільм чи серіал: останню серію, яку дивилися.
+export function latestPerTitle(history) {
+  const seen = new Set();
+  return (history || []).filter((item) => {
+    if (seen.has(item.movie_id)) return false;
+    seen.add(item.movie_id);
+    return true;
+  });
+}

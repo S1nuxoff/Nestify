@@ -1,8 +1,9 @@
 from types import SimpleNamespace
 
 import httpx
+import json
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -191,6 +192,78 @@ def test_extra_reaches_the_client(client):
     client.app.dependency_overrides[api.get_plugin_client] = lambda: PluginClient(http)
     source = client.post("/api/v4/sources", json={**QUERY, "kinds": ["torrent"]}).json()["sources"][0]
     assert source["extra"] == {"magnet": "magnet:x"}
+
+
+class SettingsPlugin:
+    def __init__(self):
+        self.saved = []
+
+    def __call__(self, request):
+        assert request.headers.get("authorization") in (None, "Bearer tok")
+        if request.url.path.endswith("/settings"):
+            if request.method == "PUT":
+                body = json.loads(request.content)["values"]
+                self.saved.append(body)
+                if body.get("cookies") == "bad":
+                    return httpx.Response(400, json={"detail": "Сайт не прийняв ці куки"})
+            return httpx.Response(200, json={
+                "status": {"ok": True, "message": "ok", "expires_at": 123},
+                "fields": [{"key": "cookies", "label": "Куки"}],
+                "help": [{"text": "step", "command": "ssh x"}],
+            })
+        return source_host(request)
+
+
+@pytest.fixture
+def settings_plugin(client):
+    plugin_mock = SettingsPlugin()
+    http = httpx.AsyncClient(transport=httpx.MockTransport(plugin_mock))
+    client.app.dependency_overrides[api.get_plugin_client] = lambda: PluginClient(http)
+    return plugin_mock
+
+
+def test_status_is_only_for_admins(client, choices, settings_plugin):
+    row = client.get("/api/v4/extensions").json()["items"][0]
+    assert "status" not in row and "configurable" not in row
+    choices.admin = True
+    row = client.get("/api/v4/extensions").json()["items"][0]
+    assert row["configurable"] is True and row["status"]["expires_at"] == 123
+
+
+def test_plugin_without_settings_has_no_button(client, choices):
+    def none(request):
+        return httpx.Response(404)
+    http = httpx.AsyncClient(transport=httpx.MockTransport(none))
+    client.app.dependency_overrides[api.get_plugin_client] = lambda: PluginClient(http)
+    choices.admin = True
+    assert "configurable" not in client.get("/api/v4/extensions").json()["items"][0]
+
+
+def test_settings_are_for_admins_only(client, settings_plugin):
+    def deny():
+        raise HTTPException(403)
+    client.app.dependency_overrides[get_current_admin] = deny
+    assert client.get("/api/v4/extensions/rezka/settings").status_code == 403
+    assert client.put("/api/v4/extensions/rezka/settings", json={"values": {"cookies": "a=1"}}).status_code == 403
+    assert settings_plugin.saved == []
+
+
+def test_settings_reach_the_plugin(client, settings_plugin):
+    data = client.get("/api/v4/extensions/rezka/settings").json()
+    assert data["help"][0]["command"] == "ssh x"
+    response = client.put("/api/v4/extensions/rezka/settings", json={"values": {"cookies": "a=1"}})
+    assert response.status_code == 200 and settings_plugin.saved == [{"cookies": "a=1"}]
+
+
+def test_plugin_explains_why_it_refused(client, settings_plugin):
+    response = client.put("/api/v4/extensions/rezka/settings", json={"values": {"cookies": "bad"}})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Сайт не прийняв ці куки"
+
+
+def test_settings_of_unknown_plugin(client, settings_plugin):
+    assert client.get("/api/v4/extensions/none/settings").status_code == 404
+    assert client.put("/api/v4/extensions/off/settings", json={"values": {}}).status_code == 404
 
 
 def test_admin_flag(client, choices):

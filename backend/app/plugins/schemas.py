@@ -67,6 +67,29 @@ class SourcesResponse(BaseModel):
     sources: list[Source]
 
 
+class PluginStatus(BaseModel):
+    ok: Optional[bool] = None
+    message: Optional[str] = Field(default=None, max_length=500)
+    expires_at: Optional[int] = None
+
+
+class SettingField(BaseModel):
+    key: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=255)
+    placeholder: Optional[str] = Field(default=None, max_length=255)
+
+
+class HelpStep(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+    command: Optional[str] = Field(default=None, max_length=1000)
+
+
+class PluginSettings(BaseModel):
+    status: PluginStatus
+    fields: list[SettingField] = Field(default_factory=list)
+    help: list[HelpStep] = Field(default_factory=list)
+
+
 class Stream(BaseModel):
     quality: str = Field(min_length=1, max_length=64)
     url: HttpUrl

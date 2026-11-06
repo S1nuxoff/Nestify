@@ -112,6 +112,22 @@ Use `proxy` when a link works only from the server's IP or needs custom headers.
 
 A response that breaks these rules is rejected, and the error is reported for that plugin only.
 
+### `GET /settings` and `PUT /settings` (optional)
+
+A plugin with settings gets a "Налаштувати" button on the extensions page, for admins only. Plugins
+without them answer 404. Never return saved secrets here.
+
+```json
+{
+  "status": {"ok": true, "message": "Сайт приймає куки", "expires_at": 1796467337},
+  "fields": [{"key": "cookies", "label": "Куки", "placeholder": "Вставте значення cookie"}],
+  "help": [{"text": "Відкрийте тунель:", "command": "ssh -D 1080 -N root@server"}]
+}
+```
+
+`PUT` receives `{"values": {"cookies": "..."}}` and answers with the same object. To refuse, answer 400
+with `{"detail": "..."}`: the text is shown to the admin.
+
 ## Backend API
 
 All under `/api/v4`.
@@ -126,6 +142,7 @@ All under `/api/v4`.
 | `POST` | `/sources` | account | Ask this account's plugins, optionally only for some `kinds`. Returns `{"sources", "errors", "providers"}` |
 | `POST` | `/resolve` | account | `{"plugin_id", "source_id"}`. Returns `{"kind", "streams", "subtitles", "magnet", "embed_url"}` |
 | `GET` | `/play/{token}` | the link | Streams proxied media with `Range` support |
+| `GET`, `PUT` | `/extensions/{id}/settings` | admin | Read and save a plugin's settings |
 
 `/play` links are random, live for 6 hours and are kept in memory, so a backend restart invalidates
 them and the client should call `/resolve` again. This requires the backend to run as one process.

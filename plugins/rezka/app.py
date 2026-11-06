@@ -4,13 +4,15 @@ import hmac
 import logging
 import os
 import re
+import time
+import urllib.request
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from rezka import Blocked, MapStore, Matcher, Site
+from rezka import Blocked, MapStore, Matcher, Site, TtlCache, parse_cookies, token_expiry
 
 log = logging.getLogger("rezka-plugin")
 
@@ -29,11 +31,6 @@ HIDDEN_QUALITIES = {
 SOURCE_ID = re.compile(r"^(/[A-Za-z0-9/_.-]+\.html)\|(\d+)\|(\d*)\|(\d*)$")
 
 
-def parse_cookies(value: str) -> dict[str, str]:
-    pairs = (part.strip().split("=", 1) for part in value.split(";") if "=" in part)
-    return {name.strip(): val.strip() for name, val in pairs}
-
-
 matcher = Matcher(Site(
     ORIGIN,
     headers={
@@ -48,6 +45,22 @@ matcher = Matcher(Site(
 
 def get_matcher() -> Matcher:
     return matcher
+
+
+def load_saved_cookies() -> None:
+    """Cookies saved on the extensions page win over the ones set when the service was deployed."""
+    if not matcher.mapping:
+        return
+    try:
+        saved = matcher.mapping.load_cookies()
+    except Exception:
+        log.exception("could not read saved cookies, using REZKA_COOKIES")
+        return
+    if saved:
+        matcher.site.cookies = saved
+
+
+load_saved_cookies()
 
 
 def require_token(authorization: str = Header(default="")) -> None:
@@ -97,6 +110,79 @@ def status(m: Matcher = Depends(get_matcher)):
     """Whether the site accepts the cookies right now."""
     m.site.check_access()
     return {"ok": True}
+
+
+STATUS_TTL = 5 * 60
+SSH_KEY_NAME = os.environ.get("REZKA_SSH_KEY_NAME", "dota_server_ed25519")
+_status = {"at": 0.0, "ok": None, "ip": None}
+
+
+def server_ip() -> str:
+    if not _status["ip"]:
+        try:
+            with urllib.request.urlopen("https://api.ipify.org", timeout=5) as response:
+                _status["ip"] = response.read().decode().strip()
+        except Exception:
+            return "IP_СЕРВЕРА"
+    return _status["ip"]
+
+
+def settings_view(m: Matcher, message: str | None = None) -> dict:
+    now = time.time()
+    if now - _status["at"] > STATUS_TTL:
+        try:
+            m.site.check_access()
+            _status["ok"] = True
+        except Exception:
+            _status["ok"] = False
+        _status["at"] = now
+    return {
+        "status": {
+            "ok": _status["ok"],
+            "message": message or ("Сайт приймає куки" if _status["ok"] else "Сайт не приймає куки, потрібні нові"),
+            "expires_at": token_expiry(m.site.cookies),
+        },
+        "fields": [{"key": "cookies", "label": "Куки", "placeholder": "Вставте значення cookie"}],
+        "help": [
+            {"text": "Відкрийте тунель через сервер у PowerShell і не закривайте вікно:",
+             "command": f'ssh -i "$env:USERPROFILE\\.ssh\\{SSH_KEY_NAME}" -D 1080 -N root@{server_ip()}'},
+            {"text": "У другому вікні запустіть окремий Chrome:",
+             "command": f'& "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --proxy-server="socks5://127.0.0.1:1080" --user-data-dir="$env:TEMP\\rezka-vps" {ORIGIN}/'},
+            {"text": "Дочекайтесь кінця перевірки сайту. Натисніть F12, відкрийте Network і F5."},
+            {"text": "Оберіть верхній запит, у Request Headers скопіюйте значення cookie і вставте його нижче."},
+        ],
+    }
+
+
+class SettingsRequest(BaseModel):
+    values: dict[str, str]
+
+
+@protected.get("/settings")
+def get_settings(m: Matcher = Depends(get_matcher)):
+    return settings_view(m)
+
+
+@protected.put("/settings")
+def put_settings(body: SettingsRequest, m: Matcher = Depends(get_matcher)):
+    cookies = parse_cookies(body.values.get("cookies", ""))
+    if not cookies:
+        raise HTTPException(400, "Вставте значення cookie: рядок виду назва=значення; назва=значення")
+    if not m.mapping:
+        raise HTTPException(400, "Плагін без бази даних, тому куки ніде зберегти. Задайте REZKA_MAP_DATABASE_URL")
+    try:
+        m.site.check_access(cookies)
+    except Blocked:
+        raise HTTPException(400, "Сайт не прийняв ці куки. Скопіюйте їх із браузера, запущеного через тунель")
+    except Exception:
+        raise HTTPException(400, "Не вдалося перевірити куки: сайт не відповідає. Спробуйте ще раз")
+    m.mapping.save_cookies(cookies)
+    m.site.cookies = cookies
+    # Loaded pages hold the old cookies, and searches may have failed because of them.
+    m.pages = TtlCache()
+    m.matches = TtlCache()
+    _status.update(at=time.time(), ok=True)
+    return settings_view(m, "Куки збережено, сайт їх приймає")
 
 
 @protected.get("/manifest.json")

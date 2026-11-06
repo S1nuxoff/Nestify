@@ -1,5 +1,7 @@
 """Plugin behaviour against a fake site. Live checks against the real site are done on the server."""
 
+import base64
+import json
 import os
 import sys
 from pathlib import Path
@@ -314,3 +316,96 @@ def test_helpers():
     assert slug_year(NACHALO_2010) == 2010
     assert slug_year("/films/action/770-nachalo.html") is None
     assert plugin.parse_cookies("a=1; b=c=d; bad") == {"a": "1", "b": "c=d"}
+    assert plugin.parse_cookies("cookie: a=1;\n b=2") == {"a": "1", "b": "2"}
+
+
+def jwt_with(exp):
+    payload = base64.urlsafe_b64encode(json.dumps({"exp": exp}).encode()).decode().rstrip("=")
+    return f"head.{payload}.sig"
+
+
+def test_token_expiry():
+    assert rezka.token_expiry({"techaro.lol-anubis-auth-x": jwt_with(1796467337), "a": "b"}) == 1796467337
+    assert rezka.token_expiry({"a": "b"}) is None
+    assert rezka.token_expiry({"techaro.lol-anubis-auth-x": "broken"}) is None
+
+
+class SavedCookies:
+    def __init__(self):
+        self.saved = None
+
+    def save_cookies(self, cookies):
+        self.saved = cookies
+
+
+@pytest.fixture
+def settings_client(site):
+    site.cookies = {"saved-name": "saved-value"}
+    site.accepted = True
+
+    def check_access(cookies=None):
+        site.tried = cookies
+        if not site.accepted:
+            raise Blocked()
+
+    site.check_access = check_access
+    site.mapping_store = SavedCookies()
+    plugin._status.update(at=0.0, ok=None, ip="1.2.3.4")
+    matcher = Matcher(site, site.mapping_store)
+    plugin.app.dependency_overrides[plugin.get_matcher] = lambda: matcher
+    client = TestClient(plugin.app, raise_server_exceptions=False)
+    client.matcher = matcher
+    yield client
+    plugin.app.dependency_overrides.clear()
+
+
+def test_settings_need_the_token(settings_client):
+    assert settings_client.get("/settings").status_code == 401
+    assert settings_client.put("/settings", json={"values": {"cookies": "a=1"}}).status_code == 401
+
+
+def test_settings_never_return_the_cookies(settings_client):
+    response = settings_client.get("/settings", headers=AUTH)
+    assert response.status_code == 200
+    assert response.json()["status"]["ok"] is True
+    assert "saved-name" not in response.text and "saved-value" not in response.text
+    assert "root@1.2.3.4" in response.text
+
+
+def test_good_cookies_are_saved_and_used_at_once(settings_client, site):
+    token = jwt_with(1796467337)
+    settings_client.matcher.pages.put("/x", "stale", 100)
+    settings_client.matcher.matches.put("k", None, 100)
+    response = settings_client.put("/settings", json={"values": {"cookies": f"cookie: techaro.lol-anubis-auth-x={token}; a=1"}}, headers=AUTH)
+    assert response.status_code == 200
+    assert response.json()["status"]["expires_at"] == 1796467337
+    assert site.mapping_store.saved["a"] == "1"
+    assert site.cookies["a"] == "1"
+    assert settings_client.matcher.pages.get("/x") is None
+    assert settings_client.matcher.matches.get("k", default=False) is False
+    assert token not in response.text
+
+
+def test_rejected_cookies_change_nothing(settings_client, site):
+    site.accepted = False
+    response = settings_client.put("/settings", json={"values": {"cookies": "a=1"}}, headers=AUTH)
+    assert response.status_code == 400
+    assert "тунель" in response.json()["detail"]
+    assert site.mapping_store.saved is None
+    assert site.cookies == {"saved-name": "saved-value"}
+
+
+def test_empty_cookies_are_refused(settings_client, site):
+    assert settings_client.put("/settings", json={"values": {"cookies": "nothing here"}}, headers=AUTH).status_code == 400
+    assert site.mapping_store.saved is None
+
+
+def test_status_reports_broken_cookies(settings_client, site):
+    site.accepted = False
+    assert settings_client.get("/settings", headers=AUTH).json()["status"]["ok"] is False
+
+
+def test_status_is_not_checked_on_every_request(settings_client, site):
+    settings_client.get("/settings", headers=AUTH)
+    site.accepted = False
+    assert settings_client.get("/settings", headers=AUTH).json()["status"]["ok"] is True

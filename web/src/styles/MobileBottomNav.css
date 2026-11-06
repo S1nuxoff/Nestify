@@ -112,7 +112,8 @@ body.torrent-modal-open .mbn-mini-player {
   height: 56px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.3);
+  /* Solid, not translucent: icon lines overlap, and alpha would show at every crossing. */
+  color: #8c8c8c;
   cursor: pointer;
   transition: color 0.2s ease, transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
@@ -134,7 +135,7 @@ body.torrent-modal-open .mbn-mini-player {
 }
 
 .mbn-tab--avatar {
-  color: rgba(255, 255, 255, 0.55);
+  color: #8c8c8c;
 }
 
 /* ── Avatar inside tab ── */
@@ -219,20 +220,38 @@ body.torrent-modal-open .mbn-mini-player {
 
   .mobile-bottom-nav {
     border-top: none;
-    gap: 4px;
-    padding: 8px 12px;
-    height: 60px;
+    gap: 2px;
+    padding: 6px;
+    height: 64px;
+    box-sizing: border-box;
   }
 
   .mbn-tab {
-    padding: 0 16px;
-    height: 44px;
+    gap: 4px;
+    min-width: 76px;
+    padding: 0 12px;
+    height: 52px;
+    box-sizing: border-box;
     border-radius: 999px;
     transition: background 0.15s ease, color 0.15s ease;
   }
 
+  .mbn-tab > svg {
+    width: 22px;
+    height: 22px;
+  }
+
   .mbn-tab--active {
     background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* The avatar takes the same space as the icons, so it fits inside the highlight. */
+  .mbn-avatar-img,
+  .mbn-avatar-placeholder {
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    border-width: 1.5px;
   }
 
   .mbn-tab__label {

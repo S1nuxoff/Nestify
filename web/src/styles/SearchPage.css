@@ -398,3 +398,8 @@
   line-height: 1.5;
   margin: 0;
 }
+
+/* Six in a row, the same as the rows on the page without filters. */
+@media (min-width: 1200px) {
+  .sp-root .sp-grid { grid-template-columns: repeat(6, 1fr); }
+}
