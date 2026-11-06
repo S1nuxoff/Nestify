@@ -3,6 +3,9 @@
 A Nestify [source plugin](../../docs/plugins.md). It finds a TMDB title on HDRezka, lists its
 voice-overs for the requested episode and returns links with subtitles.
 
+Links from the site work only from the server's IP, so Nestify streams them through the backend
+(`playback: proxy`). The plugin is fast enough for the Play button.
+
 ## Finding a title
 
 1. The `rezka_map` table, by TMDB id and then IMDb id. If several pages share an id, the page must
@@ -23,37 +26,48 @@ DATABASE_URL=postgresql://... python scripts/import_mapping.py path/to/rezka_map
 
 ## Deploy in Dokploy
 
-Create an Application in the same project as the backend:
+1. Create an Application in the same project as the backend: build type Dockerfile, build path
+   `plugins/rezka`, no domain. The backend reaches it over `dokploy-network`.
+2. Create a Postgres database for `rezka_map` and the saved settings, and set
+   `REZKA_MAP_DATABASE_URL` to it.
+3. Set the variables below and deploy.
+4. In Nestify, as an admin: Профіль → Розширення → Додати за посиланням, with
+   `http://<app name>:8000/manifest.json` and the `PLUGIN_TOKEN` value.
 
-- Build type: Dockerfile, build path `plugins/rezka`
-- Environment: see `.env.example`
-- No domain is needed: the backend reaches it over `dokploy-network`
-
-Then install it from the backend as an admin:
-
-```bash
-curl -X POST https://<api>/api/v4/plugins \
-  -H "Authorization: Bearer <admin token>" -H "Content-Type: application/json" \
-  -d '{"manifest_url": "http://<service name>:8000/manifest.json", "token": "<PLUGIN_TOKEN>"}'
-```
+| Variable | Meaning |
+|---|---|
+| `PLUGIN_TOKEN` | Random secret, also given to Nestify when installing |
+| `REZKA_MAP_DATABASE_URL` | Database for `rezka_map` and the saved cookies. Without it titles are found by name only and cookies can't be saved from the page |
+| `REZKA_COOKIES` | Initial cookies. Cookies saved on the extensions page win over these |
+| `REZKA_ORIGIN` | Site mirror, `https://rezka.ag` by default |
+| `REZKA_USER_AGENT` | Must match the browser the cookies came from |
+| `REZKA_HIDDEN_QUALITIES` | Qualities to hide, see below |
+| `REZKA_SSH_KEY_NAME` | Key file name used in the renewal steps shown to admins |
 
 ## Cookies
 
-The site protects itself with a bot check, and its cookie is tied to the IP it was issued to. So
-the cookies must come from a browser going through the server:
+The site checks for bots, and its cookie is tied to the IP that passed the check. So the cookie
+has to come from a browser going through the server. It lasts about 30 days.
 
-1. `ssh -D 1080 -N root@<server>`
-2. Start a separate browser with `--proxy-server="socks5://127.0.0.1:1080"`
-3. Open the site, pass the check, and copy the `cookie` request header into `REZKA_COOKIES`
+Renew it in Nestify, without a redeploy:
 
-The cookie lasts about 30 days. Admins renew it in Nestify: Профіль, Розширення, HDRezka, Налаштувати.
-The page shows the expiry date and these steps, checks new cookies against the site and saves them in
-the plugin's database, so no redeploy is needed. Saved cookies win over `REZKA_COOKIES`.
+1. Профіль → Розширення. The HDRezka card shows the expiry date and turns red five days before.
+2. Налаштувати. The window lists the steps with ready commands to copy:
+   an SSH tunnel to the server (`ssh -D 1080 -N`), a separate Chrome going through it, then the
+   `cookie` request header from DevTools.
+3. Paste the cookie and press "Перевірити й зберегти".
+
+The plugin checks the cookie against the site first. If the site accepts it, the cookie is saved in
+the plugin's database and used at once. If not, nothing changes and the window says why. Cookie
+values are never sent back to the page.
+
+`GET /status` answers 503 while the cookie doesn't work, and Nestify shows the same error for this
+plugin in `/api/v4/sources`.
 
 ## Quality labels
 
 `1080p Ultra`, `2K` and `4K` need a premium account. Without one, the site serves a one-minute stub
-for them, so they are hidden by default (`REZKA_HIDDEN_QUALITIES`).
+for them, so they are hidden by default (`REZKA_HIDDEN_QUALITIES`). Clear it for a premium account.
 
 Other labels are passed on as the site gives them, and they can overstate the real resolution. On
 the titles checked, without premium, `1080p` was 1280 pixels wide and `720p` was 854.

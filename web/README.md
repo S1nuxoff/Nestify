@@ -1,16 +1,67 @@
-# React + Vite
+# Nestify Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The main Nestify site: React 19, Vite 5 and React Router 7. Metadata and images come from TMDB,
+everything else from the [backend](../backend/README.md).
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cp .env.example .env.local
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # dist/
+```
 
-## React Compiler
+| Variable | Meaning |
+|---|---|
+| `VITE_BACKEND_URL` | Backend address, local or production |
+| `VITE_TMDB_KEY` | TMDB API key |
+| `VITE_TMDB_BASE`, `VITE_TMDB_IMG` | TMDB API and image hosts |
+| `VITE_HDREZKA_URL` | HDRezka mirror for links to the site |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite inlines these at build time, so the Docker image takes them as build arguments.
 
-## Expanding the ESLint configuration
+## Layout
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```text
+src/
+  api/          Backend and TMDB calls. plugins.js covers sources, playback and extensions
+  core/         Logic without React: which source to play, grouping, torrent search
+  hooks/        Data hooks: sources, live session, TV device
+  pages/        One file per route
+  components/   Shared UI, the player icons live in components/ui/PlayerIcons.jsx
+  styles/       One stylesheet per page or component
+```
+
+### Playback
+
+`core/playbackPlan.js` decides what Play starts: the voice-over remembered for the series, then
+the best quality. It asks only the fast plugins (`direct`, `hls`), so the film starts in a few
+seconds. The source picker asks the slow ones (torrents) separately. Both are tested with
+`node --test`:
+
+```bash
+node --test src/core/*.test.js
+```
+
+### Large screens
+
+`styles/LargeScreens.css` scales the page with `zoom` from 1800 px wide, so the site looks the same
+on a 2K or 4K monitor. The bottom navigation and the mini player stay at their own size. Rules that
+use `vh` inside the zoomed area must divide by `--screen-zoom`.
+
+### Rows
+
+`core/dragScroll.js` lets the mouse drag every horizontal row. Swiper sliders, the player and form
+fields keep their own handling.
+
+## Style
+
+White on black, no accent colours. Titles are large and light, secondary text is a lower opacity
+of white, and buttons are white pills. New screens should reuse the existing stylesheets instead of
+adding new colours.
+
+## TV
+
+`tv/` is a copy of this app tuned for the TV. Shared files such as `api/plugins.js`, `core/*` and
+the player are kept identical: change both.
